@@ -1,0 +1,1049 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>treetop manyara map</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+	* {	margin: 0px; padding: 0;}
+	body {
+		color: #000;
+		font-family:Monospace;
+		font-size:1em;
+		/*background: #8cff92;*/
+		background: #C3FFB1;
+		overflow: hidden;
+	}
+
+	#container {
+		display: block;
+		width: 100vw;
+		height: 100vh;
+		overflow: hidden;
+	}
+
+	#info {
+		display: block;
+		position:absolute;
+		bottom: 10px;
+		width: 100%;
+		z-index: 999;
+		text-align: center;
+	}
+	#info button.nv {
+		color: #000;
+		text-decoration: none;
+		
+		 -webkit-user-select: none; 
+  -moz-user-select: none; 
+  -ms-user-select: none;  
+  user-select: none;      
+
+		display: inline-block;
+		width: 40px;
+		height: 40px;
+		line-height: 40px;
+		border-radius: 40px;
+		outline: 0;
+		border:0;
+		background: rgba(255, 255, 255, 0.5);
+		}
+		#stminus, #stplus {
+
+font-size:1.4em;
+}
+	.nv:active, .nv:focus {outline: 0; }
+	.txtlbl {
+		color: #000;
+		cursor : pointer;
+		z-index: 999;
+		display: block;
+		width:30px;
+		height:30px;
+		line-height: 30px;
+		border-radius: 30px;
+		text-align: center;
+	}
+
+	.txtlbl:hover, .txtlbl:active {
+		background: #fff;
+	}
+
+	#cards {top:0px; left:0;}
+	#cards div {
+		padding: 4px 8px;
+		position: absolute;
+		left:-10000px;
+		font-weight: lighter;
+		font-size: 70%;
+		transform: translate3d(0,0,0);
+		margin-top: 35px;
+		border-radius: 30px;
+	}
+		#cards div.null {display: none;}
+		#cards div.active { display: block; position: absolute;
+	background: #fff;
+}
+	#scnum {position: absolute; bottom:0; right:10px; z-index: -2; width: 30px; height: 30px; display: block; font-size: 1.4em; color: #000;}
+
+	#cards div:after {
+		content: '';
+		position: absolute;
+		display: block;
+		width:0px;
+		height:0px;
+		border: transparent 8px solid;
+		border-top: #fff 8px solid;
+		border-left: #fff 8px solid;
+		bottom: -14px;
+}
+
+	</style>
+</head>
+
+<body>
+	<div id="info" class="hud">
+		<button id="stminus" class="nv" >&lt;</button>
+		<button id="topv" class="nv">top</button>
+		<button id="stplus" class="nv" >&gt;</button>
+		
+		<p id="scnum"  >?</p>
+		</div> <!-- end hud -->
+
+
+		<div id="container"></div><!-- end canvas -->
+		<div id="cards">
+			<div id="card1" class="null"><h2>hello 1</h2></div>
+			<div id="card2" class="null"><h2>hello 2</h2></div>
+			<div id="card3" class="null"><h2>hello 3</h2></div>
+			<div id="card4" class="null"><h2>hello 4</h2></div>
+			<div id="card5" class="null"><h2>hello 5</h2></div>
+			<div id="card6" class="null"><h2>hello 6</h2></div>
+			<div id="card7" class="null"><h2>hello 7</h2></div>
+			<div id="card8" class="null"><h2>hello 8</h2></div>
+			<div id="card9" class="null"><h2>hello 9</h2></div>
+			<div id="card10" class="null"><h2>hello 10</h2></div>
+		</div>
+
+		<script src="fastclick.js"></script>
+		<script src="three.min.js"></script>
+		<script src="OrbitControls.js"></script>
+		<script src='Tween.js'></script>
+		<!-- <script src="speakClient.js"></script> -->
+
+		<script>
+
+		var camera, controls, scene, renderer, mesh;
+		var cnt = 0;
+		var meshes = [];
+		var textlabels = [];
+//scenepositions
+
+		var sc1pos = [34.8, 0, 24.9];
+		var sc2pos = [25.4, 0, 14.4];
+		var sc3pos = [14.9, 0, 5.0];
+		var sc4pos = [24.9, 0, -15.1];
+		var sc5pos = [15.1, 0, -35.0];
+		var sc6pos = [-4.7, 0, -44.9];
+		var sc7pos = [-24.8, 0, -24.9];
+		var sc8pos = [-34.8, 0, -5.0];
+		var sc9pos = [-35.1, 0, 25.1];
+		var sc10pos = [-5, 0, 25.1];
+
+		init();
+		animate();
+
+		function init() {
+			//scene
+			scene = new THREE.Scene();
+
+			//groups
+			group = new THREE.Group();
+			group.scale.set( 1, 1, 1 );
+			scene.add( group );
+
+			cgroup = new THREE.Group();
+			cgroup.position.set( 0, 0, 0 );
+			group.scale.set( 1, 1, 1 );
+			scene.add( cgroup );
+
+			treegroup = new THREE.Group();
+			treegroup.scale.set( 1, 1, 1 );
+			treegroup.rotation.set( 0, ( - Math.PI * Math.random() ), 0 );
+			scene.add( treegroup );
+
+			//render init
+			renderer = new THREE.WebGLRenderer( { alpha: true, antialias: true } );
+			// scene.fog = new THREE.FogExp2( 0x8cff92, 0.008 );
+			renderer.setClearColor( 0x000000, 0 );
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( window.innerWidth, window.innerHeight );
+
+			var container = document.getElementById( 'container' );
+			container.appendChild( renderer.domElement );
+			//camera
+			camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1200 );
+			//controls
+			controls = new THREE.OrbitControls( camera, renderer.domElement );
+
+			camera.position.x = 40;
+			camera.position.y = 0;
+			camera.position.z = 50;
+			controls.maxPolarAngle = Math.PI * 0.5;
+			controls.enableDamping = true;
+			controls.dampingFactor = 0.5;
+			controls.enableZoom = true;
+			controls.maxDistance = 250;
+			controls.minDistance = 20;
+			controls.autoRotate = false;
+			controls.enablePan = false;
+
+			// lights
+
+			light = new THREE.AmbientLight( 0xffffff );
+			scene.add( light );
+
+			// models
+			var loader = new THREE.JSONLoader();
+			loader.load( "path.json", function( geometry ) {
+				mesh = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xf2ff18,
+					shading: THREE.FlatShading
+				} ) );
+				mesh.name = "path";
+				mesh.position.set(0, -3, 0);
+				// mesh.scale.set(2, 2, 2);
+				group.add( mesh );
+			} );
+
+			// models
+					var loader = new THREE.JSONLoader();
+					loader.load( "treetop-logo.json", function( geometry, materials ) {
+						logomesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+						logomesh.position.set(33, 2, 41);
+						logomesh.scale.set(0.3, 0.3, 0.3);
+						logomesh.rotation.set(0.0, 0.66, 0.0);
+						logomesh.name = "logo";
+						scene.add( logomesh );
+					} );
+
+
+			//tree
+			geometry = new THREE.CylinderGeometry( 1, 2, 50, 8, 1 );
+			material = new THREE.MeshBasicMaterial({
+				color: 0xa46d49
+			});
+			treetrunk = new THREE.Mesh(geometry, material);
+			treetrunk.position.set( 0, 8, 0 );
+			treetrunk.scale.set( 0.3, 0.52, 0.3 );
+			treetrunk.radiusTop = 1;
+			treetrunk.radiusBottom = 1;
+			treetrunk.openEnded = false;
+			treegroup.add( treetrunk );
+			//branches
+			var branch1 = treetrunk.clone();
+			branch1.position.set (0, 18, 1.3);
+			branch1.scale.set (0.2, 0.08, 0.2);
+			branch1.name = "branch1";
+			branch1.rotation.set (1, 0, 0);
+			treegroup.add( branch1 );
+			var branch2 = treetrunk.clone();
+			branch2.position.set (0, 18, -1.3);
+			branch2.scale.set (0.2, 0.08, 0.2);
+			branch2.name = "branch2";
+			branch2.rotation.set (-0.73, 0, 0);
+			treegroup.add( branch2 );
+			//treetop
+			geometry = new THREE.SphereGeometry( 14, 14, 14 );
+			material = new THREE.MeshBasicMaterial({color: 0x88eb91, side: THREE.BackSide});
+			treegreen = new THREE.Mesh(geometry, material);
+			treegreen.scale.set(0.5,0.5,0.5);
+			treegreen.position.set (0, 23, 0);
+			treegreen.name = "treegrn";
+			scene.remove( treegroup );
+			treegroup.add( treegreen );
+			//randomly placed clones
+			for ( var i = 0; i < 30; i ++ ) {
+				var treeclones = treegroup.clone();
+				treeclones.name = "treeclones";
+				var x = (Math.random() - 0.5) * 300;
+				var z = (Math.random() - 0.5) * 300;
+				// leave space in center
+				if ( Math.abs( x ) < 45 && Math.abs( z ) < 65 ) continue;
+				treeclones.position.set( x, 0, z );
+				tsc = (Math.random() + 0.3);
+				treeclones.scale.set( tsc + 0.1, tsc + 0.1, tsc + 0.1 );
+				var tg = treeclones.name = "treegrn";
+			 tg.material = new THREE.MeshBasicMaterial({
+					color: 0xff0000, side: THREE.BackSide, overdraw: 1
+				});
+				scene.add( treeclones );
+
+				// stage treeclones
+				var stage1tree = treegroup.clone();
+				stage1tree.name = "treeclones";
+				stage1tree.name = "stage1tree";
+				stage1tree.position.set( sc1pos[0], sc1pos[1], sc1pos[2] );
+				group.add( stage1tree );
+
+				var stage2tree = treegroup.clone();
+				stage2tree.name = "treeclones";
+				stage2tree.name = "stage2tree";
+				stage2tree.position.set( sc2pos[0], sc2pos[1], sc2pos[2] );
+				group.add( stage2tree );
+
+				var stage3tree = treegroup.clone();
+				stage3tree.name = "treeclones";
+				stage3tree.name = "stage3tree";
+				stage3tree.position.set( sc3pos[0], sc3pos[1], sc3pos[2] );
+				group.add( stage3tree );
+
+				var stage4tree = treegroup.clone();
+				stage4tree.name = "treeclones";
+				stage4tree.name = "stage4tree";
+				stage4tree.position.set( sc4pos[0], sc4pos[1], sc4pos[2] );
+				group.add( stage4tree );
+
+				var stage5tree = treegroup.clone();
+				stage5tree.name = "treeclones";
+				stage5tree.name = "stage5tree";
+				stage5tree.position.set( sc5pos[0], sc5pos[1], sc5pos[2] );
+				group.add( stage5tree );
+
+				var stage6tree = treegroup.clone();
+				stage6tree.name = "treeclones";
+				stage6tree.name = "stage6tree";
+				stage6tree.position.set( sc6pos[0], sc6pos[1], sc6pos[2] );
+				group.add( stage6tree );
+
+				var stage7tree = treegroup.clone();
+				stage7tree.name = "treeclones";
+				stage7tree.name = "stage7tree";
+				stage7tree.position.set( sc7pos[0], sc7pos[1], sc7pos[2] );
+				group.add( stage7tree );
+
+				var stage8tree = treegroup.clone();
+				stage8tree.name = "treeclones";
+				stage8tree.name = "stage8tree";
+				stage8tree.position.set( sc8pos[0], sc8pos[1], sc8pos[2] );
+				group.add( stage8tree );
+
+				var stage9tree = treegroup.clone();
+				stage9tree.name = "treeclones";
+				stage9tree.name = "stage9tree";
+				stage9tree.position.set( sc9pos[0], sc9pos[1], sc9pos[2] );
+				group.add( stage9tree );
+
+				var stage2tree = treegroup.clone();
+				stage2tree.name = "treeclones";
+				stage2tree.name = "stage2tree";
+				stage2tree.position.set( sc10pos[0], sc10pos[1], sc10pos[2] );
+				group.add( stage2tree );
+
+			};
+
+			// stage circles
+			var material = new THREE.MeshBasicMaterial({
+				color: 0xd6ffba, shading: THREE.FlatShading
+			});
+			var radius = 1;
+			var segments = 20;
+			var circleGeometry = new THREE.CircleGeometry( radius, segments );
+			var circle = new THREE.Mesh( circleGeometry, material );
+			circle.rotation.x = ( - Math.PI / 2 );
+			circle.name = "sc3circle";
+			circle.scale.set (0.01, 0.01, 0.01);
+			circle.position.set (sc3pos[0], -5, sc3pos[2]);
+			cgroup.add( circle );
+
+			// circle clones
+			var sc1circle = circle.clone();
+			sc1circle.position.set (sc1pos[0], -5, sc1pos[2]);
+			sc1circle.name = "sc1circle";
+			sc1circle.scale.set (0.01, 0.01, 0.01);
+			cgroup.add( sc1circle );
+
+			var sc2circle = circle.clone();
+			sc2circle.position.set (sc2pos[0], -5, sc2pos[2]);
+			sc2circle.name = "sc2circle";
+			sc2circle.scale.set (0.01, 0.01, 0.01);
+			cgroup.add( sc2circle );
+
+			var sc4circle = circle.clone();
+			sc4circle.position.set (sc4pos[0], -5, sc4pos[2]);
+			sc4circle.name = "sc4circle";
+			sc4circle.scale.set (0.01, 0.01, 0.01);
+			cgroup.add( sc4circle );
+
+			var sc5circle = circle.clone();
+			sc5circle.position.set (sc5pos[0], -5, sc5pos[2]);
+			sc5circle.name = "sc5circle";
+			sc5circle.scale.set (0.01, 0.01, 0.01);
+			cgroup.add( sc5circle );
+
+			var sc6circle = circle.clone();
+			sc6circle.position.set (sc6pos[0], -5, sc6pos[2]);
+			sc6circle.name = "sc6circle";
+			sc6circle.scale.set (0.01, 0.01, 0.01);
+			cgroup.add( sc6circle );
+
+			var sc7circle = circle.clone();
+			sc7circle.position.set (sc7pos[0], -5, sc7pos[2]);
+			sc7circle.name = "sc7circle";
+			sc7circle.scale.set (0.01, 0.01, 0.01);
+			cgroup.add( sc7circle );
+
+			var sc8circle = circle.clone();
+			sc8circle.position.set (sc8pos[0], -5, sc8pos[2]);
+			sc8circle.name = "sc8circle";
+			sc8circle.scale.set (0.01, 0.01, 0.01);
+			cgroup.add( sc8circle );
+
+			var sc9circle = circle.clone();
+			sc9circle.position.set (sc9pos[0], -5, sc9pos[2]);
+			sc9circle.name = "sc9circle";
+			sc9circle.scale.set (0.01, 0.01, 0.01);
+			cgroup.add( sc9circle );
+
+			var sc10circle = circle.clone();
+			sc10circle.position.set (sc10pos[0], -5, sc10pos[2]);
+			sc10circle.name = "sc10circle";
+			sc10circle.scale.set (0.01, 0.01, 0.01);
+			cgroup.add( sc10circle );
+
+
+			// labels
+			var geometry = new THREE.CylinderGeometry(0, 10, -30, 4, 1);
+
+			for (var i = 0; i < 10; i++) {
+				var material = new THREE.MeshBasicMaterial({
+					color: 0xffffff,
+				});
+
+				var mesh = new THREE.Mesh(geometry, material);
+				mesh.scale.set( 0.2, 0.2, 0.2 );
+				mesh.position.x = (Math.random() - 0.5) * 1000;
+				mesh.position.y = 0;
+				mesh.position.z = (Math.random() - 0.5) * 1000;
+				mesh.updateMatrix();
+				var text = this._createTextLabel(i+1);
+				text.setHTML(i+1);
+				text.id = 'kk' + (i+1);
+				text.name = ("lbl" + (i+1));
+				text.setParent(mesh);
+				this.textlabels.push(text);
+				this.container.appendChild(text.element);
+			}
+
+			// move textlabels
+			var sc1 = textlabels[0];
+			var sc2 = textlabels[1];
+			var sc3 = textlabels[2];
+			var sc4 = textlabels[3];
+			var sc5 = textlabels[4];
+			var sc6 = textlabels[5];
+			var sc7 = textlabels[6];
+			var sc8 = textlabels[7];
+			var sc9 = textlabels[8];
+			var sc10 = textlabels[9];
+
+			// circle positions
+			sc1.parent.position.set(sc1pos[0], sc1pos[1], sc1pos[2]);
+			sc2.parent.position.set(sc2pos[0], sc2pos[1], sc2pos[2]);
+			sc3.parent.position.set(sc3pos[0], sc3pos[1], sc3pos[2]);
+			sc4.parent.position.set(sc4pos[0], sc4pos[1], sc4pos[2]);
+			sc5.parent.position.set(sc5pos[0], sc5pos[1], sc5pos[2]);
+			sc6.parent.position.set(sc6pos[0], sc6pos[1], sc6pos[2]);
+			sc7.parent.position.set(sc7pos[0], sc7pos[1], sc7pos[2]);
+			sc8.parent.position.set(sc8pos[0], sc8pos[1], sc8pos[2]);
+			sc9.parent.position.set(sc9pos[0], sc9pos[1], sc9pos[2]);
+			sc10.parent.position.set(sc10pos[0], sc10pos[1], sc10pos[2]);
+
+			makebubbles();
+
+			// listener init
+			window.addEventListener( 'resize', onWindowResize, false );
+
+			// end init
+		}
+
+
+		// bubbles
+		function makebubbles() {
+			for ( var i = 0; i < 12; i ++ ) {
+				geometry = new THREE.SphereGeometry( 4, 4, 4 );
+				material = new THREE.MeshBasicMaterial({
+					color: 	0xffffff, shading: THREE.FlatShading
+					, transparent: true, opacity: 0.5
+
+				});
+				mesh = new THREE.Mesh(geometry, material);
+				mesh.scale.x = mesh.scale.y = mesh.scale.z = 0.2;
+				mesh.position.x = ( Math.random() - 0.5 ) * 200;
+				mesh.position.y = ( Math.random() - 0.5 ) * 30;
+				mesh.position.z = ( Math.random() - 0.5 ) * 200;
+				mesh.name = "bubbles";
+				mesh.updateMatrix();
+				scene.add(mesh);
+				meshes[ cnt ] = mesh;
+				cnt += 1;
+			}
+
+		}
+
+
+
+
+		// on resize
+		function onWindowResize() {
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+		}
+
+		// animate function
+		function animate() {
+			requestAnimationFrame( animate );
+			controls.update();
+			render();
+		}
+
+
+		// render function
+		function render() {
+			// remove bubbles at posY 35
+			for ( i = 0; i < cnt; i ++ ) {
+				mesh = meshes[ i ];
+				mesh.position.y = mesh.position.y + 0.07 ;
+				mesh.position.z = mesh.position.z + 0.03;
+				if (mesh.position.y > 35) {scene.remove( mesh );}
+			}
+
+			TWEEN.update();
+			renderer.render( scene, camera );
+			for(var i=0; i<this.textlabels.length; i++) {
+				this.textlabels[i].updatePosition();
+			}
+					// end render
+		}
+
+
+		// navigation menu
+		document.getElementById("stplus").addEventListener("click",moveL, false );
+		document.getElementById("stminus").addEventListener("click",moveR, false );
+		document.getElementById("topv").addEventListener("click",topv, false );
+
+		// info labels (speech bubbles)
+		var lblxx;
+		card1 = document.getElementById("card1");
+		card2 = document.getElementById("card2");
+		card3 = document.getElementById("card3");
+		card4 = document.getElementById("card4");
+		card5 = document.getElementById("card5");
+		card6 = document.getElementById("card6");
+		card7 = document.getElementById("card7");
+		card8 = document.getElementById("card8");
+		card9 = document.getElementById("card9");
+		card10 = document.getElementById("card10");
+
+		// hide all speech bubbles
+		function nullthemall() {
+			hidelabels();
+			vv = document.getElementById("info");
+			vv.children.className = "null";
+		}
+
+		// stage 0 function
+		function st0( event ) {
+			scenenum = 0;
+			var sczero = document.getElementById("scnum");
+scnnumber();
+			setstages();
+			sczero.innerHTML = "";
+new TWEEN.Tween( camera.position ).to( { x: 40, y: 0, z: 50}, 1000 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+
+}
+
+		// stage 1 function
+		function st1( event ) {
+			scenenum = 1;
+			scnnumber();
+			setstages();
+			var lblxx = document.getElementById("lbl1");
+			lblxx.classList.add("active");
+			nullthemall();
+			new TWEEN.Tween( camera.position ).to( { x: 43, y: 4, z: 29}, 1000 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+			var cc = scene.getObjectByName("sc1circle");
+			new TWEEN.Tween( cc.scale ).to( {x:30, y:30, z:30}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			setTimeout(function() {
+				var lblposx = lblxx.style.left;
+				var lblposy = lblxx.style.top;
+				card1.style.left = lblposx;
+				card1.style.top = "0";
+				card1.className = "active";
+			}, 1100);
+			makebubbles();
+		}
+
+		// stage 2 function
+		function st2( event ) {
+			scenenum = 2;
+			scnnumber();
+			setstages();
+			var lblxx = document.getElementById("lbl2");
+			lblxx.classList.add("active");
+			nullthemall();
+			new TWEEN.Tween( camera.position ).to( { x: 34, y: 10, z: 19}, 1000 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+			var cc = scene.getObjectByName("sc2circle");
+			new TWEEN.Tween( cc.scale ).to( {x:30, y:30, z:30}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			setTimeout(function() {
+				var lblposx = lblxx.style.left;
+				var lblposy = lblxx.style.top;
+				card2.style.left = lblposx;
+				card2.style.top = "0";
+				card2.className = "active";
+			}, 1100);
+			makebubbles();
+		}
+
+		// stage 3 function
+		function st3( event ) {
+			scenenum = 3;
+			scnnumber();
+			setstages();
+			var lblxx = document.getElementById("lbl3");
+			lblxx.classList.add("active");
+			nullthemall();
+			new TWEEN.Tween( camera.position ).to( { x: 22, y: 12, z: 7}, 1000 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+			var cc = scene.getObjectByName("sc3circle");
+			new TWEEN.Tween( cc.scale ).to( {x:30, y:30, z:30}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			setTimeout(function() {
+				var lblposx = lblxx.style.left;
+				var lblposy = lblxx.style.top;
+				card3.style.left = lblposx;
+				card3.style.top = "0";
+				card3.className = "active";
+			}, 1100);
+			makebubbles();
+		}
+		// stage 4 function
+		function st4( event ) {
+			scenenum = 4;
+			scnnumber();
+			setstages();
+			nullthemall();
+			var lblxx = document.getElementById("lbl4");
+			lblxx.classList.add("active");
+			new TWEEN.Tween( camera.position ).to( { x: 32, y: 11, z: -19}, 1000 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+			var cc = scene.getObjectByName("sc4circle");
+			new TWEEN.Tween( cc.scale ).to( {x:30, y:30, z:30}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			setTimeout(function() {
+				var lblposx = lblxx.style.left;
+				var lblposy = lblxx.style.top;
+				card4.style.left = lblposx;
+				card4.style.top = "0";
+				card4.className = "active";
+			}, 1100);
+			makebubbles();
+				}
+		// stage 5 function
+		function st5( event ) {
+			scenenum = 5;
+			scnnumber();
+			setstages();
+			nullthemall();
+			var lblxx = document.getElementById("lbl5");
+			lblxx.classList.add("active");
+			new TWEEN.Tween( camera.position ).to( { x: 19, y: 15, z: -43}, 1000 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+			var cc = scene.getObjectByName("sc5circle");
+			new TWEEN.Tween( cc.scale ).to( {x:30, y:30, z:30}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			setTimeout(function() {
+				var lblposx = lblxx.style.left;
+				var lblposy = lblxx.style.top;
+				card5.style.left = lblposx;
+				card5.style.top = "0";
+				card5.className = "active";
+			}, 1100);
+			makebubbles();
+		}
+		// stage 6 function
+		function st6( event ) {
+			scenenum = 6;
+			scnnumber();
+			setstages();
+			var lblxx = document.getElementById("lbl6");
+			lblxx.classList.add("active");
+			nullthemall();
+			new TWEEN.Tween( camera.position ).to( { x: -5, y: 14, z: -52}, 1000 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+			var cc = scene.getObjectByName("sc6circle");
+			new TWEEN.Tween( cc.scale ).to( {x:30, y:30, z:30}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			setTimeout(function() {
+				var lblposx = lblxx.style.left;
+				var lblposy = lblxx.style.top;
+				card6.style.left = lblposx;
+				card6.style.top = "0";
+				card6.className = "active";
+			}, 1100);
+			makebubbles();
+			}
+
+		// stage 7 function
+		function st7( event ) {
+			scenenum = 7;
+			scnnumber();
+			setstages();
+			var lblxx = document.getElementById("lbl7");
+			lblxx.classList.add("active");
+			nullthemall();
+			new TWEEN.Tween( camera.position ).to( { x: -31, y: 17, z: -31}, 1000 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+			var cc = scene.getObjectByName("sc7circle");
+			new TWEEN.Tween( cc.scale ).to( {x:30, y:30, z:30}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			setTimeout(function() {
+				var lblposx = lblxx.style.left;
+				var lblposy = lblxx.style.top;
+				card7.style.left = lblposx;
+				card7.style.top = "0";
+				card7.className = "active";
+			}, 1100);
+			makebubbles();
+			}
+
+		// stage 8 function
+		function st8( event ) {
+			scenenum = 8;
+			scnnumber();
+			setstages();
+			var lblxx = document.getElementById("lbl8");
+			lblxx.classList.add("active");
+			nullthemall();
+			new TWEEN.Tween( camera.position ).to( { x: -43, y: 17, z: -6}, 1000 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+			var cc = scene.getObjectByName("sc8circle");
+			new TWEEN.Tween( cc.scale ).to( {x:30, y:30, z:30}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			setTimeout(function() {
+				var lblposx = lblxx.style.left;
+				var lblposy = lblxx.style.top;
+				card8.style.left = lblposx;
+				card8.style.top = "0";
+				card8.className = "active";
+			}, 1100);
+			makebubbles();
+				}
+
+		// stage 9 function
+		function st9( event ) {
+			scenenum = 9;
+			scnnumber();
+			setstages();
+			var lblxx = document.getElementById("lbl9");
+			lblxx.classList.add("active");
+			nullthemall();
+			new TWEEN.Tween( camera.position ).to( { x: -40, y: 15, z: 29}, 1000 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+			var cc = scene.getObjectByName("sc9circle");
+			new TWEEN.Tween( cc.scale ).to( {x:30, y:30, z:30}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			setTimeout(function() {
+				var lblposx = lblxx.style.left;
+				var lblposy = lblxx.style.top;
+				card9.style.left = lblposx;
+				card9.style.top = "0";
+				card9.className = "active";
+			}, 1100);
+			makebubbles();
+				}
+
+		// stage 10 function
+		function st10( event ) {
+			scenenum = 10;
+			scnnumber();
+			setstages();
+			var lblxx = document.getElementById("lbl10");
+			lblxx.classList.add("active");
+			nullthemall();
+			new TWEEN.Tween( camera.position ).to( { x: -7, y: 11, z: 32}, 1000 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+			var cc = scene.getObjectByName("sc10circle");
+			new TWEEN.Tween( cc.scale ).to( {x:30, y:30, z:30}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			setTimeout(function() {
+				var lblposx = lblxx.style.left;
+				var lblposy = lblxx.style.top;
+				card10.style.left = lblposx;
+				card10.style.top = "0";
+				card10.className = "active";
+			}, 1100);
+			makebubbles();
+		}
+
+
+
+
+// listen for controls use/change
+		controls.addEventListener('change', hideinfo);
+
+// hide info boxes
+		function hideinfo() {
+			card1.className = "null";
+			card2.className = "null";
+			card3.className = "null";
+			card4.className = "null";
+			card5.className = "null";
+			card6.className = "null";
+			card7.className = "null";
+			card8.className = "null";
+			card9.className = "null";
+			card10.className = "null";
+
+			// var xpos = Math.round(camera.position.x);
+			// var ypos = Math.round(camera.position.y);
+			// var zpos = Math.round(camera.position.z);
+			// var xrot = Math.round(camera.rotation.x);
+			// var yrot = Math.round(camera.rotation.y);
+			// var zrot = Math.round(camera.rotation.z);
+			//
+			// console.log("x:" + xpos, "y:" + ypos, "z:" + zpos, "xr:" + xrot, "yr:" + yrot, "zr:" + zrot);
+		}
+
+		// birds eye view function
+		function topv( event ) {
+			hideinfo();
+			showlabels();
+			new TWEEN.Tween( camera.position ).to( { x: 0, y:100, z: 10}, 1000 ).easing( TWEEN.Easing.Quadratic.EaseInOut).start();
+		}
+
+
+// showlabels
+function showlabels() {
+	// remove active class labels
+	var y = document.getElementsByClassName("txtlbl");
+	var i;
+	for (i = 0; i < y.length; i++) {
+		y[i].style.display = "block";
+	}
+}
+// hidelabels
+hidelabels();
+function hidelabels() {
+	// remove active class labels
+	var y = document.getElementsByClassName("txtlbl");
+	var i;
+	for (i = 0; i < y.length; i++) {
+		y[i].style.display = "none";
+	}
+}
+
+
+		// reset stage / all active links etc
+		function setstages(e) {
+			// remove active class nav
+			var x = document.getElementById("info");
+			var y = x.getElementsByClassName("active");
+			var i;
+			for (i = 0; i < y.length; i++) {
+				y[i].className = "";
+			}
+			// remove active class labels
+			var y = document.getElementsByClassName("txtlbl");
+			var i;
+			for (i = 0; i < y.length; i++) {
+				y[i].className = "txtlbl";
+			}
+			// circle reset
+			var c1 = scene.getObjectByName("sc1circle");
+			new TWEEN.Tween( c1.scale ).to( {y:  0.0001, x:0.0001, z: 0.0001}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			var c2 = scene.getObjectByName("sc2circle");
+			new TWEEN.Tween( c2.scale ).to( {y:  0.0001, x:0.0001, z: 0.0001}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			var c3 = scene.getObjectByName("sc3circle");
+			new TWEEN.Tween( c3.scale ).to( {y:  0.0001, x:0.0001, z: 0.0001}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			var c4 = scene.getObjectByName("sc4circle");
+			new TWEEN.Tween( c4.scale ).to( {y:  0.0001, x:0.0001, z: 0.0001}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			var c5 = scene.getObjectByName("sc5circle");
+			new TWEEN.Tween( c5.scale ).to( {y:  0.0001, x:0.0001, z: 0.0001}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			var c6 = scene.getObjectByName("sc6circle");
+			new TWEEN.Tween( c6.scale ).to( {y:  0.0001, x:0.0001, z: 0.0001}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			var c7 = scene.getObjectByName("sc7circle");
+			new TWEEN.Tween( c7.scale ).to( {y:  0.0001, x:0.0001, z: 0.0001}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			var c8 = scene.getObjectByName("sc8circle");
+			new TWEEN.Tween( c8.scale ).to( {y:  0.0001, x:0.0001, z: 0.0001}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			var c9 = scene.getObjectByName("sc9circle");
+			new TWEEN.Tween( c9.scale ).to( {y:  0.0001, x:0.0001, z: 0.0001}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			var c10 = scene.getObjectByName("sc10circle");
+			new TWEEN.Tween( c10.scale ).to( {y:  0.0001, x:0.0001, z: 0.0001}, 200 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+		}
+
+
+		function _createTextLabel() {
+			var div = document.createElement('div');
+			div.className = 'txtlbl';
+			div.style.position = 'absolute';
+			div.style.width = 10;
+			div.style.height = 10;
+			div.innerHTML = "hi";
+			div.style.top = -1000;
+			div.style.left = -1000;
+			var _this = this;
+
+			return {
+				element: div,
+				parent: false,
+				position: new THREE.Vector3(0,0,0),
+				setHTML: function(html) {
+					this.element.innerHTML = html;
+				},
+				setParent: function(threejsobj) {
+					this.parent = threejsobj;
+				},
+				updatePosition: function() {
+					if(parent) {
+						this.position.copy(this.parent.position);
+					}
+
+					var coords2d = this.get2DCoords(this.position, _this.camera);
+					this.element.style.left = coords2d.x + 'px';
+					this.element.style.top = coords2d.y + 'px';
+				},
+				get2DCoords: function(position, camera) {
+					var vector = position.project(camera);
+					vector.x = (vector.x + 1)/2 * window.innerWidth;
+					vector.y = -(vector.y - 1)/2 * window.innerHeight;
+					return vector;
+				}
+			};
+		};
+
+		// set ids for each text label
+		var x = document.getElementsByClassName("txtlbl");
+		var i;
+		for (i = 0; i < x.length; i++) {
+			x[i].id = "lbl" + (i+1);
+		}
+
+		// content for labels
+		document.getElementById("lbl1").innerHTML = '1';
+		document.getElementById("lbl2").innerHTML = '2';
+		document.getElementById("lbl3").innerHTML = '3';
+		document.getElementById("lbl4").innerHTML = '4';
+		document.getElementById("lbl5").innerHTML = '5';
+		document.getElementById("lbl6").innerHTML = '6';
+		document.getElementById("lbl7").innerHTML = '7';
+		document.getElementById("lbl8").innerHTML = '8';
+		document.getElementById("lbl9").innerHTML = '9';
+		document.getElementById("lbl9").innerHTML = '9';
+		document.getElementById("lbl10").innerHTML = '10';
+
+
+		// textlabel nav
+		document.getElementById("lbl1").addEventListener("click",st1, false );
+		document.getElementById("lbl2").addEventListener("click",st2, false );
+		document.getElementById("lbl3").addEventListener("click",st3, false );
+		document.getElementById("lbl4").addEventListener("click",st4, false );
+		document.getElementById("lbl5").addEventListener("click",st5, false );
+		document.getElementById("lbl6").addEventListener("click",st6, false );
+		document.getElementById("lbl7").addEventListener("click",st7, false );
+		document.getElementById("lbl8").addEventListener("click",st8, false );
+		document.getElementById("lbl9").addEventListener("click",st9, false );
+		document.getElementById("lbl10").addEventListener("click",st10, false );
+
+		//keyboard controls
+		document.onkeydown = checkKey;
+		function checkKey(e) {
+			switch (e.keyCode) {
+				case 32:
+				// fire();
+				// console.log('space');
+				break;
+				case 37:
+				moveR();
+				// console.log('left');
+				break;
+				case 38:
+				topv();
+				// console.log('up');
+				break;
+				case 39:
+				moveL();
+				// console.log('right');
+				break;
+				case 40:
+				moveR();
+				// console.log('down');
+				break;
+
+			}
+		}
+
+		//move
+
+				function moveR() {
+					if (scenenum === 0) {
+						st10();
+					} else if (scenenum === 1) {
+						st0();
+					} else if (scenenum === 2) {
+						st1();
+					} else if (scenenum === 3) {
+						st2();
+					} else if (scenenum === 4) {
+						st3();
+					} else if (scenenum === 5) {
+						st4();
+					} else if (scenenum === 6) {
+						st5();
+					} else if (scenenum === 7) {
+						st6();
+					} else if (scenenum === 8) {
+						st7();
+					} else if (scenenum === 9) {
+						st8();
+					} else if (scenenum === 10) {
+						st9();
+					}
+				}
+
+
+		function moveL() {
+			if (scenenum === 0) {
+				st1();
+			} else if (scenenum === 1) {
+				st2();
+			} else if (scenenum === 2) {
+				st3();
+			} else if (scenenum === 3) {
+				st4();
+			} else if (scenenum === 4) {
+				st5();
+			} else if (scenenum === 5) {
+				st6();
+			} else if (scenenum === 6) {
+				st7();
+			} else if (scenenum === 7) {
+				st8();
+			} else if (scenenum === 8) {
+				st9();
+			} else if (scenenum === 9) {
+				st10();
+			} else if (scenenum === 10) {
+				st0();
+			}
+		}
+
+
+// make scenes
+var scenenum = 0;
+
+
+		// scene number HUD
+		function scnnumber() {
+var scnx = document.getElementById("scnum");
+scnx.innerHTML = scenenum;
+// console.log("scene = " + scenenum);
+		}
+
+		//begin
+		st0();
+
+//fastclick
+window.addEventListener('load', function() {
+	FastClick.attach(document.body);
+}, false);
+
+		</script>
+
+	</body>
+	</html>
