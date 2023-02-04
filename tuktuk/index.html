@@ -1,47 +1,292 @@
+
 <!DOCTYPE html>
-<html style="">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>wayo tuktuk roughs</title>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>tuktuk</title>
+		<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+			<style>
+			body {
+		color: #000;
+		font-family:Monospace;
+		font-size:1em;
+		background: #ddd;
+		overflow: hidden;
+	}
 
-  <style>
-  body {width: 620px; margin: 0 auto; font-family:Monospace;
-}
-h2 {font-weight: lighter; font-size: 1.2em; text-transform: uppercase; margin-top: 2em;}
-  img {padding:10px; background: #fff; margin: 1em; box-shadow:0px 0px 1em rgba(0,0,0,0.2);
-    width:600px;
-    height: auto;
-}
-p {float: left; margin: 1.5em 0 0 0; padding: 0;}
-  </style>
+	#container {
+		display: block;
+		width: 100vw;
+		height: 100vh;
+		overflow: hidden;
+	}
 
+
+	#info {position: absolute; top:10px; left:10px; z-index: 999;}
+	#info p {font-size: 1em; line-height: 2.2em;}
+	#info p a {font-size: 2em;}
+	a {text-decoration: none;}
+	p a {padding:8px 10px; background-color: #ccc; color: #fff;}
+			</style>
 </head>
 
-<h2><a href="tuktuk.html">3D model</a></h2>
-<h2><a href="tuktuk2.html">Design 2</a></h2>
+	<body>
+<div id="info">
+	<p>wood &nbsp; <a href="#" id="wood" >-</a><a href="#" id="woodminus" >+</a></p>
+<p>sofa 1 <a href="#" id="sofa1" >-</a><a href="#" id="sofa1minus" >+</a></p>
+		<p>sofa 2	<a href="#" id="sofa2" >-</a><a href="#" id="sofa2minus" >+</a></p>
+			<p>sofa 3 <a href="#" id="sofa3" >-</a><a href="#" id="sofa3minus" >+</a></p>
+<p>shade &nbsp;<a href="#" id="shade" >-</a><a href="#" id="shademinus" >+</a>
+	</div>
 
-<p>1.</p><img src="001.jpg" alt="" />
-<p>2.</p><img src="002.jpg" alt="" />
-<p>3.</p><img src="003.jpg" alt="" />
-<p>4.</p><img src="004.jpg" alt="" />
-<p>5.</p><img src="005.jpg" alt="" />
-<p>6.</p><img src="006.jpg" alt="" />
-<p>7.</p><img src="007.jpg" alt="" />
-<p>8.</p><img src="008.jpg" alt="" />
-<p>9.</p><img src="009.jpg" alt="" />
-<p>10.</p><img src="010.jpg" alt="" />
-<p>11.</p><img src="011.jpg" alt="" />
-<p>12.</p><img src="012.jpg" alt="" />
-<p>13.</p><img src="013.jpg" alt="" />
-<p>14.</p><img src="014.jpg" alt="" />
-<p>15.</p><img src="015.jpg" alt="" />
-<hr />
-<p>photo1.</p><img src="photos/1.jpg" alt="" />
-<p>photo2.</p><img src="photos/2.jpg" alt="" />
-<p>photo3.</p><img src="photos/3.jpg" alt="" />
-<p>photo4.</p><img src="photos/4.jpg" alt="" />
+		<div id="container"><canvas width="400" height="700" style="width: 400px; height: 700px; position:absolute;"></canvas></div>
 
+		<script src="three.min.js"></script>
+		<script src="OrbitControls.js"></script>
+		<script src="Tween.js"></script>
+
+
+		<script>
+
+
+
+
+
+
+
+			// if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+			var startTime	= Date.now();
+			var camera, controls, scene, renderer, object, water;
+
+
+
+
+			init();
+			animate();
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 900000 );
+				camera.position.z = -90;
+				camera.position.y = 70;
+				camera.position.x = 0;
+
+				controls = new THREE.OrbitControls( camera );
+
+				controls.rotateSpeed = 1.0;
+				controls.zoomSpeed = 1.2;
+				controls.panSpeed = 0.8;
+				controls.enableZoom = true;
+				controls.enablePan = false;
+				controls.dampingFactor = 0.3;
+				controls.keys = [ 65, 83, 68 ];
+				controls.addEventListener( 'change', render );
+
+				// world
+
+				scene = new THREE.Scene();
+				group = new THREE.Group();
+				group.scale.set(40, 40, 40);
+				group.position.set(10, 34, 0);
+				scene.add( group );
+
+				// lights
+				var light = new THREE.AmbientLight( 0xffffff );
+				light.position.set( 0, -100, 900  );
+
+				scene.add( light );
+				//
+				pointLight = new THREE.PointLight( 0xffffff, 10, 300 );
+					pointLight.position.set( 100, 300, 90 );
+					scene.add( pointLight );
+
+				//
+					var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.3 );
+					directionalLight.position.set( 0, 320, 270  );
+					scene.add( directionalLight );
+
+//helper
+var helper = new THREE.GridHelper( 300, 30 );
+helper.setColors( 0xcccccc, 0xcccccc );
+helper.position.y = 0;
+scene.add( helper );
+
+
+// tuktuk
+	var loader = new THREE.JSONLoader();
+	loader.load( "tuktuk4.json", function( geometry, materials ) {
+		mesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+		mesh.name = "tuktuk";
+		group.add( mesh );
+	} );
+
+
+// wood
+	var loader = new THREE.JSONLoader();
+	loader.load( "wood.json", function( geometry, materials ) {
+		mesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+		mesh.name = "wood";
+		mesh.scale.set(0.001, 0.001, 0.001);
+		group.add( mesh );
+	} );
+
+
+// sofa1
+	var loader = new THREE.JSONLoader();
+	loader.load( "sofa1.json", function( geometry, materials ) {
+		mesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+		mesh.name = "sofa1";
+		mesh.scale.set(0.001, 0.001, 0.001);
+		group.add( mesh );
+	} );
+
+// sofa2
+	var loader = new THREE.JSONLoader();
+	loader.load( "sofa2.json", function( geometry, materials ) {
+		mesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+		mesh.name = "sofa2";
+		mesh.scale.set(0.001, 0.001, 0.001);
+		group.add( mesh );
+	} );
+
+// sofa3
+	var loader = new THREE.JSONLoader();
+	loader.load( "sofa3.json", function( geometry, materials ) {
+		mesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+		mesh.name = "sofa3";
+		mesh.scale.set(0.001, 0.001, 0.001);
+		group.add( mesh );
+	} );
+
+// shadenet
+	var loader = new THREE.JSONLoader();
+	loader.load( "shade.json", function( geometry, materials ) {
+		mesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+		mesh.name = "shadenet";
+		mesh.scale.set(0.001, 0.001, 0.001);
+		group.add( mesh );
+	} );
+
+
+	// wood functions
+document.getElementById("wood").addEventListener("click", wood, false );
+document.getElementById("woodminus").addEventListener("click", woodminus, false );
+
+function wood( event ) {
+	var cc = scene.getObjectByName("wood");
+			new TWEEN.Tween( cc.scale ).to( {x:0.001, y:0.001, z:0.001}, 100 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			this.style.background = '#ccc';
+			document.getElementById("woodminus").style.background = '#ccc';
+		}
+function woodminus( event ) {
+	var cc = scene.getObjectByName("wood");
+			new TWEEN.Tween( cc.scale ).to( {x:1, y:1, z:1}, 100 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			document.getElementById("woodminus").style.background = '#333';
+			document.getElementById("wood").style.background = '#ccc';
+}
+
+// sofa1 functions
+document.getElementById("sofa1").addEventListener("click",sfa1, false );
+document.getElementById("sofa1minus").addEventListener("click",sofa1minus, false );
+
+function sfa1( event ) {
+var cc = scene.getObjectByName("sofa1");
+	new TWEEN.Tween( cc.scale ).to( {x:0.001, y:0.001, z:0.001}, 100 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+	this.style.background = '#ccc';
+	document.getElementById("sofa1minus").style.background = '#ccc';
+}
+function sofa1minus( event ) {
+	var cc = scene.getObjectByName("sofa1");
+			new TWEEN.Tween( cc.scale ).to( {x:1, y:1, z:1}, 100 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			document.getElementById("sofa1minus").style.background = '#333';
+			document.getElementById("sofa1").style.background = '#ccc';
+		}
+
+// sofa2 functions
+document.getElementById("sofa2").addEventListener("click",sfa2, false );
+document.getElementById("sofa2minus").addEventListener("click",sofa2minus, false );
+
+function sfa2( event ) {
+var cc = scene.getObjectByName("sofa2");
+	new TWEEN.Tween( cc.scale ).to( {x:0.001, y:0.001, z:0.001}, 100 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+	this.style.background = '#ccc';
+	document.getElementById("sofa2minus").style.background = '#ccc';
+}
+function sofa2minus( event ) {
+	var cc = scene.getObjectByName("sofa2");
+			new TWEEN.Tween( cc.scale ).to( {x:1, y:1, z:1}, 100 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			document.getElementById("sofa2minus").style.background = '#333';
+			document.getElementById("sofa2").style.background = '#ccc';
+		}
+
+
+// sofa3 functions
+document.getElementById("sofa3").addEventListener("click",sfa3, false );
+document.getElementById("sofa3minus").addEventListener("click",sofa3minus, false );
+
+function sfa3( event ) {
+var cc = scene.getObjectByName("sofa3");
+	new TWEEN.Tween( cc.scale ).to( {x:0.001, y:0.001, z:0.001}, 100 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+	this.style.background = '#ccc';
+	document.getElementById("sofa3minus").style.background = '#ccc';
+}
+function sofa3minus( event ) {
+	var cc = scene.getObjectByName("sofa3");
+			new TWEEN.Tween( cc.scale ).to( {x:1, y:1, z:1}, 100 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+			document.getElementById("sofa3minus").style.background = '#333';
+			document.getElementById("sofa3").style.background = '#ccc';
+		}
+
+// shade functions
+document.getElementById("shade").addEventListener("click",shadenet, false );
+document.getElementById("shademinus").addEventListener("click",shademinus, false );
+
+function shadenet( event ) {
+var cc = scene.getObjectByName("shadenet");
+	new TWEEN.Tween( cc.scale ).to( {x:0.001, y:0.001, z:0.001}, 100 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+	this.style.background = '#ccc';
+	document.getElementById("shademinus").style.background = '#ccc';
+}
+
+function shademinus( event ) {
+	var cc = scene.getObjectByName("shadenet");
+		new TWEEN.Tween( cc.scale ).to( {x:1, y:1, z:1}, 100 ).easing( TWEEN.Easing.Quadratic.EaseIn).start();
+		document.getElementById("shademinus").style.background = '#333';
+		document.getElementById("shade").style.background = '#ccc';
+	}
+
+
+
+				// renderer
+				renderer = new THREE.WebGLRenderer( { alpha: true, antialias: true } );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container = document.getElementById( 'container' );
+				container.appendChild( renderer.domElement );
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				render();
+			}
+
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function animate() {
+				render();
+				requestAnimationFrame( animate );
+				controls.update();
+			}
+
+			function render() {
+				TWEEN.update();
+				renderer.render( scene, camera );
+
+			}
+
+
+
+		</script>
 
 
 
