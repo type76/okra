@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>tree top manyara gate board</title>
+		<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+			<style>
+			body {
+		color: #000;
+		font-family:Monospace;
+		font-size:1em;
+		/*background: #8cff92;*/
+		background: #ddd;
+		overflow: hidden;
+	}
+
+	#container {
+		display: block;
+		width: 100vw;
+		height: 100vh;
+		overflow: hidden;
+	}
+
+	
+		</style>
+
+</head>
+
+	<body>
+		<div id="container"><canvas width="400" height="700" style="width: 400px; height: 700px; position:absolute;"></canvas></div>
+
+		<script src="office/three.min.js"></script>
+		<script src="office/OrbitControls.js"></script>
+		
+
+		<script>
+
+
+
+
+
+
+
+			// if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+			var startTime	= Date.now();
+			var camera, controls, scene, renderer, object, water;
+
+
+
+
+			init();
+			animate();
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 900000 );
+				camera.position.z = 190;
+				camera.position.y = 100;
+
+				controls = new THREE.OrbitControls( camera );
+
+				controls.rotateSpeed = 1.0;
+				controls.zoomSpeed = 1.2;
+				controls.panSpeed = 0.8;
+				controls.enableZoom = true;
+				controls.enablePan = false;
+				controls.dampingFactor = 0.3;
+				controls.keys = [ 65, 83, 68 ];
+				controls.addEventListener( 'change', render );
+
+				// world
+
+				scene = new THREE.Scene();
+				group = new THREE.Group();
+				group.scale.set( 0.5, 0.5, 0.5);
+				scene.add( group );
+
+				// lights
+				var light = new THREE.AmbientLight( 0xffffff );
+				light.position.set( 0, -100, 900  );
+
+				scene.add( light );
+				//
+				pointLight = new THREE.PointLight( 0xff4400, 10, 300 );
+					pointLight.position.set( 900, 400, 0 );
+					scene.add( pointLight );
+
+				//
+					var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.3 );
+					directionalLight.position.set( 0, 70, 70  );
+					scene.add( directionalLight );
+
+//wood box
+var texture = THREE.ImageUtils.loadTexture( 'wood.jpg' );
+
+				var geometry = new THREE.BoxGeometry( 90, 260, 7 );
+				var material = new THREE.MeshBasicMaterial( { map: texture } );
+
+				mesh = new THREE.Mesh( geometry, material );
+				mesh.position.set(0,35,0);
+
+				group.add( mesh );
+
+				//walk-img box
+				var texture = THREE.ImageUtils.loadTexture( 'walk-img.jpg' );
+
+								var geometry = new THREE.BoxGeometry( 80, 80, 9 );
+								var material = new THREE.MeshBasicMaterial( { map: texture } );
+
+								mesh = new THREE.Mesh( geometry, material );
+								mesh.position.set(0,35,0);
+
+								group.add( mesh );
+
+//helper
+var helper = new THREE.GridHelper( 300, 30 );
+helper.setColors( 0xcccccc, 0xcccccc );
+helper.position.y = -50;
+scene.add( helper );
+
+
+// eagle
+	var loader = new THREE.JSONLoader();
+	loader.load( "eagle.json", function( geometry, materials ) {
+		mesh = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial( materials ) );
+		mesh.name = "walkway";
+		mesh.position.set(-30, 177, 0);
+		mesh.scale.set(90, 90, 90);
+		group.add( mesh );
+	} );
+
+
+
+//logo box
+var texture = THREE.ImageUtils.loadTexture( 'logo.jpg' );
+
+				var geometry = new THREE.BoxGeometry( 80, 80, 9 );
+				var material = new THREE.MeshBasicMaterial( { map: texture } );
+
+				mesh = new THREE.Mesh( geometry, material );
+				mesh.position.set(0,120,0);
+
+				group.add( mesh );
+
+
+
+//info box
+var texture = THREE.ImageUtils.loadTexture( 'sq-info.jpg' );
+
+				var geometry = new THREE.BoxGeometry( 80, 80, 9 );
+				var material = new THREE.MeshBasicMaterial( { map: texture } );
+
+				mesh = new THREE.Mesh( geometry, material );
+				mesh.position.set(0,-50,0);
+
+				group.add( mesh );
+
+
+
+
+
+				// renderer
+				renderer = new THREE.WebGLRenderer( { alpha: true, antialias: true } );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container = document.getElementById( 'container' );
+				container.appendChild( renderer.domElement );
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				render();
+			}
+
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function animate() {
+				render();
+				requestAnimationFrame( animate );
+				controls.update();
+			}
+
+			function render() {
+				renderer.render( scene, camera );
+
+			}
+
+
+
+		</script>
+
+
+
+</body></html>
