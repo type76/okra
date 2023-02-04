@@ -1,0 +1,92 @@
+
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+<meta charset="utf-8">
+
+<title>io76</title>
+<meta name=viewport content='width=700'>
+
+
+<style type="text/css">
+* {margin: 0; padding: 0;}
+html, body {background: #222323; color: #f0f6f0;}
+button {border:none; outline:none;}
+body {
+	font-family: monospace;
+	overflow: hidden;
+	user-select:none; 
+}
+h1, h2, h3, h4 ,h5 { font-weight: lighter; }
+a {text-decoration: none; color:#fff;}
+a:hover {color: #fff;
+transition-timing-function: ease-out; 
+transition-duration: 200ms;
+}
+#logoimg {
+	display: block;
+	background-color: #000;
+	width: 160px;
+	height: 90px;
+	position: absolute;
+	top: 0;
+	left: 0;
+	transform: scale(0.8);
+	margin: -20px 0 0 -20px;
+	transition: all 0.2s ease-in-out;
+}
+p {
+	/*margin: 50px;*/
+}
+#logoimg svg path {fill: #f0f6f0;}
+</style>
+</head>
+<body>
+	<header id="mv">
+		<a href="#" onclick="xio();">
+			<svg id="logoimg" class="logo" version="1.1" xmlns="http://www.w3.org/2000/svg"
+			style="opacity:0;">
+			<g>
+				<path id="txt" fill="none" stroke="#f0f6f0" stroke-width="9" stroke-linecap="square" stroke-linejoin="miter" stroke-miterlimit="3" d="M52.85 40.6 Q49.65 41.4 47.15 43.95 43.4 47.65 43.4 52.95 43.4 58.25 47.15 62 50.85 65.7 56.15 65.7 61.45 65.7 65.2 62 68.9 58.25 68.9 52.95 68.9 47.65 65.2 43.95 62.95 41.7 60.15 40.8 M29.8 65.2 L29.8 42.2 M114.1 47.5 Q119.5 46.55 123.2 50.45 124.95 52.3 125.35 55 125.95 58.85 123.55 62.05 120.4 66.1 114.95 65.4 112.2 64.9 110.4 63 106.55 59.1 108.05 53.9 L108.85 51.6 109.65 49.75 119.6 30.15 M78.6 29.6 L99.4 29.6 82.5 64.55"
+				style="opacity:0;" ></path>
+				<path id="dot" stroke="none" fill="#f0f6f0" d="M24.55 29.6 Q24.55 27.45 26.05 25.9 27.65 24.35 29.8 24.35 32 24.35 33.5 25.9 35.05 27.45 35.05 29.6 35.05 31.8 33.5 33.3 32 34.85 29.8 34.85 27.65 34.85 26.05 33.3 24.55 31.8 24.55 29.6"
+				style="opacity:0;" ></path>
+			</g>
+		</svg>
+	</a>
+</header>
+
+<article>
+		<p>hi@io76.com</p>
+</article>
+
+<script>
+setTimeout(function() { 
+	document.getElementById("logoimg").style.opacity = "0.5";
+	xio();
+}, 600);
+
+function xio() {
+    document.getElementById("logoimg").style.height = "90px";
+    document.getElementById("dot").style.opacity = "0";
+    document.getElementById("txt").style.opacity = "1";
+    var path = document.querySelector('.logo path');
+    var length = path.getTotalLength();
+    path.style.transition = path.style.WebkitTransition = 'none';
+    path.style.strokeDasharray = length + ' ' + length;
+    path.style.strokeDashoffset = length;
+    path.getBoundingClientRect();
+    path.style.transition = path.style.WebkitTransition =
+        'stroke-dashoffset 1.5s ease-in-out';
+    path.style.strokeDashoffset = '0';
+    setTimeout(function() { 
+    	document.getElementById("dot").style.opacity = "1";
+    }, 1000);
+}
+
+</script>
+</body>
+</html>
