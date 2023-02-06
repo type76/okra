@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>sounds</title>
+	<style type="text/css">
+	@font-face {
+		font-family: 'glass_tty_vt220medium';
+		src: url('glass_tty_vt220-webfont.woff2') format('woff2'), url('glass_tty_vt220-webfont.woff') format('woff');
+		font-weight: normal;
+		font-style: normal;
+	}
+	* {margin: 0; padding: 0;}
+	body {
+		user-select:none;
+		margin: 1em;
+		background: #000;
+		color: #fff;
+		font-family: 'glass_tty_vt220medium';
+		overflow: hidden;
+		font-size: 1.5em;
+		line-height: 3em;
+		background:#000 url('typebg.png') top repeat-x; 
+		width: 100%;
+		height: 100%;
+	}
+	canvas {
+		position: absolute;
+		top: 0;
+		z-index: 1;
+	}
+
+	button {
+		font-size: 1em;
+		padding-bottom: 12px;
+		outline: none;
+		border: 0;
+		background: transparent;
+		color: #fff;
+		cursor: pointer !important;
+		font-family: 'glass_tty_vt220medium';
+	}
+	button:hover {
+		color: red !important;
+	}
+
+	#start { position: absolute; right: 0; z-index: 4; padding: 1em }
+
+	#botmsg {
+		display: block;
+		background-color: rgba(50,50,50,0.3);
+		padding: 0 1em;
+		margin-right: 4em;
+		/*max-width: 300px;*/
+	}
+
+	#hud {position: absolute; z-index: 2;}
+</style>
+
+</head>
+<body>
+	<button id="start" onclick="init();">[speak]</button>
+
+<div id="hud">	
+	<p id="botmsg"></p>
+</div>
+
+
+	<script src="three.min.js"></script>
+<script src="OrbitControls.min.js"></script>
+
+	<script src="js/randomshapes.js"></script>
+	<script src="js/rant.min.js"></script>
+	<script src="js/ZzFX.micro.js"></script>
+
+	<script type="text/javascript">
+
+
+function init(){ 
+
+	var rant = require("rant");
+	var sentence=rant('<firstname> likes to <verb-transitive> <noun.plural> with <pron poss> pet <noun-animal> on <timenoun dayofweek plural>.');
+
+	setTimeout(function() {
+		writethis( sentence );
+	}, 100);
+
+	// dothis(0.1);
+	num = 0;
+	clrpoints()
+
+// zzfx(...[,,216,,,.17,3,.31,,.4,,,,.6,79,.4,,.86,.1]); // Hit 153
+	//
+	xvar = Math.random()*10;
+	group.rotation.set(xvar, 0, 0)
+	disc.rotation.set(xvar, 0, 0)
+	new Audio("tap2.wav").play();
+}
+
+
+function dothis(num){
+	if ( Math.random() > num ) {  
+		console.log(num+'% prob ')
+	}   	
+}
+
+
+
+var tyspeed = 30;
+var xvar = 0;
+
+
+// click press sound
+function clicksnd() {
+zzfxV=.04;
+zzfx(...[1.5,.5,270,,.1,,1,1.5,,,,,,,,.1,.01]); // keyboard note -rnd
+zzfxV=.02;
+
+// zzfx(...[,0,1723,,.14,.24,1,3.5,,,837,.06]); // mario coin pick up
+zzfx(...[,.2,1723,,.14,.24,1,3.5,,,837,.06]); // Loaded Sound 156 - rnd
+}
+
+
+
+// speak and write this
+function writethis(argument){
+	botmsg = argument;
+	typereset();
+	typeWriter();
+}
+
+
+
+// reset title
+function typereset() {
+	document.getElementById("botmsg").innerHTML = '';
+	k = 0;
+}
+
+
+// type writer effect
+function typeWriter() {
+	if (k < botmsg.length) {
+		document.getElementById("botmsg").innerHTML += botmsg.charAt(k);
+		k++;
+		clicksnd();
+		addpoint();
+		setTimeout(typeWriter, tyspeed);
+	}
+}
+
+// clear title
+function clrbotmsg(){
+	document.getElementById('botmsg').innerHTML = "";
+}
+
+
+
+
+</script>
+</body>
+</html>
