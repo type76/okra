@@ -1,0 +1,430 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>biome</title>
+<style>
+@font-face {
+	font-family: 'prstartk';
+	src: url('font/prstartk-webfont.woff2') format('woff2'),
+	url('font/prstartk-webfont.woff') format('woff');
+	font-weight: normal;
+	font-style: normal;
+}
+body {
+	background: #000;
+	color: #eee;
+	overflow: hidden;
+	margin:0;
+	user-select:none;
+	font-family: 'prstartk';
+}
+canvas {  
+	image-rendering: auto;
+	image-rendering: crisp-edges;
+	image-rendering: pixelated;
+}
+#ccanvas {position: absolute;} 
+#hitcanvas {position: absolute; top: 0; right: 0;
+	z-index: 99;}
+	#ccanvas, #hitcanvas, #tcanvas {display: none;}
+	#hud {position: absolute; top: 0; left: 0; z-index: 99;
+		font-family: 'prstartk'; color: #fff; padding: 8px; background-color: rgba(0,0,0,0.5);}
+	</style>
+</head>
+<body>
+
+<div id="hud"></div>
+
+<canvas id="tcanvas" width="512" height="512" ></canvas>
+<canvas id="ccanvas" width="512" height="512" ></canvas>
+<canvas id="hitcanvas" width="512" height="512" ></canvas>
+
+<div class="joy" id="joy"></div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.7.3/nipplejs.min.js"></script>
+<script src="trees.js"></script>
+
+<script>
+// keyboard
+keyboard = {
+	_pressed: {},
+
+	LEFT: 37,
+	UP: 38,
+	RIGHT: 39,
+	DOWN: 40,
+
+	isDown: function(keyCode) {
+		return this._pressed[keyCode];
+	},
+
+	onKeydown: function(event) {
+		this._pressed[event.keyCode] = true;
+	},
+
+	onKeyup: function(event) {
+		delete this._pressed[event.keyCode];
+	}
+};
+
+
+// keyboard events
+window.addEventListener('keyup', function(event) { keyboard.onKeyup(event); }, false);
+window.addEventListener('keydown', function(event) { keyboard.onKeydown(event);
+}, false);
+
+
+// globals
+const HERO = {
+	allowmove:true,
+	moving:false,
+	maxSpeed:0.5,
+	posx:0,
+	posz:0,
+	x:0,
+	y:0,
+	vx:0,
+	vy:0,
+};
+
+// speed limiter
+function speedLimit(vx, vy, speedLimit) {
+	const hyp = Math.hypot(vx, vy);
+	if (hyp === 0) return { vx: 0, vy: 0 };
+	const maxSpeed = Math.min(hyp, speedLimit);
+	const ratio = maxSpeed / hyp;
+	return {
+		vx: ratio * vx,
+		vy: ratio * vy
+	};
+}
+
+
+// hit canvas
+var hitcanvas = document.getElementById("hitcanvas"),
+htx = hitcanvas.getContext("2d");
+hitcanvas.id = "hitcanvas";
+hitcanvas.width = 512;
+hitcanvas.height = hitcanvas.width;
+// hit circle
+htx.fillStyle = '#fff';
+htx.fillRect(0, 0, hitcanvas.width, hitcanvas.width);
+htx.fillStyle = 'green';
+htx.beginPath();
+aliasedCircle(htx, 255, 255, 254);
+htx.fill();
+// document.body.appendChild(hitcanvas);
+
+
+// trees
+var ccanvas = document.getElementById("ccanvas"),
+ctx = ccanvas.getContext("2d");
+ccanvas.width = ccanvas.height = 512;
+
+// texture canvas
+var tcanvas = document.getElementById("tcanvas"),
+ttx = tcanvas.getContext("2d");
+tcanvas.width = tcanvas.height = 512;
+ttx.fillStyle = '#e60087';
+ttx.fillRect(0, 0, tcanvas.width, tcanvas.width);
+
+// BG circle
+ctx.fillStyle = '#fff';
+ctx.fillRect(0, 0, ccanvas.width, ccanvas.width);
+ctx.fillStyle = 'green';
+ctx.beginPath();
+aliasedCircle(ctx, 255, 255, 254);
+ctx.fill();
+
+
+// create pixellated circle
+function aliasedCircle(ctx, xc, yc, r) {  
+	var x = r, y = 0, cd = 0;
+
+	// middle line
+	ctx.rect(xc - x, yc, r<<1, 1);
+
+	while (x > y) {
+		cd -= (--x) - (++y);
+		if (cd < 0) cd += x++;
+			ctx.rect(xc - y, yc - x, y<<1, 1);    // upper 1/4
+			ctx.rect(xc - x, yc - y, x<<1, 1);    // upper 2/4
+			ctx.rect(xc - x, yc + y, x<<1, 1);    // lower 3/4
+			ctx.rect(xc - y, yc + x, y<<1, 1);    // lower 4/4
+		}
+	}
+
+
+	// read array and create canvas
+	for(var i = 0; i < tree.length; i++) {
+
+	// colour
+	ctx.fillStyle = "rgba("+i+","+i+","+i+",1)";
+	ctx.beginPath();
+	aliasedCircle(ctx, tree[i].x, tree[i].y, tree[i].r);
+	ctx.fill();
+
+	// hit areas
+	htx.fillStyle = "rgba("+(tree[i].r)+",0,0,1)";
+	htx.beginPath();
+	aliasedCircle(htx, tree[i].x, tree[i].y, tree[i].r);
+	htx.fill();
+
+	ttx.fillStyle = "rgba(0,0,0,"+0.2+")";
+	ttx.beginPath();
+	ttx.arc(tree[i].x, tree[i].y, tree[i].r-2, 0, Math.PI*2);
+	ttx.fill();
+
+}
+
+
+
+// create 3D
+function createbush(x,y,z,s,n) {
+	/* hemisphere */
+	var geometry = new THREE.SphereGeometry(s, 30, 30, 0, 2*Math.PI, 0, Math.PI/2);
+	var dome = new THREE.Mesh( 
+		geometry, 
+		new THREE.MeshLambertMaterial( { 
+			color: 0x00ff00,
+			transparent:true,
+			opacity:0.6 
+		})
+		);
+	dome.position.set(x,y,z);
+	scenegroup.add( dome );
+	trees.push(dome)
+}
+
+
+
+// window resize
+window.addEventListener('resize', function(){
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.render(scene, camera);
+}, false)
+
+
+
+// initialise 3D scene
+function init3D() {
+	window.scene = new THREE.Scene();
+	window.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 2000 );
+
+	window.renderer = new THREE.WebGLRenderer({antialias:true, transparent:true, alpha:true});
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.domElement.id = 'threecnv';
+	document.body.appendChild( renderer.domElement );
+
+	camera.position.z = 30;
+	camera.position.y = 20;
+	camera.lookAt(0,0,0)
+
+	trees = [];
+
+	scenegroup = new THREE.Group();
+	scene.add( scenegroup );
+
+	treegroup = new THREE.Group();
+	scene.add( treegroup );
+
+	// lights
+	globalLight = new THREE.AmbientLight(0x333333, 1);
+	shadowLight = new THREE.DirectionalLight(0xffffff, 1);
+	shadowLight.position.y = 100;
+	scenegroup.add(globalLight);
+	scenegroup.add(shadowLight);
+}
+
+
+
+
+// ground circle
+function createground() {
+	treegroup = new THREE.Group();
+	scene.add( treegroup );
+
+	//	create 3D from array
+	for(var i = 0; i < tree.length; i++) {
+		createbush(tree[i].x-256, 0, tree[i].y-256, tree[i].r/1.1, i)
+	}
+
+
+	// Base circle
+	var plgeometry = new THREE.CircleGeometry( 256, 100 );
+	var plmaterial = new THREE.MeshBasicMaterial({  map : new THREE.CanvasTexture(tcanvas) });
+	plane = new THREE.Mesh( plgeometry, plmaterial );
+	plane.material.map.magFilter = THREE.NearestFilter;
+	plane.material.map.minFilter = THREE.NearestFilter;
+	plane.rotation.set(-Math.PI/2,0,0);
+	scene.add( plane );
+
+}
+
+// create player/cursor/pointer
+function createplayer() {
+	// 3D cursor
+	cursor = new THREE.Group();
+	scene.add( cursor );
+
+	// 3D player object
+	var geometry = new THREE.BoxGeometry( 5, 5, 5 );
+	var material = new THREE.MeshBasicMaterial( { color: 0xffffff, 
+		wireframe:true
+	} );
+	selection = new THREE.Mesh( geometry, material );
+	selection.position.x = cursor.position.x;
+	selection.position.y = 2.5;
+	scene.add( selection );
+
+	// triangle [direction arrow]
+	var trigeometry = new THREE.CircleGeometry( 3, 3 );
+	var tmaterial = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+	tri = new THREE.Mesh( trigeometry, tmaterial );
+	tri.rotation.set(Math.PI,0,Math.PI/2)
+	tri.position.z = 2;
+	selection.add( tri );
+
+	// home pointer (rotate helper)
+	// pointerobj = new THREE.Mesh( 
+	// 	new THREE.BoxGeometry( 2, 2, 2 ),
+	//   new THREE.MeshBasicMaterial( {color: 0xffffff} )
+	// );
+	pointerobj = new THREE.Group();
+	pointerobj.position.y = 8;
+	cursor.add( pointerobj );
+}
+
+
+
+
+// map check
+function updateloop() {
+
+	// player lookat raycast
+	selection.position.x += (cursor.position.x - selection.position.x)*0.3;
+	selection.position.z += (cursor.position.z - selection.position.z)*0.3;
+	selection.lookAt(pointerobj.position.x,0,pointerobj.position.z);	
+
+
+	// keys
+	if (HERO.allowmove) {
+		if (keyboard.isDown(keyboard.LEFT) ){
+			cursor.position.x -= 0.5;
+		}
+		if (keyboard.isDown(keyboard.RIGHT) ){
+			cursor.position.x += 0.5;
+		}
+		if (keyboard.isDown(keyboard.UP) ){
+			cursor.position.z -= 0.5;
+		}
+		if (keyboard.isDown(keyboard.DOWN) ){
+			cursor.position.z += 0.5;
+		}
+	}
+
+	// check colour under player
+	xu = (hitcanvas.width/2)+Math.floor( cursor.position.x);
+	xv = (hitcanvas.width/2)+Math.floor( cursor.position.z);
+	xdata = htx.getImageData(xu, xv, 1, 1); // white/tree name
+	cdata = ctx.getImageData(xu, xv, 1, 1); // grey/tree number
+
+
+	// move player
+	if (xdata.data[0]>254) {
+		cursor.position.x = HERO.posx;
+		cursor.position.z = HERO.posz;
+		HERO.allowmove = false;
+	} else {
+		HERO.posx = cursor.position.x; 
+		HERO.posz = cursor.position.z; 
+		HERO.allowmove = true;
+
+	// draw cursor
+	// ctx.fillStyle = "blue";
+	// ctx.fillRect(xu, xv, 1, 1);   
+	// plane.material.map.needsUpdate = true;
+
+	}// end move player
+
+
+	// stop at white
+	if (xdata.data[0] > 254) {return}
+
+	// move scene with player
+	scene.position.x = -selection.position.x;
+	scene.position.z = -selection.position.z;
+
+	// moving allowed
+	if (HERO.moving) {
+		cursor.position.x += HERO.vx;
+		cursor.position.z += HERO.vy;
+	} // if moving
+
+	if (cdata.data[0] === 0) {
+		hud.innerHTML = '';
+	}
+
+
+	// check cursor colour
+	if (cdata.data[0] != 0) { 
+		hud.innerHTML = tree[cdata.data[0]].name.common;
+	} 
+
+	// move 3D tree on hover
+	if (cdata.data[0] > 0 ) {
+		trees[cdata.data[0]].position.y = 5;
+	} else {
+		for(var i = 0; i < trees.length; i++) {trees[i].position.y = 0;}
+	}
+
+} // end mapcheck
+
+
+
+// animation loop
+function animate() {
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
+	updateloop();
+};
+
+
+// START <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+init3D();
+createground();
+createplayer();
+animate();
+
+
+// nipple.js
+const nipple = nipplejs.create({
+	mode: 'dynamic',
+	dataOnly:true,
+	zone: document.getElementById('threecnv'),
+});
+
+// start
+nipple.on("move", (e, data) => {
+	const vx = data.force * Math.cos(data.angle.radian);
+	const vy = -data.force * Math.sin(data.angle.radian);
+	const v = speedLimit(vx, vy, HERO.maxSpeed);
+	HERO.vx = v.vx;
+	HERO.vy = v.vy;
+	HERO.moving = true;
+});
+
+// end
+nipple.on("end", (e, data) => {
+	HERO.moving = false;
+});
+</script>
+</body>
+</html>
