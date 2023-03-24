@@ -1,0 +1,395 @@
+
+<html>
+<head>
+	<title>octokid</title>
+	<style>
+	body { margin: 0; background-color: #330000;}
+	canvas { width: 100%; height: 100% }
+	#bos {position: absolute; top: 0; z-index: 3;
+		color: red; display:inline-block;}
+	#bumpcanvas {position: absolute; top: 170px; display: block; width: 256px; height: 128px; display: none;}
+	#colcanvas {position: absolute; top: 40px; display: block; width: 256px; height: 128px; display: none;}
+</style>
+</head>
+<body onfocusout="losefocus()">
+
+	<script src="js/three.min.js"></script>
+	<script src="js/OrbitControls.js"></script>
+	<script src="js/tween.min.js"></script>
+
+	<script>
+
+	document.addEventListener( 'pointerdown', onPointerDown );
+	document.addEventListener( 'pointerup', onPointerUp );
+
+
+	function onPointerUp() {mousedown=false;}
+
+
+	function onPointerDown( event ) {
+		mousedown=true;
+
+		pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+		pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+		raycaster.setFromCamera( pointer, camera );
+
+		const intersects = raycaster.intersectObject( head, true );
+
+		if ( intersects.length > 0 ) {
+			
+			if (intersects[0].object.parent.name == 'head') {
+				// console.log(intersects[0].object.parent.name)
+				animlegs();
+				return
+			}
+			
+		}
+
+	}
+	let selectedObject = null;
+	const raycaster = new THREE.Raycaster();
+	const pointer = new THREE.Vector2();
+	//	
+	const yscale = 1;
+	let xspeed = 0.1;
+	const lerpspeed = 0.1;
+	const raingroup = [];
+	let animating = false;
+	const coords = { x: 1, y: 90 };
+	var n = 0;
+	const paused = false;
+	const oldframe = 1;
+	const ypos = 0;
+
+	
+
+	function losefocus(argument) {
+		document.title = 'bye'
+	}
+
+
+// photo array
+var syncData = [
+{"start":"0", "col":"octocol.png", "bmp":"tentacle.png", "viz":true},
+// {"start":"1", "col":"col.png", "bmp":"bmp.png", "viz":false},
+];
+
+
+// overlay
+const images = [];
+const bimages = [];
+var imageCount = 0;
+	//
+	syncData.forEach(function(element, index){
+		const colimage = new Image();
+		colimage.src = element.col;
+		colimage.onload = ()=>{ 
+			imageCount += 1;
+	         if(imageCount === syncData.length){ 
+	 			coltx.drawImage(images[0], 0, 0, 256, 128);
+	         }
+	     }
+	     //
+		const bmpimage = new Image();
+		bmpimage.src = element.bmp;
+		bmpimage.onload = ()=>{ 
+	         if(imageCount === syncData.length){ 
+	         	// place all legs at once
+         	    for (var x = 0; x < 8; x++) {
+        			bumptx.drawImage(bimages[0], 5+(x*10)*3, 90, 36,36);
+    			}
+
+    			// place each leg
+		 		// bumptx.drawImage(bimages[0], 10, 90, 27, 27);
+		 		// bumptx.drawImage(bimages[0], 40, 90, 27, 27);
+		 		// bumptx.drawImage(bimages[0], 70, 90, 27, 27);
+		 		// bumptx.drawImage(bimages[0], 100, 90, 27, 27);
+		 		// bumptx.drawImage(bimages[0], 130, 90, 27, 27);
+		 		// bumptx.drawImage(bimages[0], 160, 90, 27, 27);
+		 		// bumptx.drawImage(bimages[0], 190, 90, 27, 27);
+		 		// bumptx.drawImage(bimages[0], 220, 90, 27, 27);
+	 			// coltx.drawImage(bimages[0], 0, 50, 27, 27);
+
+		        init();
+	         }
+	     }     
+
+
+	     images.push(colimage); 
+	     bimages.push(bmpimage); 
+	 });
+
+
+
+	// face bump layer
+	var bumpcanvas = document.createElement('canvas');
+	bumptx = bumpcanvas.getContext('2d');
+	bumpcanvas.id = "bumpcanvas";
+	bumpcanvas.width = 256;
+	bumpcanvas.height = 128;
+	bumptx.fillStyle = 'black';
+  	bumptx.fillRect(0,0,bumpcanvas.width,bumpcanvas.height);
+	// document.body.appendChild(bumpcanvas);
+
+	// face colour layer
+	var colcanvas = document.createElement('canvas');
+	coltx = colcanvas.getContext('2d');
+	colcanvas.id = "colcanvas";
+	colcanvas.width = 256;
+	colcanvas.height = 128;
+	// document.body.appendChild(colcanvas);
+
+
+	//
+	var scene = new THREE.Scene();
+	var clock = new THREE.Clock();
+
+	// renderer
+	var renderer = new THREE.WebGLRenderer({
+		alpha: true,
+		antialias: true
+	});
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( renderer.domElement );
+
+	// camera
+	var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+	camera.position.z = 300;
+
+	// controls
+	controls = new THREE.OrbitControls(camera, renderer.domElement);
+	controls.enablePan = false;
+	controls.enableDamping = true;
+	controls.dampingFactor = 0.9;
+	controls.maxDistance = 300;
+	controls.minDistance = 40;
+
+	// lights
+	var light3 = new THREE.PointLight( 0xffefef, 0.5 );
+	light3.position.set( 50, 1, 60 );
+	scene.add( light3 );
+	//
+	var light = new THREE.AmbientLight( 0x666666 );
+	scene.add( light );
+
+	// backlight
+	var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.2 );
+	directionalLight.position.set(0,200,100)
+	directionalLight.rotation.set(-Math.PI/2,0,0)
+	scene.add( directionalLight );
+
+	// head group
+	var head = new THREE.Group();
+	head.name = 'head';
+	head.rotation.y = -Math.PI/2;
+	head.scale.set(1.1,1,1.1)
+	scene.add( head );
+
+
+	// sphere face 
+	var geometry = new THREE.SphereBufferGeometry( 27, 200, 200 );
+	var material = new THREE.MeshStandardMaterial( { 
+		metalness: 0,
+		roughness: 2,
+		map : new THREE.CanvasTexture(colcanvas),
+		displacementMap: new THREE.CanvasTexture(bumpcanvas),
+		displacementScale: 10,
+	} );
+
+	face = new THREE.Mesh( geometry, material );
+	face.rotation.z = Math.PI/0.1;
+	head.add( face );
+	face.material.map.magFilter = THREE.NearestFilter;
+	face.material.map.minFilter = THREE.NearestFilter;
+
+	// outline
+	omaterial = new THREE.MeshStandardMaterial( { 
+		color:0x000000,
+		roughness: 100,
+		displacementMap: new THREE.CanvasTexture(bumpcanvas),
+		displacementScale: 10,
+	    side:THREE.BackSide
+	} );
+	oface = new THREE.Mesh( geometry, omaterial );
+	oface.scale.set(1.04,1.04,1.04);
+	head.add( oface );
+
+
+	document.addEventListener("visibilitychange", function() {
+		document.title = document.hidden ? "bye" : "hi";
+
+		if (document.visibilityState === 'visible') {
+			pause = false;
+		} else {
+			pause = true;
+			losefocus();
+		}
+
+	});
+
+
+	// events
+	window.addEventListener( 'resize', onWindowResize, false );
+	// resize event
+	function onWindowResize() {
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+		renderer.setSize( window.innerWidth, window.innerHeight );
+	}
+
+
+	// render loop
+	function animate(time) {
+		if(paused) return;
+
+
+		
+		// blink
+		// if ( Math.random() > 0.985) { blink(); }
+
+		// if (animating) {
+		// 	lerpspeed += ((xspeed/5) - lerpspeed)*0.2;
+		// 	head.scale.set(1,lerpspeed,1);
+		// }
+
+
+		// rain
+		if (typeof raingroup[0] != "undefined") {
+		  for ( var i = 0; i < raingroup.length; i ++ ) { 
+
+		    raingroup[i].position.y -= 1.1+(xspeed/2);
+		    if (raingroup[i].position.y < -300) {
+
+		      raingroup[i].position.x = (Math.random() - 0.5) * 1000;
+		      raingroup[i].position.y = (Math.random() - 0.5) * 1000;
+		      raingroup[i].position.z = (Math.random() - 0.5) * 1000;   
+
+		      // leave space
+		      if ( Math.abs( raingroup[i].position.x ) < 5000 && Math.abs( raingroup[i].position.z ) < 5000 ) continue;
+		    }
+		  }
+		}
+
+		//
+		if (!animating) {
+			n++;
+			bumptx.fillRect(0,0,bumpcanvas.width,bumpcanvas.height);
+			for (var x = 0; x < 8; x++) {
+				bumptx.drawImage(bimages[0], 5+(x*10)*3, 89+Math.sin(n/10), 36,36);
+			}
+			face.material.displacementMap.needsUpdate = true;
+			oface.material.displacementMap.needsUpdate = true;
+		}
+
+		TWEEN.update(time);
+		// RAF
+		requestAnimationFrame( animate );
+		renderer.render( scene, camera );
+	} // end loop
+
+
+
+// init
+function init(argument) {
+	face.material.map.needsUpdate = true;
+	face.material.displacementMap.needsUpdate = true;
+	animate();
+	makerain();
+}
+
+
+function animlegs() {
+	if (animating) {return}
+
+	animating = true;
+	bumptx.fillStyle = 'black';
+	bumptx.fillRect(0,0,bumpcanvas.width,bumpcanvas.height);		
+
+	// sweep (up down)
+	new TWEEN.Tween(coords)
+	.to({ x: 1.1, y: 70 }, 300)
+	.easing(TWEEN.Easing.Quadratic.InOut)
+	.onUpdate(function() {
+		bumptx.fillRect(0,0,bumpcanvas.width,bumpcanvas.height);
+		for (var x = 0; x < 8; x++) {
+			bumptx.drawImage(bimages[0], 5+(x*10)*3, coords.y, 36,36);
+		}
+		face.material.displacementMap.needsUpdate = true;
+		oface.material.displacementMap.needsUpdate = true;
+		xspeed = -(coords.y/50);
+		head.scale.y = coords.x;
+	})
+	.onComplete(function() { 
+		new TWEEN.Tween( coords )
+		.to({ x: 1, y: 105 }, 400)
+		.easing(TWEEN.Easing.Quadratic.Out)
+		.onUpdate(function() {
+			bumptx.fillRect(0,0,bumpcanvas.width,bumpcanvas.height);
+			for (var x = 0; x < 8; x++) {
+				bumptx.drawImage(bimages[0], 5+(x*10)*3, coords.y, 36,36);
+			}
+			face.material.displacementMap.needsUpdate = true;
+			oface.material.displacementMap.needsUpdate = true;
+			xspeed = (coords.y/20);
+			head.scale.y = coords.x;
+		})
+	.start();
+	})
+	.start();
+
+	// return to start pos (up)
+	setTimeout(function() {
+		new TWEEN.Tween(coords)
+		.to({ x: 1, y: 90 }, 500)
+		.easing(TWEEN.Easing.Quadratic.InOut)
+		.onComplete(function() { animating = false; n=0; })
+		.onUpdate(function() {
+			bumptx.fillRect(0,0,bumpcanvas.width,bumpcanvas.height);
+			for (var x = 0; x < 8; x++) {
+				bumptx.drawImage(bimages[0], 5+(x*10)*3, coords.y, 36,36);
+			}
+			face.material.displacementMap.needsUpdate = true;
+			oface.material.displacementMap.needsUpdate = true;
+			xspeed = coords.y-89.95;
+		}).start();
+	}, 800);
+
+}
+
+// make rain
+function makerain() {
+for ( var i = 0; i < 300; i ++ ) {
+      var rmaterial = new THREE.MeshBasicMaterial( {
+        color: 0xff0000, 
+        transparent:true, 
+        opacity:0.2
+      } );
+      var rgeometry = new THREE.SphereBufferGeometry( 0.5, 20, 20 )
+      var mesh = new THREE.Mesh( rgeometry, rmaterial );
+          var sc = Math.random()*4;
+          mesh.scale.set(sc*sc, sc*sc, sc*sc);
+
+          mesh.position.x = ( Math.random() - 0.5 ) * 600;
+          mesh.position.y = ( Math.random() - 0.5 ) * 600;
+          mesh.position.z = ( Math.random() - 0.5 ) * 600;
+
+          scene.add( mesh );
+          raingroup.push(mesh);
+        }
+}
+
+// blink eyes
+function blink(){
+
+	face.material.map.needsUpdate = true;
+		// eyes
+	// face.material.map = 
+	setTimeout(function() {
+		face.material.map.needsUpdate = true;
+	}, 200);
+}
+
+</script>
+</body>
+</html>
