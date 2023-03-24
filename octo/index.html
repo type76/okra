@@ -34,7 +34,7 @@
 
 		raycaster.setFromCamera( pointer, camera );
 
-		const intersects = raycaster.intersectObject( head, true );
+		var intersects = raycaster.intersectObject( head, true );
 
 		if ( intersects.length > 0 ) {
 			
@@ -47,20 +47,20 @@
 		}
 
 	}
-	let selectedObject = null;
-	const raycaster = new THREE.Raycaster();
-	const pointer = new THREE.Vector2();
+	var selectedObject = null;
+	var raycaster = new THREE.Raycaster();
+	var pointer = new THREE.Vector2();
 	//	
-	const yscale = 1;
-	let xspeed = 0.1;
-	const lerpspeed = 0.1;
-	const raingroup = [];
-	let animating = false;
-	const coords = { x: 1, y: 90 };
+	var yscale = 1;
+	var xspeed = 0.1;
+	var lerpspeed = 0.1;
+	var raingroup = [];
+	var animating = false;
+	var coords = { x: 1, y: 90 };
 	var n = 0;
-	const paused = false;
-	const oldframe = 1;
-	const ypos = 0;
+	var paused = false;
+	var oldframe = 1;
+	var ypos = 0;
 
 	
 
@@ -77,12 +77,12 @@ var syncData = [
 
 
 // overlay
-const images = [];
-const bimages = [];
+var images = [];
+var bimages = [];
 var imageCount = 0;
 	//
 	syncData.forEach(function(element, index){
-		const colimage = new Image();
+		var colimage = new Image();
 		colimage.src = element.col;
 		colimage.onload = ()=>{ 
 			imageCount += 1;
@@ -91,7 +91,7 @@ var imageCount = 0;
 	         }
 	     }
 	     //
-		const bmpimage = new Image();
+		var bmpimage = new Image();
 		bmpimage.src = element.bmp;
 		bmpimage.onload = ()=>{ 
 	         if(imageCount === syncData.length){ 
@@ -141,12 +141,12 @@ var imageCount = 0;
 	// document.body.appendChild(colcanvas);
 
 
+function threeinit(argument) {
 	//
-	var scene = new THREE.Scene();
-	var clock = new THREE.Clock();
+	scene = new THREE.Scene();
 
 	// renderer
-	var renderer = new THREE.WebGLRenderer({
+	renderer = new THREE.WebGLRenderer({
 		alpha: true,
 		antialias: true
 	});
@@ -154,7 +154,7 @@ var imageCount = 0;
 	document.body.appendChild( renderer.domElement );
 
 	// camera
-	var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+	camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
 	camera.position.z = 300;
 
 	// controls
@@ -180,7 +180,7 @@ var imageCount = 0;
 	scene.add( directionalLight );
 
 	// head group
-	var head = new THREE.Group();
+	head = new THREE.Group();
 	head.name = 'head';
 	head.rotation.y = -Math.PI/2;
 	head.scale.set(1.1,1,1.1)
@@ -214,7 +214,7 @@ var imageCount = 0;
 	oface = new THREE.Mesh( geometry, omaterial );
 	oface.scale.set(1.04,1.04,1.04);
 	head.add( oface );
-
+} // end threeinit
 
 	document.addEventListener("visibilitychange", function() {
 		document.title = document.hidden ? "bye" : "hi";
@@ -243,15 +243,8 @@ var imageCount = 0;
 	function animate(time) {
 		if(paused) return;
 
-
-		
 		// blink
 		// if ( Math.random() > 0.985) { blink(); }
-
-		// if (animating) {
-		// 	lerpspeed += ((xspeed/5) - lerpspeed)*0.2;
-		// 	head.scale.set(1,lerpspeed,1);
-		// }
 
 
 		// rain
@@ -271,7 +264,7 @@ var imageCount = 0;
 		  }
 		}
 
-		//
+		// idle
 		if (!animating) {
 			n++;
 			bumptx.fillRect(0,0,bumpcanvas.width,bumpcanvas.height);
@@ -282,6 +275,7 @@ var imageCount = 0;
 			oface.material.displacementMap.needsUpdate = true;
 		}
 
+		// anim
 		TWEEN.update(time);
 		// RAF
 		requestAnimationFrame( animate );
@@ -292,6 +286,7 @@ var imageCount = 0;
 
 // init
 function init(argument) {
+	threeinit();
 	face.material.map.needsUpdate = true;
 	face.material.displacementMap.needsUpdate = true;
 	animate();
