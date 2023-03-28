@@ -1,0 +1,195 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>eyes</title>
+
+<style>
+  body {margin: 0; overflow: hidden;}
+  #facebump {
+  	/*display: none;*/
+  	/*visibility: hidden;*/
+  	position: absolute;
+  }
+</style>
+
+</head>
+<body>
+
+<script src="../js/three.min.js"></script>
+
+
+<script>
+var pupils = [];
+var mouse = new THREE.Vector2();
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera( 
+75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+var renderer = new THREE.WebGLRenderer();
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+camera.position.z = 10;
+
+//
+var light = new THREE.AmbientLight( 0xeeeeee );
+scene.add( light );
+//
+var slight = new THREE.PointLight( 0xffffff, 1, 100 );
+slight.position.set( 0, 50, 80 );
+scene.add( slight );
+slight.castShadow = true;
+
+
+
+
+// main group
+eyes = new THREE.Group();
+scene.add( eyes );
+
+botheyes = new THREE.Group();
+// botheyes.scale.set(0.2,0.2,0.2)
+botheyes.position.set(-3,-4,8)
+eyes.add( botheyes );
+
+
+
+// cursor object
+var mouseGeometry = new THREE.SphereGeometry(0.1, 22, 22);
+var mouseMaterial = new THREE.MeshBasicMaterial({
+color: 0x0000ff
+});
+mouseMesh = new THREE.Mesh(mouseGeometry, mouseMaterial);
+scene.add(mouseMesh);	
+
+
+addhero();
+
+// add hero
+function addhero(){
+// eye balls
+for ( var i = 0; i < 2; i ++ ) {
+// white
+var geometry = new THREE.SphereBufferGeometry( 2, 32, 32 );
+var material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
+var ball = new THREE.Mesh( geometry, material );
+botheyes.add( ball );
+ball.position.y = 5;
+ball.position.x = i*5;
+ball.rotation.y = i*8;
+ball.position.z = -10;
+// ball.scale.set(xscale, xscale, xscale);
+// black
+var geometry = new THREE.SphereBufferGeometry( 0.6, 32, 32 );
+var material = new THREE.MeshBasicMaterial( {color: 0x222222} );
+var black = new THREE.Mesh( geometry, material );
+black.position.z = 1.9;
+black.scale.z = 0.5;
+ball.add( black );
+//
+pupils.push(ball);
+} //for
+
+
+// // character body
+// var bodytex = citytexture = new THREE.TextureLoader().load( 'assets/body.png' );  
+// bodytex.magFilter = THREE.NearestFilter;
+// bodytex.minFilter = THREE.NearestFilter;
+// var geometry = new THREE.PlaneBufferGeometry( 60, 60, 1 );
+// var material = new THREE.MeshBasicMaterial( { map:bodytex, transparent:true } );
+// var herobody = new THREE.Mesh( geometry, material );
+// herobody.position.x = 3;
+// herobody.position.y = -14;
+// herobody.position.z = -10;
+// botheyes.add( herobody );
+}
+
+
+// create video BG
+function createbgplane(){
+  var vtexture = new THREE.TextureLoader().load( 'assets/bg.png' );  
+  vtexture.magFilter = THREE.NearestFilter;
+  vtexture.minFilter = THREE.NearestFilter;
+
+  // video plane
+  var vgeometry = new THREE.PlaneBufferGeometry( 10.24, 5.12, 1, 1 );
+  videomaterial = new THREE.MeshBasicMaterial( { 
+    map : vtexture,
+    transparent:true,
+  } );
+  videoplane = new THREE.Mesh( vgeometry, videomaterial );
+  // videoplane.renderOrder = -1;
+  videoplane.position.set(0,0,-20)
+  videoplane.scale.set(10,10,10)
+  scene.add( videoplane );
+}
+
+
+
+
+// follow mouse
+window.addEventListener('mousemove', updateMouse, false);
+
+function updateMouse() {
+event.preventDefault();
+mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+// sphere follows mouse
+var vector = new THREE.Vector3(mouse.x, mouse.y, -2.5);
+vector.unproject( camera );
+var dir = vector.sub( camera.position ).normalize();
+var distance = - camera.position.z / dir.z;
+var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+mouseMesh.position.copy(pos);
+
+for ( var i = 0; i < pupils.length; i ++ ) { 
+pupils[i].lookAt(pos) // follow mouse pos
+}
+
+// eyes.lookAt(pos.x, pos.y, pos.z)
+}
+
+
+
+// resize
+window.addEventListener('resize', onWindowResize, false);
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+
+// zoom
+window.addEventListener( 'wheel', onMouseWheel, false );
+
+function onMouseWheel( event ) {
+  console.log(event)
+    // camera.position.Z -= event.deltaY * 0.5;
+    // camera.position.clampScalar( 0, 10 );
+}
+
+
+//
+	var animate = function () {
+		requestAnimationFrame( animate );
+		renderer.render( scene, camera );
+		 
+// move the eyes
+  for ( var i = 0; i < pupils.length; i ++ ) { 
+    if ( Math.random() > 0.99 ) { 
+      pupils[i].children[0].scale.y = 0.001; 
+      pupils[i].rotation.y = Math.random()/2; 
+    }  else {
+      pupils[i].children[0].scale.y += ( 1 - pupils[i].children[0].scale.y ) * 0.2;
+    }
+  }
+
+
+	};
+	animate();
+</script>
+</body>
+</html>
