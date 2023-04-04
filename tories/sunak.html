@@ -31,8 +31,8 @@
 		if (index>syncData.length-1) {index=0;}
 		console.log(index)
 
- 		bumptx.drawImage(bimages[index], 0, 0, 512, 256);
- 		coltx.drawImage(images[index], 0, 0, 512, 256);
+ 		bumptx.drawImage(bimages[index], 0, 0);
+ 		coltx.drawImage(images[index], 0, 0);
  		face.material.map.needsUpdate = true;	
 		face.material.displacementMap.needsUpdate = true;
 		oface.material.displacementMap.needsUpdate = true;
@@ -63,7 +63,7 @@ var imageCount = 0;
 		colimage.onload = ()=>{ 
 			imageCount += 1;
 	         if(imageCount === syncData.length){ 
-	 			coltx.drawImage(images[0], 0, 0, 512, 256);
+	 			coltx.drawImage(images[0], 0, 0);
 	         }
 	     }
 	     //
@@ -71,7 +71,7 @@ var imageCount = 0;
 		bmpimage.src = element.bmp;
 		bmpimage.onload = ()=>{ 
 	         if(imageCount === syncData.length){ 
-		 		bumptx.drawImage(images[0], 0, 0, 512, 256);
+		 		bumptx.drawImage(images[0], 0, 0);
 		        init();
 	         }
 	     }     
@@ -87,15 +87,15 @@ var imageCount = 0;
 	var bumpcanvas = document.createElement('canvas');
 	bumptx = bumpcanvas.getContext('2d');
 	bumpcanvas.id = "bumpcanvas";
-	bumpcanvas.width = 512;
-	bumpcanvas.height = 256;
+	bumpcanvas.width = 1024;
+	bumpcanvas.height = 512;
 	// document.body.appendChild(bumpcanvas);
 
 	var colcanvas = document.createElement('canvas');
 	coltx = colcanvas.getContext('2d');
 	colcanvas.id = "colcanvas";
-	colcanvas.width = 512;
-	colcanvas.height = 256;
+	colcanvas.width = 1024;
+	colcanvas.height = 512;
 	// document.body.appendChild(colcanvas);
 
 	//
@@ -157,8 +157,8 @@ var imageCount = 0;
 	face = new THREE.Mesh( geometry, material );
 	face.rotation.z = Math.PI/0.1;
 	head.add( face );
-	face.material.map.magFilter = THREE.NearestFilter;
-	face.material.map.minFilter = THREE.NearestFilter;
+	// face.material.map.magFilter = THREE.NearestFilter;
+	// face.material.map.minFilter = THREE.NearestFilter;
 
 	// outline
 	omaterial = new THREE.MeshStandardMaterial( { 
@@ -232,9 +232,9 @@ var imageCount = 0;
 
 		// if (thisframe != oldframe) {
 		// 	teeth.visible = syncData[thisframe].viz;			
-		// 	coltx.drawImage(images[thisframe], 0, 0, 512, 256);
-		// 	coltx.drawImage(overlayimage, 0, 0, 512, 256);
-		// 	bumptx.drawImage(bimages[thisframe], 0, 0, 512, 256);
+		// 	coltx.drawImage(images[thisframe], 0, 0);
+		// 	coltx.drawImage(overlayimage, 0, 0);
+		// 	bumptx.drawImage(bimages[thisframe], 0, 0);
 		// 	face.material.map.needsUpdate = true;
 		// 	face.material.displacementMap.needsUpdate = true;
 		// 	oldframe = thisframe;
@@ -288,8 +288,8 @@ function createhair() {
 
 // init
 function init(argument) {
-	coltx.drawImage(images[0], 0, 0, 512, 256);
-	bumptx.drawImage(bimages[0], 0, 0, 512, 256);
+	coltx.drawImage(images[0], 0, 0);
+	bumptx.drawImage(bimages[0], 0, 0);
 	face.material.map.needsUpdate = true;
 	face.material.displacementMap.needsUpdate = true;
 	animate();
