@@ -1,4 +1,5 @@
 
+
 <html>
 <head>
 	<title>tory heads</title>
@@ -17,8 +18,9 @@
 <div id="box"></div>
 
 
-	<script src="js/three.min.js"></script>
-	<script src="js/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.122.0/build/three.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.122.0/examples/js/controls/OrbitControls.js"></script>
 
 	<script>
 	var paused = false;
@@ -65,48 +67,43 @@
 	const images = [];
 	const bimages = [];
 	var imageCount = 0;
+    const loadImage = (src) => {
+        return new Promise((resolve, reject) => {
+            const image = new Image();
+            image.crossOrigin = "Anonymous";
+            image.onload = () => resolve(image);
+            image.onerror = () => reject(new Error(`Could not load image at ${src}`));
+            image.src = src;
+        });
+    };
+    const indexMap = {};
+    const imagePromises = syncData.reduce((r,n,i) => {
+            r.push(loadImage(n.col));
+            r.push(loadImage(n.bmp));
+            indexMap[n.col] = i;
+            indexMap[n.bmp] = i;
+            return r;
+        },[]);
 
-	//
-	syncData.forEach(function(element, index){
-		const colimage = new Image();
-		colimage.src = element.col;
-		colimage.onload = ()=>{ 
-			imageCount += 1;
-	         if(imageCount === syncData.length){ 
-	 			coltx.drawImage(images[0], 0, 0, 256, 128);
-	         }
-	     }
-	     //
-		const bmpimage = new Image();
-		bmpimage.src = element.bmp;
-		bmpimage.onload = ()=>{ 
-	         if(imageCount === syncData.length){ 
-		 		bumptx.drawImage(images[0], 0, 0, 256, 128);
-        		setTimeout(function() {
-		        	init();
-				}, 300);
-	         }
-	     }     
-
-	     images.push(colimage); 
-	     bimages.push(bmpimage); 
-	 });
-
-
-	// face colour layer
-	var bumpcanvas = document.createElement('canvas');
-	bumptx = bumpcanvas.getContext('2d');
-	bumpcanvas.id = "bumpcanvas";
-	bumpcanvas.width = 256;
-	bumpcanvas.height = 128;
-	// document.body.appendChild(bumpcanvas);
-
-	var colcanvas = document.createElement('canvas');
-	coltx = colcanvas.getContext('2d');
-	colcanvas.id = "colcanvas";
-	colcanvas.width = 256;
-	colcanvas.height = 128;
-	// document.body.appendChild(colcanvas);
+    const imageMap = {};
+    Promise.all(imagePromises)
+        .then((loadedImages) => {
+            console.log("All images loaded successfully:", loadedImages);
+            loadedImages.forEach(img=>{
+                imageMap[img.src] = img;
+            })
+            syncData.forEach((n,i)=>{
+                const x = i*100;
+                const y = 0;
+                const z = 0;
+                createhead(x, y, z, imageMap[n.bmp], imageMap[n.col]);
+            });
+            
+		    animate();
+        })
+        .catch((error) => {
+            console.error("Error loading images:", error);
+        });
 
 	//
 	var scene = new THREE.Scene();
@@ -153,17 +150,26 @@
 
 
 	//
-	function createhead(index) {
- 		bumptx.drawImage(bimages[index], 0, 0);
- 		coltx.drawImage(images[index], 0, 0);
+	function createhead(x, y, z, bumpImage, colorImage) {
+        const bumpCanv = document.createElement("canvas");
+        bumpCanv.width = bumpImage.width;
+        bumpCanv.height = bumpImage.height;
+        const bumpCtx = bumpCanv.getContext("2d");
+        bumpCtx.drawImage(bumpImage, 0, 0);
+
+        const colCanv = document.createElement("canvas");
+        colCanv.width = colorImage.width;
+        colCanv.height = colorImage.height;
+        const colCtx = colCanv.getContext("2d");
+        colCtx.drawImage(colorImage, 0, 0);
 
 		// sphere face 
 		geometry = new THREE.SphereBufferGeometry( 20, 150, 150 );
 		material = new THREE.MeshStandardMaterial( { 
 			metalness: 0,
 			roughness: 2,
-			map : new THREE.CanvasTexture(colcanvas),
-			displacementMap: new THREE.CanvasTexture(bumpcanvas),
+			map : new THREE.CanvasTexture(colCanv),
+			displacementMap: new THREE.CanvasTexture(bumpCanv),
 			displacementScale: 16
 		} );
 
@@ -171,7 +177,9 @@
 		face = new THREE.Mesh( geometry, material );
 		face.rotation.z = Math.PI/0.1;
 		face.rotation.y = -Math.PI/2;
-		face.position.x = index*100;
+		face.position.x = x;
+		face.position.y = y;
+		face.position.z = z;
 
 		head.add( face );
 
@@ -182,7 +190,7 @@
 		omaterial = new THREE.MeshStandardMaterial( { 
 			color:0x000000,
 			roughness: 100,
-			displacementMap: new THREE.CanvasTexture(bumpcanvas),
+			displacementMap: new THREE.CanvasTexture(bumpCanv),
 			displacementScale: 16,
 		    side:THREE.BackSide
 		} );
@@ -191,35 +199,14 @@
 		oface.rotation.z = Math.PI/0.1;
 		oface.rotation.y = -Math.PI/2;
 		oface.scale.set(1.05,1.05,1.05);
-		oface.position.x = index*100;
+		oface.position.x = x;
+		oface.position.y = y;
+		oface.position.z = z;
 		head.add( oface );
 
  		face.material.map.needsUpdate = true;	
 		face.material.displacementMap.needsUpdate = true;
 		oface.material.displacementMap.needsUpdate = true;
-	//
-	// // createbodyplane() 
- //  var geometry = new THREE.PlaneBufferGeometry( 55, 55, 1, 1 );
-
- //  // body texture
- //  // bodytex = new THREE.TextureLoader().load( 'ground.png' );
- //  // bodytex.magFilter = THREE.NearestFilter;
- //  // bodytex.minFilter = THREE.LinearMipMapLinearFilter;
- //  // bodytex.repeat.set( 2, 2 );
- //  // bodytex.wrapS = bodytex.wrapT = THREE.RepeatWrapping;
- //  var cmaterial = new THREE.MeshBasicMaterial( { 
- //    map: new THREE.TextureLoader().load( 'legs.png' ),
- //    color:0x000000,
- //   side:THREE.DoubleSide,
- //   alphaTest:0.5
- //  } );
- //  xbody = new THREE.Mesh( geometry, cmaterial );
- //  xbody.rotation.set(0,Math.PI/2,0);
- //  xbody.position.set(0,-35,0);
- //  // xbody.recieveShadow = true;
- //  face.add( xbody );
-
-
 	}
 
 
@@ -257,36 +244,6 @@
 		// blink
 		// if ( Math.random() > 0.985) { blink(); }
 	} // end loop
-
-
-
-	// init
-	function init() {
-
-		setTimeout(function() {
-			createhead(0);
-		}, 100);
-		setTimeout(function() {
-			createhead(1);
-		}, 300);
-		setTimeout(function() {
-			createhead(2);
-		}, 400);
-		setTimeout(function() {
-			createhead(3);
-		}, 500);
-		setTimeout(function() {
-			createhead(4);
-		}, 600);
-		setTimeout(function() {
-			createhead(5);
-		}, 700);
-
-		// var sunak, mogg;
-		// //
-
-		animate();
-	}
 
 
 	// blink eyes
