@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <meta charset="UTF-8">
+  <title>blend</title>
+	<style>
+body{
+  user-select:none;
+  padding: 0;
+  margin: 0;
+  background: #30042b;
+  color: #fff;
+  overflow: hidden;
+  font-family: monospace;
+}
+
+#btns{
+  position: absolute;
+  z-index: 99;
+  bottom: 20px;
+  font-size: 1.2em;
+  line-height: 1.5em;
+  z-index: 99;
+  display: none;
+}
+.btn{
+  /*padding: 15px;*/
+  font-family: monospace;
+  cursor: pointer;
+  color: #666;
+  display: block;
+}
+.btn:hover {color: #fff;}
+#hud {position: fixed; top: 0; padding: 12px;}
+#next { background: red; 
+border: none; display: inline-block; z-index: 9; width: 50px; height: 50px; cursor: pointer; text-align: center; }
+#next:hover, #next:focus {background: #222; color: #fff;}
+	</style>
+</head>
+<body tabindex="1">
+
+<span id="hud">next: <button id="next" onclick="next()">next</button></span>
+
+<div id="btns">
+
+<a class="btn">idle</a>
+<a class="btn">cocky</a>
+<a class="btn">acknowledging</a>
+<a class="btn">angry</a>
+<a class="btn">annoyed-head-shake</a>
+<a class="btn">dismissing-gesture</a>
+<a class="btn">happy-hand-gesture</a>
+<a class="btn">hard-head-nod</a>
+<a class="btn">head-nod-yes</a>
+<a class="btn">lengthy-head-nod</a>
+<a class="btn">look-away-gesture</a>
+<a class="btn">relieved-sigh</a>
+<a class="btn">sarcastic-head-nod</a>
+<a class="btn">shaking-head-no</a>
+<a class="btn">thoughtful-head-shake</a>
+<a class="btn">weight-shift</a>
+<a class="btn">Female-Standing-Pose</a>
+<a class="btn">Zombie-Agonizing</a>
+<a class="btn">Zombie-Idle</a>
+
+
+</div>
+
+
+
+<script src='js/three.min.js'></script>
+<script src='js/OrbitControls.js'></script>
+<script src='js/inflate.min.js'></script>
+<script src='js/FBXLoader.js'></script>
+<script src='js/perlin.js'></script>
+
+<script>
+
+
+// play next animation
+function next() {
+  index++;
+  if (index>list.length-2) {index= -1}
+  document.getElementById("next").innerHTML = index+1;
+  playAction(index+1)
+}
+
+
+//
+var scene, camera, renderer, clock, mixer, actions, spine;
+var anims = [];
+var list = [];
+var target = new THREE.Vector3();
+var anim = null;
+var speed = 0;
+var paused = false;
+var headfinished = false;
+var index = -1;
+var walking = false;
+
+
+// start
+init();
+
+
+function init(){  
+  clock = new THREE.Clock();
+  
+  scene = new THREE.Scene();
+  
+  camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1000 );
+  camera.position.set(0, 3, 35);
+  camera.lookAt(0,3,0)
+
+  const ambient = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
+  scene.add(ambient);
+  
+  // const light = new THREE.DirectionalLight(0xFFFFFF, 1);
+  // light.position.set( 0, 1, 10);
+  // light.castShadow = true;
+  // light.shadow.radius = 8;
+  // scene.add(light);
+
+
+  // light
+  var light3 = new THREE.PointLight( 0xffefef, 0.5 );
+  light3.position.set( 20, 1, 30 );
+  light3.shadow.radius = 22;
+  scene.add( light3 );
+  
+
+  // // backlight
+  // var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.2 );
+  // directionalLight.position.set(0,200,100)
+  // directionalLight.rotation.set(-Math.PI/2,0,0);
+  // directionalLight.shadow.radius = 30;
+  // scene.add( directionalLight );
+
+
+  renderer = new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: true
+  });
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  document.body.appendChild( renderer.domElement );
+  
+  const controls = new THREE.OrbitControls( camera, renderer.domElement );
+  controls.maxPolarAngle = Math.PI * 0.47;
+  controls.target.set( 0, 3, 0 );
+  controls.update();
+  
+  //Add button actions here
+  const btns = document.getElementById("btns");
+  btns.childNodes.forEach( btn => {
+    if (btn.innerHTML !== undefined){
+      anims.push(btn.innerHTML)
+      list.push(btn.innerHTML)
+
+      btn.addEventListener('click', 
+        playAction.bind(this, index)
+      );
+      index++;
+    }
+  });
+  
+  // BG
+  var bgloader = new THREE.BufferGeometryLoader();
+
+  pptexture = new THREE.MeshLambertMaterial( { 
+    map : new THREE.TextureLoader().load( 'destroyed.png' ),
+    // gradientMap : new THREE.TextureLoader().load( 'threeTone.jpg' ),
+          // object.material.map.minFilter = object.material.map.magFilter = THREE.NearestFilter;
+  } );
+  clockTexture = new THREE.MeshBasicMaterial( { 
+  color:0xffffff
+  } );
+
+  // group
+  sceneparts = [];
+  scenebg = new THREE.Group();
+  // scenebg.scale.set(2,2,2)
+  // scenebg.rotation.x = Math.PI*0.5;
+  // scenebg.rotation.z = Math.PI*0.5;
+  scenebg.rotation.y = -Math.PI*0.5;
+  scenebg.position.y = 0.5;
+  scene.add( scenebg );
+
+  // loadobj('westminster-normal', pptexture);
+  loadobj('westminster-destroyed', pptexture);
+  // loadobj('clock', clockTexture);
+
+function loadobj(obj, tex1){
+  bgloader.load(
+    obj+'.json',
+    function ( geometry ) {
+      var material = tex1
+      object = new THREE.Mesh( geometry, material );
+      object.name = obj;
+      object.castShadow = true;
+      object.receiveShadow = true;
+      scenebg.add( object );
+      sceneparts.push(object)
+      console.log('loaded: ' + object.name)
+    },
+    function ( xhr ) {
+    },
+    function ( xhr ) {
+      console.log( 'An error happened' );
+    }
+    );
+}
+   // console.log(anims)
+
+  const loader = new THREE.FBXLoader();
+  
+  loader.load('anim/idle.fbx', object => {
+    mixer = new THREE.AnimationMixer(object);
+    actions = [];
+    const action = mixer.clipAction(object.animations[0]);
+    action.play();
+    // actions.push(action);
+    const map = new THREE.TextureLoader()
+    .load('testbod.png');
+    map.magFilter = THREE.NearestFilter;
+    map.minFilter = THREE.LinearMipMapLinearFilter;
+
+
+    object.traverse( child => {
+      if (child.isMesh){
+        child.material.map = map;
+        child.castShadow = true;
+        child.recieveShadow = true;
+
+      }
+    });
+
+  // console.log(object.children[3].children[0].children[0])
+
+    scenebg.add(object);
+    object.scale.set(0.2,0.2,0.2)
+    object.rotation.y = Math.PI*0.5;
+    loadAnimation(loader);
+    
+    // add parts to body
+    spine = scenebg.getObjectByName( 'mixamorigSpine1' );
+    // for shadow
+
+    // lion head
+    neckbone = scenebg.getObjectByName( 'mixamorigHead' );
+    makehead(neckbone);  
+  });
+  
+  window.addEventListener( 'resize', resize, false);
+  
+}
+
+function playAction(index){
+  const action = actions[index];
+  mixer.stopAllAction();
+  action.reset();
+  action.fadeIn(0.5);
+  action.clampWhenFinished = true;
+  action.play();
+  // action.stop();
+  // console.log(list[index])
+  
+  // if (index>list.length-2) {index= -1}
+  // document.getElementById("next").innerHTML = list[index+1];
+
+  // console.log(index, actions[index])
+  //     if (index>2){
+  //     action.loop = THREE.LoopOnce;
+  //     action.clampWhenFinished = true;
+  //     walking = true;
+  //     speed = 0.001;
+  //   } else {
+  //     speed = 0;
+  //     // walking = false;
+  //   }
+}
+
+function makehead(obj) {
+
+// head group
+head = new THREE.Group();
+
+head.rotation.y = -Math.PI/2;
+head.rotation.z = Math.PI/10;
+head.position.y = 3.9;
+neckbone.add( head );
+
+
+// sphere face 
+var geometry = new THREE.SphereBufferGeometry( 4, 100, 100 );
+var material = new THREE.MeshStandardMaterial( { 
+  metalness: 0.0,
+  metalness: 0.0,
+  roughness: 2,
+  map : new THREE.TextureLoader().load( 'mogg.png' ),
+  displacementMap: new THREE.TextureLoader().load( 'moggbmp.png' ),
+  displacementScale: 4
+} );
+
+face = new THREE.Mesh( geometry, material );
+// face.scale.y = 1.6;
+// face.position.y = 0.2;
+head.add( face );
+//
+// // createbodyplane() 
+//   var geometry = new THREE.PlaneBufferGeometry( 55, 55, 1, 1 );
+
+//   // body texture
+//   // bodytex = new THREE.TextureLoader().load( 'ground.png' );
+//   // bodytex.magFilter = THREE.NearestFilter;
+//   // bodytex.minFilter = THREE.LinearMipMapLinearFilter;
+//   // bodytex.repeat.set( 2, 2 );
+//   // bodytex.wrapS = bodytex.wrapT = THREE.RepeatWrapping;
+//   var cmaterial = new THREE.MeshBasicMaterial( { 
+//     // map:groundtex
+//     color:0xff0000
+//   } );
+//   xbody = new THREE.Mesh( geometry, cmaterial );
+//   // xbody.rotation.set(-Math.PI/2,0,0);
+//   // xbody.position.set(-21,0,0);
+//   // xbody.recieveShadow = true;
+//   face.add( xbody );
+}
+
+
+function createbodyplane() {
+
+
+}
+
+function loadAnimation(loader){
+  anim = anims.shift();
+  loader.load(`anim/${anim}.fbx`, object => {
+    const action = mixer.clipAction(object.animations[0]);
+    actions.push(action);
+    if (anims.length>0){
+      loadAnimation(loader);
+    }else{
+      update();
+    }
+  })
+}
+
+function update(){
+  if (paused) {return}
+
+  requestAnimationFrame( update );
+	renderer.render( scene, camera );
+  if (mixer) {
+    const dt = clock.getDelta();
+    mixer.update(dt);
+
+    // // shadow
+    // spine.getWorldPosition( target );
+    // shadow.position.z = target.z;
+    // shadow.position.x = target.x;
+  }
+
+    // move ground
+    // groundtex.offset.y -= speed;
+
+  // if (headfinished && speed>0) {
+  //   updatethis(hair)
+  // }
+}
+
+
+
+function resize(){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+function createworld(){
+
+  // ground plane
+  var geometry = new THREE.PlaneBufferGeometry( 50, 50, 1 );
+
+  // ground texture
+  groundtex = new THREE.TextureLoader().load( 'ground.png' );
+  groundtex.magFilter = THREE.NearestFilter;
+  groundtex.minFilter = THREE.LinearMipMapLinearFilter;
+  groundtex.repeat.set( 2, 2 );
+  groundtex.wrapS = groundtex.wrapT = THREE.RepeatWrapping;
+  var cmaterial = new THREE.MeshBasicMaterial( { 
+    map:groundtex
+  } );
+  ground = new THREE.Mesh( geometry, cmaterial );
+  ground.rotation.set(-Math.PI/2,0,0);
+  ground.position.set(-21,0,0);
+  ground.recieveShadow = true;
+  scenebg.add( ground );
+
+  // water
+  var wtrmaterial = new THREE.MeshLambertMaterial( { 
+    color: 0xff0000,
+    // map:new THREE.TextureLoader().load( 'water.png' ),
+    transparent:true,
+    opacity:0.2
+  } );
+
+  water = new THREE.Mesh( geometry, wtrmaterial );
+  water.rotation.set(-Math.PI/2,0,0);
+  water.position.y = 0.02;
+  water.position.set(25,-1,0);
+
+  scenebg.add( water );
+
+}
+
+
+// stop on leave focus
+document.addEventListener("visibilitychange", function() {
+  document.title = document.hidden ? "bye" : "hi";
+
+  if (document.visibilityState === 'visible') {
+    pause = false;
+  } else {
+    pause = true;
+  }
+
+});
+
+
+//
+
+next.innerHTML = anims[index];
+
+createworld()
+update()
+
+</script>
+
+<!-- <script  src="head.js"></script> -->
+
+</body>
+</html>
