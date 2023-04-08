@@ -1,0 +1,316 @@
+
+<html>
+<head>
+	<title>tory heads</title>
+	<style>
+	body { margin: 0; background-color: #222;}
+	canvas { width: 100%; height: 100% }
+	#bos {position: absolute; top: 0; z-index: 3;
+		color: red; display:inline-block;}
+	#bumpcanvas {position: absolute; top: 260px; display: block; width: 267px; height: 128px;}
+	#colcanvas {position: absolute; top: 0px; display: block; width: 256px; height: 128px;}
+	button {position: absolute; top: 12px; left: 12px; padding:12px; cursor: pointer; z-index: 9;}
+</style>
+</head>
+<body >
+<button onclick="refresh()">next</button>
+<div id="box"></div>
+
+
+	<script src="js/three.min.js"></script>
+	<script src="js/OrbitControls.js"></script>
+
+	<script>
+	var paused = false;
+	var oldframe = 1;
+	var index = 0;
+
+	// refresh
+	function refresh() {
+		index++;
+		if (index>syncData.length-1) {
+
+			index=0; 
+			// return;
+		}
+		// console.log(index)
+			head.position.x = -index*100;
+
+	 	// 	bumptx.drawImage(bimages[index], 0, 0, 256, 128);
+	 	// 	coltx.drawImage(images[index], 0, 0, 256, 128);
+	 	// 	face.material.map.needsUpdate = true;	
+		// face.material.displacementMap.needsUpdate = true;
+		// oface.material.displacementMap.needsUpdate = true;
+		// createhead(index)
+
+	}
+	
+	// photo array
+	var syncData = [
+	{"start":"0", "col":"mogg.png", "bmp":"moggbmp.png", "viz":true},
+	{"start":"1", "col":"zahawi.png", "bmp":"zahawibmp.png", "viz":true},
+	{"start":"2", "col":"sunak.png", "bmp":"sunakbmp.png", "viz":true},
+	{"start":"3", "col":"cruella.png", "bmp":"cruellabmp.png", "viz":true},
+	{"start":"4", "col":"bojo.png", "bmp":"bojobmp.png", "viz":true},
+	{"start":"5", "col":"gullis.png", "bmp":"gullisbmp.png", "viz":true},
+	];
+
+	// player1 array
+	player = {
+	  count:syncData.length,
+	  fps:2,
+	};
+
+	// overlay
+	const images = [];
+	const bimages = [];
+	var imageCount = 0;
+
+	//
+	syncData.forEach(function(element, index){
+		const colimage = new Image();
+		colimage.src = element.col;
+		colimage.onload = ()=>{ 
+			imageCount += 1;
+	         if(imageCount === syncData.length){ 
+	 			coltx.drawImage(images[0], 0, 0, 256, 128);
+	         }
+	     }
+	     //
+		const bmpimage = new Image();
+		bmpimage.src = element.bmp;
+		bmpimage.onload = ()=>{ 
+	         if(imageCount === syncData.length){ 
+		 		bumptx.drawImage(images[0], 0, 0, 256, 128);
+        		setTimeout(function() {
+		        	init();
+				}, 300);
+	         }
+	     }     
+
+	     images.push(colimage); 
+	     bimages.push(bmpimage); 
+	 });
+
+
+	// face colour layer
+	var bumpcanvas = document.createElement('canvas');
+	bumptx = bumpcanvas.getContext('2d');
+	bumpcanvas.id = "bumpcanvas";
+	bumpcanvas.width = 256;
+	bumpcanvas.height = 128;
+	// document.body.appendChild(bumpcanvas);
+
+	var colcanvas = document.createElement('canvas');
+	coltx = colcanvas.getContext('2d');
+	colcanvas.id = "colcanvas";
+	colcanvas.width = 256;
+	colcanvas.height = 128;
+	// document.body.appendChild(colcanvas);
+
+	//
+	var scene = new THREE.Scene();
+	var clock = new THREE.Clock();
+
+	var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+
+	var renderer = new THREE.WebGLRenderer({
+		alpha: true,
+		antialias: true
+	});
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( renderer.domElement );
+
+	camera.position.z = 100;
+
+	// controls
+	controls = new THREE.OrbitControls(camera, renderer.domElement);
+	controls.enablePan = false;
+	controls.enableDamping = true;
+	controls.dampingFactor = 0.9;
+	controls.maxDistance = 300;
+	controls.minDistance = 40;
+
+	// light
+	var light3 = new THREE.PointLight( 0xffefef, 0.5 );
+	light3.position.set( 20, 1, 30 );
+	scene.add( light3 );
+	//
+	var light = new THREE.AmbientLight( 0x666666 );
+	scene.add( light );
+
+	// backlight
+	var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.2 );
+	directionalLight.position.set(0,200,100)
+	directionalLight.rotation.set(-Math.PI/2,0,0)
+	scene.add( directionalLight );
+
+	// head
+	let head = new THREE.Group();
+	head.scale.set(1,1.2,1);
+	// head.position.set(-150,0,0);
+	scene.add( head );
+
+
+	//
+	function createhead(index) {
+ 		bumptx.drawImage(bimages[index], 0, 0);
+ 		coltx.drawImage(images[index], 0, 0);
+
+		// sphere face 
+		geometry = new THREE.SphereBufferGeometry( 20, 150, 150 );
+		material = new THREE.MeshStandardMaterial( { 
+			metalness: 0,
+			roughness: 2,
+			map : new THREE.CanvasTexture(colcanvas),
+			displacementMap: new THREE.CanvasTexture(bumpcanvas),
+			displacementScale: 16
+		} );
+
+		// head
+		face = new THREE.Mesh( geometry, material );
+		face.rotation.z = Math.PI/0.1;
+		face.rotation.y = -Math.PI/2;
+		face.position.x = index*100;
+
+		head.add( face );
+
+		face.material.map.magFilter = THREE.NearestFilter;
+		face.material.map.minFilter = THREE.NearestFilter;
+
+		// outline
+		omaterial = new THREE.MeshStandardMaterial( { 
+			color:0x000000,
+			roughness: 100,
+			displacementMap: new THREE.CanvasTexture(bumpcanvas),
+			displacementScale: 16,
+		    side:THREE.BackSide
+		} );
+
+		oface = new THREE.Mesh( geometry, omaterial );
+		oface.rotation.z = Math.PI/0.1;
+		oface.rotation.y = -Math.PI/2;
+		oface.scale.set(1.05,1.05,1.05);
+		oface.position.x = index*100;
+		head.add( oface );
+
+ 		face.material.map.needsUpdate = true;	
+		face.material.displacementMap.needsUpdate = true;
+		oface.material.displacementMap.needsUpdate = true;
+	//
+	// // createbodyplane() 
+ //  var geometry = new THREE.PlaneBufferGeometry( 55, 55, 1, 1 );
+
+ //  // body texture
+ //  // bodytex = new THREE.TextureLoader().load( 'ground.png' );
+ //  // bodytex.magFilter = THREE.NearestFilter;
+ //  // bodytex.minFilter = THREE.LinearMipMapLinearFilter;
+ //  // bodytex.repeat.set( 2, 2 );
+ //  // bodytex.wrapS = bodytex.wrapT = THREE.RepeatWrapping;
+ //  var cmaterial = new THREE.MeshBasicMaterial( { 
+ //    map: new THREE.TextureLoader().load( 'legs.png' ),
+ //    color:0x000000,
+ //   side:THREE.DoubleSide,
+ //   alphaTest:0.5
+ //  } );
+ //  xbody = new THREE.Mesh( geometry, cmaterial );
+ //  xbody.rotation.set(0,Math.PI/2,0);
+ //  xbody.position.set(0,-35,0);
+ //  // xbody.recieveShadow = true;
+ //  face.add( xbody );
+
+
+	}
+
+
+	// tab on/off
+	document.addEventListener("visibilitychange", function() {
+		document.title = document.hidden ? "bye" : "hi";
+
+		if (document.visibilityState === 'visible') {
+			pause = false;
+		} else {
+			pause = true;
+		}
+
+	});
+
+
+	// events
+	window.addEventListener( 'resize', onWindowResize, false );
+	// resize event
+	function onWindowResize() {
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+		renderer.setSize( window.innerWidth, window.innerHeight );
+	}
+
+
+	// render loop
+	var animate = function () {
+		if(paused) return;
+
+		// RAF
+		requestAnimationFrame( animate );
+		renderer.render( scene, camera );
+
+		// blink
+		// if ( Math.random() > 0.985) { blink(); }
+	} // end loop
+
+
+
+	// init
+	function init() {
+
+		setTimeout(function() {
+			createhead(0);
+		}, 100);
+		setTimeout(function() {
+			createhead(1);
+		}, 300);
+		setTimeout(function() {
+			createhead(2);
+		}, 400);
+		setTimeout(function() {
+			createhead(3);
+		}, 500);
+		setTimeout(function() {
+			createhead(4);
+		}, 600);
+		setTimeout(function() {
+			createhead(5);
+		}, 700);
+
+		// var sunak, mogg;
+		// //
+
+		animate();
+	}
+
+
+	// blink eyes
+	function blink(){
+			// eyes
+		eyematerial = new THREE.MeshPhongMaterial({
+		  color: 0x000000
+		 ,shininess:500
+		});
+		eyematerial.map.needsUpdate = true;
+		// reye.scale.set(0.1,0.1,0.1)
+		// leye.scale.set(0.1,0.1,0.1)
+		setTimeout(function() {
+		// reye.scale.set(1,1,1);
+		// leye.scale.set(1,1,1);
+				// eyes
+		eyematerial = new THREE.MeshPhongMaterial({
+		  color: 0x000000
+		 ,shininess:500
+		});
+			eyematerial.map.needsUpdate = true;
+		}, 200);
+	}
+
+</script>
+</body>
+</html>
