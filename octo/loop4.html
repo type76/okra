@@ -1,0 +1,61 @@
+<style>canvas { border: 1px solid }</style>
+
+
+<canvas id=c width=600 height=400></canvas>
+<script>
+// t=c.getContext`2d`,onmousedown=o=>(C=X=x,D=Y=y,m=1,P=[]),onmouseup=e=>m=o=0,onmousemove=o=>(x=o.offsetX,y=o.offsetY),setInterval`for(m?(Z=P.push([x-X,y-Y]),X=x,Y=y,o=0):o++,A=C,B=D,c.width^=i=0;i<o+Z;i++)e=P[i%Z],A+=e[0],B+=e[1],i>o&&t.lineTo(A,B);t.stroke()`
+
+
+m=0;
+o=0;
+C=0;
+D=0;
+Z=[{}];
+P=[{}];
+t=c.getContext`2d`;
+
+// Mousedown: m flag = 1, save start position in X, Y and C, D
+onpointerdown=e=>(C=X=x,D=Y=y,m=1,P=[]);
+
+// Mouseup: m flag and animation offset = 0
+onpointerup=e=>m=o=0;
+
+// Mousemove: set current position (x, y)
+onpointermove=e=>(x=e.offsetX,y=e.offsetY);
+
+// Loop
+setInterval(z=>{
+
+  // if mouse down: 
+  // save current position (x, y) in p, copy it in X, Y
+  // save current offset in P
+  // keep animation offset (o) at 0
+  if(m){
+    Z=P.push([x-X,y-Y]);
+    X=x;
+    Y=y;
+    o=0;
+  }
+  else{
+    o++;
+  }
+  
+  // Save start position in A, B
+  A=C;
+  B=D;
+  
+  // Reset canvas, draw as many lines as the number of items in P, starting from the current position, and update it
+  for(c.width^=i=0;i<o+Z;i++){
+    z=P[i%Z];
+    A+=z[0];
+    B+=z[1];
+    if(i>o)t.lineTo(A,B);
+  }
+  
+  // Render, increment offset
+  t.stroke();
+})
+
+
+
+</script>
