@@ -1,0 +1,585 @@
+
+
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+
+	<title>bird</title>
+
+	<style>
+	body { margin: 0; background-color: #333; user-select:none;}
+	canvas { width: 100%; height: 100% }
+	#box {position: absolute; top: 0; z-index: 3;
+		color: red; display:inline-block;}
+		button {padding: 12px; position: absolute; margin: 4px;}
+		#bumpcanvas {position: absolute; top: 130px; display: block; width: 256px; height: 128px;}
+		#colcanvas {position: absolute; top: 0px; display: block; width: 256px; height: 128px;}
+	</style>
+</head>
+<body>
+
+	<script src="js/three.min.js"></script>
+	<script src="js/OrbitControls.js"></script>
+
+	<script>
+	document.addEventListener( 'pointerdown', onPointerDown );
+	document.addEventListener( 'pointerup', onPointerUp );
+	document.addEventListener( 'pointermove', onPointerMove );
+
+	function onPointerDown( event ) {mousedown=true; xjump();}
+	function onPointerUp( event ) {mousedown=false;}
+	function onPointerMove( event ) {}
+
+	var mousedown = false;
+	var thisframe = 0;
+	var frame = 0;
+	var birdposy = 0;
+	var flying = false;
+	let gravity = 0.9;
+	let bird_dy = 0;
+
+	function xjump() {
+		flying = true;
+		head.scale.set(1.05, 0.85, 1.05);
+		bird_dy = bird_dy+20;
+		quickflap();
+		setTimeout(function() {
+			head.scale.set(1, 0.9, 1);
+		}, 40);
+	}
+
+	function apply_gravity() {
+	    if (birdbody.position.y < 0.01 ) {birdbody.position.y = 0; flying = false;} 
+	    bird_dy = bird_dy - gravity;
+	    birdbody.position.y += (bird_dy-birdbody.position.y)*0.4;
+	    if (birdbody.position.y < 0 ) {birdbody.position.y = 0;}
+	}
+
+// jump
+function jump() {
+	if (jumping) {
+		console.log('dbljump'); 
+		// fly();
+		return
+	}
+	
+	// 1st pose
+	jumping = true;
+	head.scale.set(1.1, 0.8, 1.1);
+	// legarray[0].scale.y = 3;
+	// legarray[1].scale.y = 3;
+	legs.position.y = 0.6;
+	head.position.y = -1.3;
+
+	// 2nd
+	setTimeout(function() {
+		head.scale.set(0.9, 1, 0.9);
+		head.position.y = 0.6;
+		// legarray[0].scale.y = 7;
+		// legarray[1].scale.y = 7;
+		birdbody.position.y = 10;
+		// legarray[2].rotation.x = 0.6;
+		// legarray[3].rotation.x = 0.6;
+		head.rotation.x = -0.05;
+	}, 100);
+	
+	// 3rd
+	setTimeout(function() {
+		head.scale.set(0.85, 1, 0.85);
+		// legarray[0].scale.y = 6;
+		// legarray[1].scale.y = 6;
+	}, 220);
+
+	// 4th
+	setTimeout(function() {
+		birdbody.position.y = 10;
+		head.scale.set(1.1, 0.85, 1.1);
+		head.rotation.x = 0;
+		legs.position.y = 0;
+		head.rotation.x = 0;
+	}, 400);
+
+	// 5th
+	setTimeout(function() {
+		if (!flying) {birdbody.position.y = 0;}
+		
+		// legarray[0].rotation.x = legarray[1].rotation.x = legarray[2].rotation.x = legarray[3].rotation.x = 0;
+		
+	}, 450);
+
+	// 6th
+	setTimeout(function() {
+		head.scale.set(1, 0.9, 1);
+		jumping = false;
+		blink();
+	}, 600);
+
+}
+
+
+// fly
+function fly() {
+	flying = true;
+	birdbody.position.y = birdbody.position.y+10;	
+}
+
+// play tweet sound
+function tweetsnd() {
+	var rndcheck = Math.floor(Math.random()*5);
+
+	if (rndcheck>3) {
+		chirp = new Audio("twit.wav");
+	} else {
+		chirp = new Audio("twit2.wav");
+	}
+	
+	chirp.volume = 0.4;
+	chirp.play();
+}
+
+
+// globals
+var jumping = false;
+var paused = false;
+var oldframe = 1;
+var newrotation = 0;
+var loadedcol = false;
+const images = [];
+const bimages = [];
+var imageCount = 0;
+
+// photo array
+var syncData = [
+	{"col":"bird.png", "bmp":"birdbmp.png"},
+	// {"col":"cruella2.png", "bmp":"cruellabmp2.png"},
+];
+var player = {
+	count:10,
+	fps:2,
+};
+
+// parse array
+syncData.forEach(function(element, index){
+	const colimage = new Image();
+	colimage.src = element.col;
+	colimage.onload = ()=>{ 
+		imageCount += 1;
+		if(imageCount === syncData.length){ 
+			coltx.drawImage(images[0], 0, 0);
+			loadedcol = true;
+		}
+	}
+
+    //
+    const bmpimage = new Image();
+    bmpimage.src = element.bmp;
+    bmpimage.onload = ()=>{ 
+    	if(imageCount === syncData.length && loadedcol == true){ 
+    		bumptx.drawImage(bimages[0], 0, 0);
+    		init();
+    	}
+    }        
+
+    images.push(colimage); 
+    bimages.push(bmpimage); 
+});
+
+
+// overlays
+var blinkimage = new Image();
+blinkimage.src = 'birdeye.png';
+var birdbeak = new Image();
+birdbeak.src = 'birdbeak.png';
+var birdwings = new Image();
+birdwings.src = 'birdwings.png';
+var birdtail = new Image();
+birdtail.src = 'birdtail.png';
+
+
+
+
+// face bump canvas
+var bumpcanvas = document.createElement('canvas');
+bumptx = bumpcanvas.getContext('2d');
+bumpcanvas.id = "bumpcanvas";
+bumpcanvas.width = 256;
+bumpcanvas.height = 128;
+// document.body.appendChild(bumpcanvas);
+
+// face colour canvas
+var colcanvas = document.createElement('canvas');
+coltx = colcanvas.getContext('2d');
+colcanvas.id = "colcanvas";
+colcanvas.width = 256;
+colcanvas.height = 128;
+// document.body.appendChild(colcanvas);
+
+// scene
+var scene = new THREE.Scene();
+var clock = new THREE.Clock();
+
+var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+
+var renderer = new THREE.WebGLRenderer({
+	alpha: true,
+	antialias: true
+});
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// camera
+camera.position.z = 140;
+camera.position.y = 20;
+
+// controls
+controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enablePan = false;
+controls.enableDamping = true;
+controls.dampingFactor = 0.9;
+controls.maxDistance = 300;
+controls.minDistance = 40;
+
+// light
+var light3 = new THREE.PointLight( 0xffefef, 0.5 );
+light3.position.set( 20, 1, 30 );
+scene.add( light3 );
+//
+var light = new THREE.AmbientLight( 0x666666 );
+scene.add( light );
+
+// backlight
+var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.2 );
+directionalLight.position.set(0,200,100)
+directionalLight.rotation.set(-Math.PI/2,0,0)
+scene.add( directionalLight );
+
+let birdbody = new THREE.Group();
+birdbody.scale.set(1,0.9,1)
+scene.add( birdbody );
+
+// head
+let head = new THREE.Group();
+head.scale.set(1,0.9,1)
+birdbody.add( head );
+
+let legs = new THREE.Group();
+birdbody.add( legs );
+
+
+// sphere face 
+var geometry = new THREE.SphereBufferGeometry( 20, 150, 150 );
+var material = new THREE.MeshStandardMaterial( { 
+	metalness: 0,
+	roughness: 2,
+	map : new THREE.CanvasTexture(colcanvas),
+	displacementMap: new THREE.CanvasTexture(bumpcanvas),
+	displacementScale: 11
+} );
+
+face = new THREE.Mesh( geometry, material );
+face.rotation.z = Math.PI/0.1;
+face.position.set(0,35,0)
+head.add( face );
+face.material.map.magFilter = THREE.NearestFilter;
+face.material.map.minFilter = THREE.NearestFilter;
+
+// outline
+omaterial = new THREE.MeshStandardMaterial( { 
+	color:0x000000,
+	roughness: 100,
+	displacementMap: new THREE.CanvasTexture(bumpcanvas),
+	displacementScale: 11,
+	side:THREE.BackSide
+} );
+oface = new THREE.Mesh( geometry, omaterial );
+oface.position.set(0,35,0)
+oface.scale.set(1.06,1.06,1.06);
+head.add( oface );
+
+
+
+
+//
+var loader = new THREE.BufferGeometryLoader();
+loadobj('leg');
+loadobj('foot');
+legarray = [];
+
+function loadobj(obj){
+	loader.load(
+		obj+'.json',
+		function ( geometry ) {
+			var material = new THREE.MeshBasicMaterial( { 
+				// map: texture,gradientMap: gradTexture
+				color:0x000000
+			} );
+			lleg = new THREE.Mesh( geometry, material );
+			lleg.scale.set(6,6,6)
+			lleg.rotation.set(0,-Math.PI*0.6,0)
+			lleg.position.set(-5,0,0)
+			legs.add( lleg );
+			legarray.push(lleg)
+			//
+			rleg = lleg.clone();
+			rleg.scale.set(6,6,6)
+			rleg.rotation.set(0,-Math.PI*0.4,0)
+			rleg.position.set(5,0,0)
+			legs.add( rleg );
+			legarray.push(rleg)
+		},
+		function ( xhr ) {},
+		function ( xhr ) { console.log( 'An error happened' );} );
+}
+
+
+  // ground plane
+  var geometry = new THREE.PlaneGeometry( 400, 400);
+  window.groundtex = new THREE.TextureLoader().load( 'ground.png' );
+  groundtex.magFilter = THREE.NearestFilter;
+  groundtex.minFilter = THREE.NearestFilter;
+  groundtex.wrapS = groundtex.wrapT = THREE.RepeatWrapping;
+  var cmaterial = new THREE.MeshLambertMaterial( { 
+  	alphaTest:0.5,
+  	transparent:true,
+    color: 0xff0000,
+    map:groundtex,
+  } );
+  ground = new THREE.Mesh( geometry, cmaterial );
+  ground.rotation.set(-Math.PI/2,0,0);         
+  // ground.castShadow = true;
+  // ground.receiveShadow = true;
+  scene.add( ground );
+
+	// visibility change
+	document.addEventListener("visibilitychange", function() {
+		document.title = document.hidden ? "bye" : "hi";
+
+		if (document.visibilityState === 'visible') {
+			pause = false;
+		} else {
+			pause = true;
+		}
+
+	});
+
+
+	// events
+	window.addEventListener( 'resize', onWindowResize, false );
+	// resize event
+	function onWindowResize() {
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+		renderer.setSize( window.innerWidth, window.innerHeight );
+	}
+
+
+
+
+	function rotatebird() {
+		flap()
+		head.scale.y = 0.8;
+		head.rotation.x = Math.random()*0.3;
+		
+		setTimeout(function() {
+			head.scale.y = 0.9;
+			birdbody.rotation.x = 0;
+			head.rotation.y = (-Math.PI*2)-((Math.random()*0.5)-0.5);
+			legs.scale.y = 0.8;
+		}, 60);
+
+		setTimeout(function() {
+			legs.scale.y = 1;
+			legs.rotation.y = head.rotation.y;
+		}, 120);
+
+	}
+
+
+// init
+function init() {
+	setdefaultpose();
+	animate();
+}
+
+
+function setdefaultpose() {
+	coltx.drawImage(images[0], 0, 0);
+	coltx.drawImage(birdwings, 0, 0);
+	bumptx.drawImage(bimages[0], 0, 0);
+	bumptx.drawImage(birdwings, 0, -128);
+	coltx.drawImage(birdtail, 0, 0);
+	bumptx.drawImage(birdtail, 0, -128);
+
+	face.material.map.needsUpdate = true;
+	face.material.displacementMap.needsUpdate = true;
+	oface.material.displacementMap.needsUpdate = true;
+}
+
+
+
+// flap tail
+function tail() {
+	if (typeof birdwings == "undefined" && typeof birdtail == "undefined") {
+		return
+	}
+
+	var flp = (Math.random()*10)-10;
+	coltx.drawImage(images[thisframe], 0, 0);
+	bumptx.drawImage(bimages[thisframe], 0, 0);
+	coltx.drawImage(birdtail, 0, flp);
+	bumptx.drawImage(birdtail, 0, -128+flp);
+	coltx.drawImage(birdwings, 0, 0);
+	bumptx.drawImage(birdwings, 0, -128);
+
+	face.material.map.needsUpdate = true;
+	face.material.displacementMap.needsUpdate = true;
+	oface.material.displacementMap.needsUpdate = true;
+
+	// back to normal
+	setTimeout(function() {
+		setdefaultpose()	
+	}, 200);
+
+}
+
+
+// flap wings twice
+function quickflap() {
+	if (typeof birdwings == "undefined" && typeof birdtail == "undefined") {
+		return
+	}
+
+	coltx.drawImage(images[thisframe], 0, 0);
+	bumptx.drawImage(bimages[thisframe], 0, 0);
+	coltx.drawImage(birdwings, 0, 20);
+	bumptx.drawImage(birdwings, 0, -128+20);
+	coltx.drawImage(birdtail, 0, 0);
+	bumptx.drawImage(birdtail, 0, -128);
+
+	face.material.map.needsUpdate = true;
+	face.material.displacementMap.needsUpdate = true;
+	oface.material.displacementMap.needsUpdate = true;
+
+	// back to normal
+	setTimeout(function() {
+		setdefaultpose()
+	}, 20);
+
+}
+
+
+// flap wings
+function flap() {
+	if (typeof birdwings == "undefined" && typeof birdtail == "undefined") {
+		return
+	}
+
+	var flp = Math.random()*15;
+	coltx.drawImage(images[thisframe], 0, 0);
+	bumptx.drawImage(bimages[thisframe], 0, 0);
+	coltx.drawImage(birdwings, 0, flp);
+	bumptx.drawImage(birdwings, 0, -128+flp);
+	coltx.drawImage(birdtail, 0, 0);
+	bumptx.drawImage(birdtail, 0, -128);
+
+	face.material.map.needsUpdate = true;
+	face.material.displacementMap.needsUpdate = true;
+	oface.material.displacementMap.needsUpdate = true;
+
+	// back to normal
+	setTimeout(function() {
+		setdefaultpose()
+	}, 80);
+
+}
+
+
+// tweet beak
+function tweet(){
+
+	if (typeof birdbeak == "undefined") {
+		return
+	}
+	
+
+	// open beak
+	coltx.drawImage(birdbeak, 0, 0);
+	bumptx.drawImage(birdbeak, 0, -128);
+	face.material.map.needsUpdate = true;
+	oface.material.displacementMap.needsUpdate = true;
+	// tweetsnd();
+
+	// back to normal
+	setTimeout(function() {
+		setdefaultpose()
+	}, 60);
+}
+
+
+// blink eyes
+function blink(){
+
+	if (typeof blinkimage == "undefined") {
+		return
+	}
+
+	// closed eye
+	coltx.drawImage(blinkimage, 0, 0);
+	face.material.map.needsUpdate = true;
+
+	// back to normal
+	setTimeout(function() {
+		setdefaultpose()
+	}, 400);
+}
+
+
+
+
+	// render loop
+	var animate = function () {
+		if(paused) return;
+
+		// RAF
+		requestAnimationFrame( animate );
+		renderer.render( scene, camera );
+
+		apply_gravity()
+
+		// animations
+	if (!flying || !jumping) {
+		// idle
+
+		// blink
+		if ( Math.random() > 0.995) { blink(); }
+
+		// twitch
+		if ( Math.random() > 0.99) { blink(); rotatebird(); }
+
+		// tweet
+		if ( Math.random() > 0.99) { tweet(); }
+
+		// flap
+		if ( Math.random() > 0.98) { flap(); }
+
+		// tail
+		if ( Math.random() > 0.97) { tail(); }
+	
+	} 
+
+	// bird gravity/ground
+	if (flying || jumping) {		
+		groundtex.offset.y -= 0.002;
+		if (birdbody.position.y<25 && birdbody.position.y > 0.01) {
+			legarray[2].rotation.x = birdbody.position.y/20;
+			legarray[3].rotation.x = birdbody.position.y/20;	
+		}
+		if (birdbody.position.y < 0.01) {birdbody.position.y = 0; flying = false;}
+	}
+
+
+	} // end loop
+
+</script>
+</body>
+</html>
