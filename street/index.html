@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>3</title>
+  <meta charset="utf-8">
+  <meta name="msapplication-tap-highlight" content="no"/>
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+  <style>
+  @font-face {
+  font-family: 'uni0553-webfont';
+  src: url('font/uni0553-webfont.eot');
+  src: url('font/uni0553-webfont.eot?#iefix') format('embedded-opentype'),
+  url('font/uni0553-webfont.woff') format('woff'),
+  url('font/uni0553-webfont.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-smooth: never;
+  }
+
+  body {
+    color: #ccc;
+    /*font-family: sans-serif;*/
+    font-family: 'uni0553-webfont';
+    font-size: 16px;
+    text-align: center;
+    background: #333;
+    margin: 0px;
+    overflow: hidden;
+    user-select:none;
+  }
+  body.shooting {
+    background: #222;
+  }
+  #points {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    display: block;
+    width: 100%;
+    color: #eee;
+    font-family: 'uni0553-webfont';
+    text-align: center;
+    padding: 8px;
+    margin:0;
+    font-size: 1.8em;
+    text-shadow: 0 3px 3px rgba(0,0,0,0.2);
+  }
+  button#playbtn {z-index: 999; margin-bottom: 40px; background: transparent; border: none; outline: none; font-family: monospace; color: #eee; position: absolute;
+    cursor: pointer; display: block; width: 100px; height: 100px;
+    transform: scale(0.7);}
+    button.off .playsvg {display: block !important;}
+    button.off .pausesvg {display: none;}
+    button.on .playsvg {display: none;}
+    button.on .pausesvg {display: block !important;}
+    button svg path {fill:#fff;}
+    video, audio {display: none;}
+    #mask {position: absolute; top: 0; right: 0;
+     /*visibility: hidden;*/
+   }
+  </style>
+</head>
+<body>	
+  <button id="playbtn" class="off">
+    <svg class="playsvg" height="100" preserveAspectRatio="none" width="100" xmlns="http://www.w3.org/2000/svg"><path d="m19.55 14.85v70.3l60.95-35.15z" fill="#fff"/></svg>
+    <svg class="pausesvg" style="display: none;" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none" width="100" height="100"><defs><path d="M33.05 39.05h-12v43h12v-43m22.5 0h-12v43h12v-43z" id="a" fill="#fff"/></defs><use xlink:href="#a" transform="translate(-11.25 -42.9) scale(1.53488)"/></svg>
+  </button>
+
+  <p id="points">0</p>
+
+  <video controls id="video" src="1e.mp4"></video>
+  <audio controls id="explosionwav" src="blip2.wav"></audio>
+
+<canvas id="mask"></canvas> 
+
+  <script src="js/three.min.js"></script>
+
+  <script>
+  // player
+player = {
+  width:128,
+  size:32,
+  count:4,
+  fps:12
+};
+
+
+  let videoEl = document.getElementById('video');
+
+  var canvas = document.getElementById('mask');
+  var context = canvas.getContext('2d');
+ 
+  var cw = 256;
+  var ch = 128;
+  canvas.width = cw;
+  canvas.height = ch;
+ 
+
+
+// scroll zoom
+window.addEventListener( 'wheel', onMouseWheel, false );
+function onMouseWheel( event ) {
+  camera.position.z += event.deltaY * 0.005;
+}
+
+
+
+// play button
+var btn = document.getElementById('playbtn');
+btn.addEventListener('mousedown', function(){
+  playDown();
+},false);
+
+
+// play/pause click events
+function playDown(e){
+  if ( btn.classList != "on") {
+    videoEl.play();
+    btn.classList = "on";
+  } else {
+    videoEl.pause();
+    btn.classList = "off";
+  }
+}
+
+var isMouseDown = false;
+var points = 0;
+var camera, scene, renderer, mouse, clock;
+var npc;
+// number of horizontal npcs
+var xnum = 6;
+// spawning multiplier [lower is more frequent, up to 0.99999]
+var npcAmount = 0.997;
+
+
+
+// START <<<<
+init();
+createScene();
+animate();
+
+function init() {
+
+// camera
+camera = new THREE.PerspectiveCamera( 20, window.innerWidth / window.innerHeight, 0.1, 1000 );
+camera.position.set( 0, 0, 35 );
+
+// scene
+scene = new THREE.Scene();
+clock = new THREE.Clock();
+
+
+// light
+var light = new THREE.AmbientLight( 0xffffff );
+light.intensity = 2;
+scene.add( light );
+
+// renderer
+renderer = new THREE.WebGLRenderer( { antialias: true, alpha:true, transparent:true } );
+renderer.setPixelRatio( window.devicePixelRatio );
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+renderer.autoClear = false;
+
+//raycaster
+raycaster = new THREE.Raycaster();
+mouse = new THREE.Vector2();
+// groups
+cursor = new THREE.Group();
+scene.add( cursor );
+
+}
+
+
+
+
+function createNPC(num, name, startpos, health, zstartpos) {
+  var texname = 'dadrun.png'
+  npctex = new THREE.TextureLoader().load( texname );
+  npctex.magFilter = THREE.NearestFilter;
+  npctex.minFilter = THREE.NearestFilter;
+  npctex.repeat.x = 1 / 4;
+  var geometry = new THREE.PlaneBufferGeometry( 2, 2, 1 );
+  var material = new THREE.MeshBasicMaterial({ 
+    map:npctex 
+    ,transparent:true
+    // ,clippingPlanes: [clip_layer]
+ });
+  npc1 = new THREE.Mesh( geometry, material );
+  npc.add( npc1 );
+  // npc1.renderOrder = 4;
+
+// add game vars
+npc1.position.z = 12-num*5;
+npc1.name = name;
+npc1.num = num;
+npc1.zstartpos = npc1.position.z;
+npc1.startpos = startpos;
+npc1.position.x = startpos;
+npc1.health = health;
+npc1.oghealth = health;
+npc1.dead = true;
+npc1.started = false;
+npc1.visible = false;
+// move verticals
+if (num > 5) {
+  npc1.position.z = zstartpos; 
+  npc.zstartpos = zstartpos;
+}
+}
+
+
+
+function createScene() {
+// 3D plane for NPCs
+// var size = 30;
+// var divisions = 3;
+// var gridHelper = new THREE.GridHelper( size, divisions );
+var gridHelper = new THREE.Object3D();
+gridHelper.rotation.x = Math.PI*0.05;
+scene.add( gridHelper );
+
+// 
+// var maskwidth = 30;
+// var maskheight = 20;
+// var holeheight = 4.8;
+// var holewidth = 9.7;
+
+// // // Clipping plane (mask)
+// var clip_shape = new THREE.Shape();
+// clip_shape.moveTo( -maskwidth, -maskheight );
+// clip_shape.lineTo( maskwidth, -maskheight );
+// clip_shape.lineTo( maskwidth, maskheight );
+// clip_shape.lineTo( -maskwidth, maskheight );
+// clip_shape.lineTo(-maskwidth, -maskheight );
+// var clip_hole = new THREE.Shape();
+// clip_hole.moveTo( -holewidth, -holeheight );
+// clip_hole.lineTo( holewidth, -holeheight );
+// clip_hole.lineTo( holewidth, holeheight );
+// clip_hole.lineTo( -holewidth, holeheight);
+// clip_hole.lineTo( -holewidth, -holeheight );
+// clip_shape.holes.push(clip_hole);
+// var clip_plane = new THREE.ShapeBufferGeometry( clip_shape );
+// var clip_material = new THREE.MeshBasicMaterial({
+// // colorWrite: false, //remove to see
+// color:0xff0000
+// // ,wireframe:true
+// });
+// clip_layer = new THREE.Mesh( clip_plane, clip_material );
+// scene.add( clip_layer );
+// clip_layer.renderOrder = 400;
+// clip_layer.position.z = 5;
+// clip_layer.material.depthTest = true;
+// clip_layer.material.colorWrite = false;
+
+ 
+  // // video plane
+var vtexture = new THREE.VideoTexture( videoEl );
+vtexture.magFilter = THREE.NearestFilter;
+vtexture.minFilter = THREE.NearestFilter;
+var vgeometry = new THREE.PlaneBufferGeometry( 20, 10, 1, 1 );
+bgmaterial = new THREE.MeshBasicMaterial( { 
+  map : vtexture
+} );
+vplane = new THREE.Mesh( vgeometry, bgmaterial );
+// vplane.position.set(0,0,-0.001)
+scene.add( vplane );
+vplane.material.depthWrite = false;
+
+
+// NPC group
+npc = new THREE.Object3D();
+gridHelper.add(npc);
+npc.renderOrder = -2;
+npc.depthTest = false;
+
+
+// createNPC(num, name, startpos, health, zpos)
+createNPC(0, 'helicopter', -8, 1, 0);
+createNPC(1, 'car', 9, 1, 0);
+createNPC(2, 'tinydude', -11, 1, 0);
+createNPC(3, 'lildude', 12, 1, 0);
+createNPC(4, 'dude', -14, 1, 0);
+createNPC(5, 'closedude', 15, 1, 0);
+createNPC(6, 'magazine', 3, 1, -20);
+createNPC(7, 'bonus', -5, 1, -20);
+
+// cursor object
+selection = new THREE.Group();
+selection.position.y = 0.2;
+scene.add( selection );
+
+// explode sprite
+var explodetex = 'explode.png'
+exptex = new THREE.TextureLoader().load( explodetex );
+exptex.magFilter = THREE.NearestFilter;
+exptex.minFilter = THREE.NearestFilter;
+var geometry = new THREE.PlaneBufferGeometry( 2, 2, 1 );
+var material = new THREE.MeshBasicMaterial({ map:exptex, transparent:true });
+explodeobj = new THREE.Mesh( geometry, material );
+gridHelper.add( explodeobj );
+explodeobj.visible = false;
+// explodeobj.material.depthWrite = false;
+explodeobj.renderOrder = 200;
+explodeobj.material.depthTest = false;
+
+
+// // overlay
+// masktex = new THREE.CanvasTexture(canvas);
+oltexture = new THREE.CanvasTexture(canvas);
+
+var olgeometry = new THREE.PlaneBufferGeometry( 20, 10, 1, 1 );
+let olmaterial = new THREE.MeshBasicMaterial( { 
+  // color: 0xffff00,
+  map:vtexture,
+  alphaMap: oltexture,
+  alphaTest: 0.5,
+  transparent:true
+   } );
+let olvideo = new THREE.Mesh( olgeometry, olmaterial );
+scene.add( olvideo );
+olvideo.renderOrder = 99;
+olvideo.depthTest = false;
+//
+  document.body.appendChild(canvas);
+}
+
+
+
+
+// click events
+function mouseDown(e){
+  document.body.classList = 'shooting';
+  isMouseDown = true;
+  mouse.x = ( e.pageX / window.innerWidth ) * 2 - 1;
+  mouse.y = - ( e.pageY / window.innerHeight ) * 2 + 1;
+  var npcintersects = getIntersects();
+  if ( npcintersects.length > 0 && isMouseDown) {
+    hitNPC(npcintersects[0]);
+  }   
+}
+
+function mouseUp(e){
+  isMouseDown = false;
+  document.body.classList = 'off';
+}
+// events
+window.addEventListener( "resize", onWindowResize, false );
+window.addEventListener('mousedown', mouseDown);
+window.addEventListener('touchstart', mouseDown);
+window.addEventListener('mouseup', mouseUp);
+window.addEventListener('touchend', mouseUp);
+
+// event mouse move [computers]
+window.addEventListener('mousemove', e => {
+  mouse.x = ( e.pageX / window.innerWidth ) * 2 - 1;
+  mouse.y = - ( e.pageY / window.innerHeight ) * 2 + 1;
+  movesprite(e);
+});
+
+
+// event touch move [mobile]
+window.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const touches = e.targetTouches;
+  for (let i = 0; i < touches.length; i++) {
+    mouse.x = ( e.touches[0].pageX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( e.touches[0].pageY / window.innerHeight ) * 2 + 1;
+    movesprite(e);
+
+  }
+}, false);
+
+// movesprite
+function movesprite(e) {
+  // camera.rotation.y = mouse.x/20;
+  // camera.rotation.x = -mouse.y/20;
+// hit npc
+var npcintersects = getIntersects();
+if ( npcintersects.length > 0 && isMouseDown) {
+  hitNPC(npcintersects[0]);
+}      
+}
+
+
+// NPC intersect
+function getIntersects() {
+  mouse.set( mouse.x, mouse.y, 0.5 );
+  raycaster.setFromCamera( mouse, camera );
+  return raycaster.intersectObject( npc, true );
+}
+
+
+/// HIT NPC object
+function hitNPC(obj) {
+if ( btn.classList != "on") { return } // play/pause
+
+// hurt
+obj.object.health = obj.object.health - 1;
+  // die
+  if (obj.object.health < 1) {
+    points++;
+    document.getElementById('points').innerHTML = points;
+    obj.object.dead = true;
+    explosion(obj.object.position);
+  }
+
+}
+
+
+
+// show explosion sprite
+function explosion(obj) {
+explodeobj.visible = true;
+explodeobj.position.x = obj.x;
+explodeobj.position.y = obj.y;
+explodeobj.position.z = obj.z;
+document.getElementById('explosionwav').play();
+
+  setTimeout(function() {
+    explodeobj.visible = false;
+  }, 100);
+}
+
+
+// resize
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+
+
+// loop
+function animate() {
+  requestAnimationFrame( animate );
+  renderer.render( scene, camera );
+  if (btn.classList != "on") { return } // play/pause
+
+  gameloop();
+
+}
+
+
+
+function gameloop() {
+// time
+  var t = clock.getElapsedTime();
+// mask canvas
+  context.filter = 'invert(1) contrast(2)';
+  context.drawImage(videoEl,0,0,cw,ch);
+  oltexture.needsUpdate = true;
+
+
+
+// move NPCs
+for ( var i = 0; i < npc.children.length; i ++ ) {
+
+  // offset sprite sheet
+  npc.children[i].material.map.offset.x = Math.floor( ( t * player.fps ) % player.count ) * 1 / player.count;
+
+
+  // random spawn
+  if ( Math.random() > npcAmount ) { 
+    if (npc.children[i].started != true) {
+      npc.children[i].visible = true;
+      npc.children[i].started = true;
+      npc.children[i].dead = false;
+    }
+  }
+
+// move if alive
+if (npc.children[i].dead != true) {
+
+  // up/down 
+  if ( npc.children[i].num >= xnum) {
+    npc.children[i].position.z +=  0.2;
+  }
+
+  // move left/right
+  if ( npc.children[i].startpos>0 && npc.children[i].num < xnum) { // right side
+    npc.children[i].position.x -=  0.2;
+    npc.children[i].scale.x = -1;
+  } 
+  if (npc.children[i].startpos<0 && npc.children[i].num < xnum) {// left side
+    npc.children[i].position.x +=  0.2;
+  }
+
+
+}// end move if alive
+
+
+// return back to start state if dead for X
+if (npc.children[i].dead  == true && npc.children[i].num < xnum) {
+  npc.children[i].position.x = npc.children[i].startpos;
+  npc.children[i].health = npc.children[i].oghealth;
+  npc.children[i].position.z = npc.children[i].zstartpos;
+}
+
+// return back to start state if dead for Y
+if (npc.children[i].dead  == true && npc.children[i].num >= xnum) {
+  npc.children[i].position.z = npc.children[i].zstartpos;
+  npc.children[i].health = npc.children[i].oghealth;
+}
+
+// check bounds for X
+if (npc.children[i].position.x < -20 || npc.children[i].position.x> 20) {
+  npc.children[i].dead = true;
+}
+// // check bounds for Y
+if (npc.children[i].position.z >= 18 && npc.children[i].num >= xnum){ 
+  npc.children[i].dead = true;
+  npc.children[i].position.z = npc.children[i].zstartpos;
+}
+
+// console.log(npc.children[i].position.z)
+// npc.children[i].lookAt(camera.position);
+
+// isdead hide
+if (npc.children[i].dead == true) {
+  npc.children[i].visible = false;
+  npc.children[i].started = false;
+} else {
+  npc.children[i].visible = true;
+}
+
+// // visibility
+// if (npc.children[i].position.x < -npc.children[i].startpos || npc.children[i].position.x > npc.children[i].startpos || npc.children[i].position.z > 16){
+//     npc.children[i].visible = false;
+// }
+
+
+} // end for loop
+
+
+
+}// gameloop
+
+
+
+</script>
+</body>
+</html>
