@@ -1,0 +1,102 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>slitscan</title>
+    <style>
+        body { margin: 0; overflow:hidden; user-select:none;}
+        canvas { width: 100vw; height: 100vh; display: block; }
+    </style>
+    
+</head>
+
+<body>
+    
+    <canvas></canvas>
+</body>
+
+</html>
+
+<script>
+var vx = 0;
+var vv = 0;
+
+
+// events
+window.addEventListener('mousemove', e => {
+    e.preventDefault();
+    setcontrol(e.offsetX, e.offsetY)
+});
+
+window.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const touches = e.targetTouches;
+    for (let i = 0; i < touches.length; i++) {
+        setcontrol(touches[i].pageX, touches[i].pageY)
+    }
+}, false);
+
+// convert position to vx
+function setcontrol(x, y) {
+    vx = (y/100)+1;
+}
+
+//
+    var img = new Image();
+    img.onload = start;
+    img.src = "v38pV.jpg";
+    function start() {
+
+        var canvas = document.querySelector("canvas");
+        var ctx = canvas.getContext("2d");
+
+        function mix(a, b, l) {
+            return a + (b - a) * l;
+        }
+
+        function upDown(v) {
+            return Math.sin(v) * 0.5 + 0.5;
+        }
+
+        function render(time) {
+            time *= 0.0002;
+            resize(canvas);
+
+            var t1 = time;
+            var t2 = time * 0.37;
+            // lerp vx
+            vv += (vx - vv)*0.2;
+
+            for (var dstY = 0; dstY < canvas.height; ++dstY) {
+                let v = (dstY / canvas.height)/vv;
+
+                const off1 = Math.sin((v + 0.5) * mix(3, 12, upDown(t1))) * 300;
+                const off2 = Math.sin((v + 0.5) * mix(3, 12, upDown(t2))) * 300;
+                const off = off1 + off2;
+
+                let srcY = (dstY * img.height / canvas.height + off);
+                srcY = Math.max(0, Math.min(img.height - 1, srcY));
+                ctx.drawImage(
+                    img,
+                    0, srcY, img.width, 1,
+                    0, dstY, canvas.width, 1);
+            }
+
+            requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
+
+        function resize(canvas) {
+            var width = canvas.clientWidth;
+            var height = canvas.clientHeight;
+            if (width != canvas.width || height != canvas.height) {
+                canvas.width = width;
+                canvas.height = height;
+            }
+        }
+    }
+</script>
