@@ -1,0 +1,105 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body { margin: 0; }
+        canvas { width: 100vw; height: 100vh; display: block; }
+        #xvar {position: absolute; color: #fff; margin: 1em;}
+    </style>
+    <!-- <script src="iife_easings.js"></script> -->
+</head>
+
+<body>
+    <!-- <p id="xvar">0</p> -->
+    <canvas></canvas>
+</body>
+
+</html>
+
+<script>
+var vx = 0;
+
+
+// events
+window.addEventListener('mousemove', e => {
+    e.preventDefault();
+    setcontrol(e.offsetX, e.offsetY)
+});
+
+window.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const touches = e.targetTouches;
+    for (let i = 0; i < touches.length; i++) {
+        setcontrol(touches[i].pageX, touches[i].pageY)
+    }
+}, false);
+
+// convert position to sound
+function setcontrol(x, y) {
+    // console.log(x,y)
+    vx = (y/100)+1;
+    // document.getElementById("xvar").innerHTML = vx;
+}
+
+//
+    var img = new Image();
+    img.onload = start;
+    img.src = "v38pV.jpg";
+    function start() {
+
+        var canvas = document.querySelector("canvas");
+        var ctx = canvas.getContext("2d");
+
+        function mix(a, b, l) {
+            return a + (b - a) * l;
+        }
+
+        function upDown(v) {
+            return Math.sin(v) * 0.5 + 0.5;
+        }
+
+        function render(time) {
+            time *= 0.0002;
+            resize(canvas);
+
+            var t1 = time;
+            var t2 = time * 0.37;
+            
+            for (var dstY = 0; dstY < canvas.height; ++dstY) { // for each line in the canvas
+
+                let v = (dstY / canvas.height)/vx; // v is value that goes 0 to 1 down the canvas
+
+                // v = easings[EASING_METHOD](v);
+
+                const off1 = Math.sin((v + 0.5) * mix(3, 12, upDown(t1))) * 300;
+                const off2 = Math.sin((v + 0.5) * mix(3, 12, upDown(t2))) * 300;
+                const off = off1 + off2;
+
+                let srcY = (dstY * img.height / canvas.height + off);
+                srcY = Math.max(0, Math.min(img.height - 1, srcY));// clamp srcY to be inside the image
+                ctx.drawImage(
+                    img,
+                    0, srcY, img.width, 1,
+                    0, dstY, canvas.width, 1);
+            }
+
+            requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
+
+        function resize(canvas) {
+            var width = canvas.clientWidth;
+            var height = canvas.clientHeight;
+            if (width != canvas.width || height != canvas.height) {
+                canvas.width = width;
+                canvas.height = height;
+            }
+        }
+    }
+</script>
