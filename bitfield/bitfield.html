@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>bit</title>
+	<style type="text/css">
+  @font-face {
+    font-family: 'uni0553-webfont';
+    src: url('font/uni0553-webfont.eot');
+    src: url('font/uni0553-webfont.eot?#iefix') format('embedded-opentype'), url('font/uni0553-webfont.woff') format('woff'), url('font/uni0553-webfont.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+	
+	body {
+		background-color: #222;
+	 margin: 0; user-select:none; overflow: hidden;
+		font-family: monospace;}
+		canvas {
+			position: absolute;
+			top: 0; left: 0; z-index: 1;}
+			button {position: absolute; z-index: 2; cursor: pointer; display: block;
+				width: 50px; height: 50px;
+				font-family: 'uni0553-webfont';
+				text-transform: uppercase; color: #fff;
+				background-color: rgba(0,0,0,0.3);
+				border: none; outline: none; padding: 0;}
+			#lfbtn {left: 0;}
+			#rtbtn {left: 52px;}
+			#txt {position: absolute; top: 0px; 
+			left: 114px; font-size: 2em; padding: 0;
+			margin: 0; font-family: 'uni0553-webfont';
+			color: #fff; z-index: 2;}
+			</style>
+		</head>
+		<body>
+ 
+		<button id="lfbtn">-</button>
+		<button id="rtbtn">+</button>
+		<p id="txt">bitfield9</p>
+
+		<div class="joy" id="joy"></div>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.7.3/nipplejs.min.js"></script>
+
+<script>
+
+// joystick
+var options = {
+	zone: document.body,
+	dataOnly:true,
+};
+
+// initialise joystick
+var joy = nipplejs.create(options);
+var direction = 'none';
+
+// joystick events
+joy.on('move dir start', function (evt, data) {
+if (data.force>0) {
+	force = data.force; 
+}
+
+if (data.direction){ 
+
+if (data.direction.x=='right' && force<10 && xmove < cnv.width-pixel_size && wontHitAnythingWhite(1, 0)) {//222
+		direction = data.direction.x;
+		xmove += 1;       
+		updatepos(); 
+}// R
+
+if (data.direction.x=='left' && force<10 && xmove > 0 && wontHitAnythingWhite(-1, 0)) {   
+		direction = data.direction.x;
+		xmove -= 1;       
+		updatepos(); 
+}// L
+
+if (data.direction.y=='up' && force<10 && ymove > 0 && wontHitAnythingWhite(0, -1)) {   
+		direction = data.direction.y;
+		ymove -= 1;       
+		updatepos(); 
+}// U
+
+if (data.direction.y=='down' && force<10 && ymove < cnv.width-pixel_size && wontHitAnythingWhite(0, 1)) {   
+		direction = data.direction.y;
+		ymove += 1;       
+		updatepos(); 
+}// D
+
+}// if direction
+});// on start
+
+
+
+// release joystick
+joy.on('end', function (evt, data) {
+	direction = 'none';
+});// on end
+
+// keys
+keyboard = {
+	_pressed: {},
+
+	LEFT: 37,
+	UP: 38,
+	RIGHT: 39,
+	DOWN: 40,
+
+	isDown: function(keyCode) {
+		return this._pressed[keyCode];
+	},
+	onKeydown: function(event) {
+		this._pressed[event.keyCode] = true;
+	},
+	onKeyup: function(event) {
+		delete this._pressed[event.keyCode];
+	}
+};
+
+
+// vars
+let pixel_size = 1;
+let namenum = 0;
+let xmove = 0;
+let ymove = pixel_size;
+let nchk = 0;
+const mainwidth = 128;
+
+
+// player movement update
+function playerupdate() {
+	if (keyboard.isDown(keyboard.LEFT) && xmove > 0 && wontHitAnythingWhite(-1, 0))   {
+		xmove -= 1;       
+		updatepos();     
+	}
+	if (keyboard.isDown(keyboard.RIGHT) && xmove < cnv.width-pixel_size && wontHitAnythingWhite(1, 0))   {
+		xmove += 1; 
+		updatepos();
+	}
+	if (keyboard.isDown(keyboard.UP) && ymove > 0 && wontHitAnythingWhite(0, -1))   {
+		ymove -= 1; 
+		updatepos();
+	}
+	if (keyboard.isDown(keyboard.DOWN) && ymove < cnv.width-pixel_size && wontHitAnythingWhite(0, 1))   {
+		ymove += 1; 
+		updatepos();
+	}
+
+
+}// move player
+
+
+// update position
+function updatepos(){
+
+    context.drawImage(mapcnv, 0, 0, cnv.width, cnv.width);
+
+    // check collisions
+    pcontext.clearRect(0,0,cnv.width,cnv.width);
+    pcontext.fillStyle = "yellow";
+    pcontext.fillRect(xmove, ymove, pixel_size, pixel_size);  
+	context.drawImage(pcnv, 0, 0);
+
+	// update texture
+	plane.material.map.needsUpdate = true;	
+}
+
+
+// events
+window.addEventListener('keyup', function(event) { keyboard.onKeyup(event); }, false);
+window.addEventListener('keydown', function(event) { keyboard.onKeydown(event); }, false);
+
+// btn event
+document.getElementById("lfbtn").addEventListener("click", decrease, false );
+
+// increase event
+document.getElementById("rtbtn").addEventListener("click", increase, false );
+
+// increase function
+function increase() {
+	if (namenum > ctxMap.length-2) {namenum= -1;}
+	namenum++;
+	newtexture(ctxMap[namenum].valueOf());
+	document.getElementById("txt").innerHTML = ctxMap[namenum];
+}
+
+
+// next map
+function decrease() {
+	if (namenum < 1) {namenum= ctxMap.length;}
+	namenum--;
+	newtexture(ctxMap[namenum].valueOf());
+	document.getElementById("txt").innerHTML = ctxMap[namenum];
+}
+
+
+// list
+const bitFunctions = {
+	"bitfield9": (x, y) => (x ^ y) % 9,
+	"bitfield5": (x, y) => (x ^ y) % 5,
+	"bitfield17": (x, y) => (x ^ y) % 17,
+	"bitfield33": (x, y) => (x ^ y) % 33,
+	"ecksor7": (x, y) => (x | y) % 7,
+	"ecksor17": (x, y) => (x | y) % 17,
+	"ecksor29": (x, y) => (x | y) % 29,
+	"Serkle24": (x, y) => (x * y) & 24,
+	"Serkle47": (x, y) => (x * y) & 47,
+	"Serkle64": (x, y) => (x * y) & 64,
+	"Beams2": (x, y) => (x * 2) % y,
+	"Beams31": (x, y) => (x * 64) % y,
+	"Retrofield": (x, y) => ((x-128) * 64) % (y-128),
+	"Checker23": (x, y) => (x ^ y) & 23,
+	"Noise_4_7": (x, y) => ((x * y) ** 4) % 7,
+	"Noise_5_99": (x, y) => ((x * y) ** 5) % 99,
+	"Noise_9_3": (x, y) => ((x * y) ** 9) % 3,
+	"Rotate_4": (x, y) => (x % y) % 4,
+	"Rotate_20": (x, y) => (y % x) % 20,
+	"40_Rotate": (x, y) => 40 % (x % y),
+}
+
+
+// create list of names
+const ctxMap = [];
+Object.keys(bitFunctions).forEach(name => {
+	ctxMap.push(name);
+});	
+
+
+// bit canvas	
+cnv = document.createElement('canvas');
+cnv.width = mainwidth;
+cnv.height = cnv.width;
+context = cnv.getContext('2d');
+context.fillStyle = "white";
+context.fillRect(0, 0, cnv.width, cnv.width); 
+context.fillStyle = "black";
+for (let x = 0; x < cnv.width; x++) {
+	for (let y = 0; y < cnv.width; y++) {
+		if ((x ^ y) % 9) {
+			context.fillRect(x*pixel_size, y*pixel_size, pixel_size, pixel_size);
+		}
+	}
+}
+
+// backup map canvas
+mapcnv = document.createElement('canvas');
+mapcontext = mapcnv.getContext('2d');
+mapcnv.width = mainwidth;
+mapcnv.height = mainwidth;
+mapcnv.height = cnv.width;
+mapcontext.drawImage(cnv, 0, 0, cnv.width, cnv.width);
+
+
+// player canvas
+pcnv = document.createElement('canvas');
+pcontext = pcnv.getContext('2d');
+pcnv.width = mainwidth;
+pcnv.height = mainwidth;
+pcontext.fillStyle = "yellow";
+pcontext.fillRect(xmove, ymove, pixel_size, pixel_size);
+context.drawImage(pcnv, 0, 0);
+
+
+// make new texture
+function newtexture(name){
+
+	context.fillStyle = "white";
+	context.fillRect(0, 0, cnv.width, cnv.width);
+	context.fillStyle = "black";
+
+	for (let x = 0; x < cnv.width; x++) {
+		for (let y = 0; y < cnv.width; y++) {
+			if(bitFunctions[name](x,y)) {
+				context.fillRect(
+					x*pixel_size,
+					y*pixel_size,
+					pixel_size,
+					pixel_size
+					);
+			}
+		}
+	}
+	
+	// add new map to mapcontext
+	mapcontext.drawImage(cnv, 0, 0, cnv.width, cnv.width);
+	// add player to map
+	pcontext.fillStyle = "yellow";
+	pcontext.fillRect(xmove, ymove, pixel_size, pixel_size);
+	context.drawImage(pcnv, 0, 0);
+
+    // refresh plane texture
+    plane.material.map.needsUpdate = true;	
+}
+
+
+
+// three.js 
+function startscene(){
+	scene = new THREE.Scene();
+	camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+
+	renderer = new THREE.WebGLRenderer({alpha:true});
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( renderer.domElement );
+
+	// camera
+	camera.position.z = 0.7;
+
+	// plane
+	const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+	const material = new THREE.MeshBasicMaterial( { 
+		map:new THREE.CanvasTexture(cnv)
+	} );
+	plane = new THREE.Mesh( geometry, material );
+	scene.add( plane );
+
+	// texture
+	plane.material.map.magFilter = THREE.NearestFilter;
+	plane.material.map.minFilter = THREE.NearestFilter;
+
+}// startscene
+
+
+// handle window resize
+window.addEventListener('resize', function(){
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	camera.aspect	= window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+}, false)
+
+// zoom
+window.addEventListener( 'wheel', onMouseWheel, false );
+
+function onMouseWheel( event ) {
+	camera.position.z -= event.deltaY * 0.005;
+	if (camera.position.z < 0.2) {camera.position.z = 0.2}
+		if (camera.position.z > 5) {camera.position.z = 5}
+}
+
+
+// render loop
+let animate = function () {
+	playerupdate();
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
+};
+
+// start
+setTimeout(function() {
+	startscene();
+	animate(); 
+}, 10);
+
+
+
+//
+function wontHitAnythingWhite(dx, dy) {
+const imageData = context.getImageData(xmove + dx, ymove + dy, pixel_size, pixel_size);
+const analysis = analyzeImageDataColors(imageData);
+
+return analysis.colors.indexOf("rgb(255,255,255)") === -1;
+
+function analyzeImageDataColors(imageData) {
+    const ret = {
+        colors: [],
+        transparents: {},
+        colorMap: {},
+    };
+    for (let x = 0; x < imageData.width; x++) {
+        for (let y = 0; y < imageData.height; y++) {
+            const i = (x + y * imageData.width) * 4;
+            if (imageData.data[i + 3] !== 0) {
+                const r = imageData.data[i];
+                const g = imageData.data[i + 1];
+                const b = imageData.data[i + 2];
+                const color = `rgb(${r},${g},${b})`;
+                let colorIdx = ret.colors.indexOf(color);
+                if (colorIdx === -1) {
+                    colorIdx = ret.colors.length;
+                    ret.colors.push(color);
+                }
+                ret.colorMap[`${x}_${y}`] = colorIdx;
+            } else {
+                ret.transparents[`${x}_${y}`] = 1;
+            }
+        }
+    }
+    return ret;
+}
+}
+</script>
+</body>
+</html>

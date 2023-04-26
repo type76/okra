@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>bit</title>
+	<style type="text/css">
+	body {background-color: #e80c7a; margin: 0; user-select:none;
+		font-family: monospace;}
+	canvas {width: 256px; width: 256px; position: absolute;
+		top: 0; left: 0; z-index: 1;}
+	button {position: absolute; z-index: 2; cursor: pointer;
+		border: none; outline: none; font-family: monospace; padding: 10px;}
+	p {text-indent: 1em; line-height: 2em;}
+	span {margin-left: 3em;}
+	</style>
+</head>
+<body>
+
+	<p><button id="btn">1</button> <span>cycle</span></p>
+	<p><button id="increasebtn">1</button> <span>pixel size</span></p>
+	<p id="algo"></p>
+
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.js"></script>
+
+	<script>
+let pixel_size = 1;
+let namenum = 0;
+
+
+// btn event
+document.getElementById("btn").addEventListener("click", cycle, false );
+
+// increase event
+document.getElementById("increasebtn").addEventListener("click", increaseclick, false );
+
+// increase function
+function increaseclick() {
+	pixel_size++;
+	if (pixel_size > 8) {pixel_size = 1;}
+	document.getElementById("increasebtn").innerHTML = pixel_size;
+	newtexture(ctxMap[namenum].valueOf());
+
+}
+
+
+// click on body
+// document.body.addEventListener("click", cycle, false );
+function cycle() {
+	if (namenum > ctxMap.length-2) {namenum= -1;}
+	namenum++;
+	newtexture(ctxMap[namenum].valueOf());
+	document.getElementById("btn").innerHTML = namenum;
+}
+
+
+// list
+const bitFunctions = {
+    "bitfield9": (x, y) => (x ^ y) % 9,
+    "bitfield5": (x, y) => (x ^ y) % 5,
+    "bitfield17": (x, y) => (x ^ y) % 17,
+    "bitfield33": (x, y) => (x ^ y) % 33,
+    "ecksor7": (x, y) => (x | y) % 7,
+    "ecksor17": (x, y) => (x | y) % 17,
+    "ecksor29": (x, y) => (x | y) % 29,
+    "Serkle24": (x, y) => (x * y) & 24,
+    "Serkle47": (x, y) => (x * y) & 47,
+    "Serkle64": (x, y) => (x * y) & 64,
+    "Beams2": (x, y) => (x * 2) % y,
+    "Beams31": (x, y) => (x * 64) % y,
+    "Retrofield": (x, y) => ((x-128) * 64) % (y-128),
+    "Checker23": (x, y) => (x ^ y) & 23,
+    "Noise_4_7": (x, y) => ((x * y) ** 4) % 7,
+    "Noise_5_99": (x, y) => ((x * y) ** 5) % 99,
+    "Noise_9_3": (x, y) => ((x * y) ** 9) % 3,
+    "Rotate_4": (x, y) => (x % y) % 4,
+    "Rotate_20": (x, y) => (y % x) % 20,
+    "40_Rotate": (x, y) => 40 % (x % y),
+}
+
+
+// create list of names
+    const ctxMap = [];
+    Object.keys(bitFunctions).forEach(name => {
+		ctxMap.push(name);
+	});	
+
+
+// bit canvas	
+	cnv = document.createElement('canvas');
+	cnv.width = 256;
+	cnv.height = cnv.width;
+	context = cnv.getContext('2d');
+	for (let x = 0; x < cnv.width; x++) {
+		for (let y = 0; y < cnv.width; y++) {
+			if ((x ^ y) % 9) {
+				context.fillRect(x*pixel_size, y*pixel_size, pixel_size, pixel_size);
+			}
+		}
+	}
+
+
+// make new texture
+function newtexture(name){
+    context.clearRect(0,0,cnv.width,cnv.width);
+    for (let x = 0; x < cnv.width; x++) {
+        for (let y = 0; y < cnv.width; y++) {
+            if(bitFunctions[name](x,y)) {
+                context.fillRect(
+                    x*pixel_size,
+                    y*pixel_size,
+                    pixel_size,
+                    pixel_size
+                );
+            }
+        }
+    }
+
+    // refresh plane texture
+	plane.material.map.needsUpdate = true;
+	//
+	// console.log(name, bitFunctions[name])
+}
+
+
+
+// three.js 
+function startscene(){
+	scene = new THREE.Scene();
+	camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+
+	renderer = new THREE.WebGLRenderer({alpha:true});
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( renderer.domElement );
+
+	// camera
+	camera.position.z = 0.7;
+
+	// plane
+	const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+	const material = new THREE.MeshBasicMaterial( { 
+		map:new THREE.CanvasTexture(cnv)
+	} );
+	plane = new THREE.Mesh( geometry, material );
+	scene.add( plane );
+
+	// texture
+	plane.material.map.magFilter = THREE.NearestFilter;
+	plane.material.map.minFilter = THREE.NearestFilter;
+
+}// startscene
+
+
+// handle window resize
+window.addEventListener('resize', function(){
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	camera.aspect	= window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+}, false)
+
+// render loop
+let animate = function () {
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
+};
+
+// start
+setTimeout(function() {
+	startscene();
+	animate(); 
+}, 10);
+
+</script>
+</body>
+</html>
