@@ -2,7 +2,7 @@
 
 a collection of 3D and design work 
 
-[https://type76.github.io/okra/](https://type76.github.io/okra/biodome
+https://type76.github.io/okra/biodome
 https://type76.github.io/okra/bitfield
 https://type76.github.io/okra/camera
 https://type76.github.io/okra/canopy
@@ -20,4 +20,4 @@ https://type76.github.io/okra/tuktuk
 https://type76.github.io/okra/wayo
 https://type76.github.io/okra/wayo3D
 https://type76.github.io/okra/wobbly
-https://type76.github.io/okra/words)
+https://type76.github.io/okra/words
