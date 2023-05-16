@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>zx</title>
+	<style>
+	body { margin: 0; background: #222;
+	background: radial-gradient(ellipse at center, #333333 0%,#000000 150%);}
+	/*#tcanvas {display: none;}*/
+	#tcanvas {position: absolute;
+		top: -280px;
+	 /*visibility: hidden;*/
+	}
+</style>
+</head>
+<body>
+	<canvas class="playpause"></canvas>
+
+	<script src="three.min.js"></script>
+	<script src="OrbitControls.js"></script>
+	<script src="gifler.min.js"></script>
+
+
+
+	<script>
+
+	var updatescreen = false;
+	
+	// Load GIF
+	gifler('zxloader.gif').animate('canvas.playpause');
+	// set canvas id
+	document.getElementsByClassName('playpause')[0].id = 'tcanvas';
+	window.tcanvas = document.getElementsByClassName('playpause')[0];
+	tcanvas.width = 128;
+	tcanvas.height = 128;
+  	tctx = tcanvas.getContext('2d');
+	
+
+	// 3D
+	const scene = new THREE.Scene();
+	const camera = new THREE.PerspectiveCamera( 32, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+	const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( renderer.domElement );
+
+	camera.position.z = 8;
+	camera.position.y = 2;
+	const controls = new THREE.OrbitControls(camera, renderer.domElement);
+	controls.maxDistance = 60;
+    controls.minDistance = 2;
+
+	zxgroup = new THREE.Group();
+	zxgroup.name = "zxgroup";
+	zxgroup.rotation.y = Math.PI;
+	zxgroup.position.y = -1;
+	scene.add( zxgroup );
+
+	maingroup = new THREE.Group();
+	maingroup.rotation.x = -Math.PI/2;
+	maingroup.rotation.y = -Math.PI/2;
+	maingroup.rotation.z = Math.PI;
+	maingroup.position.y = 1.5;
+	maingroup.position.z = -3.5;
+	scene.add(maingroup)
+	//
+	//
+	groundgroup = new THREE.Group();
+	groundgroup.position.z = -3.5;
+	scene.add( groundgroup );
+
+	raycaster = new THREE.Raycaster();
+	mouse = new THREE.Vector2();
+
+
+	// buttons
+	makebutton(-4, 'rwbtn');
+	makebutton(4, 'ffbtn');
+	// makebutton(1.1, 'playbtn');
+	// makebutton(-0.6, 'stopbtn');
+
+
+
+	//
+	function makebutton(num, btname){
+		// texture
+		var bgtexture = new THREE.TextureLoader().load( ''+btname+'.png' );  
+
+			//plane geometry
+			let plgeometry = new THREE.PlaneBufferGeometry( 1.8, 1.8, 1 );
+
+		//plane material
+		let plmaterial = new THREE.MeshBasicMaterial( { 
+			map:bgtexture, 
+			alphaTest:0.5,
+			color : 0xff0000
+
+		} );
+
+		//plane object3D
+		let plane = new THREE.Mesh( plgeometry, plmaterial );
+		plane.name = btname;
+		plane.position.set(num,0,0);
+		// if (btname == 'playbtn') {
+		// 	plane.position.set(num,-1,5.8);
+		// 	plane.rotation.set(-Math.PI/2,0,0);
+		// }
+		// if (btname == 'stopbtn') {
+		// 	plane.position.set(num,-1,5.8);
+		// 	plane.rotation.set(-Math.PI/2,0,0);
+		// }
+		groundgroup.add( plane );
+
+	}
+
+
+	createLights()
+	function createLights() {
+	  globalLight = new THREE.AmbientLight(0x333333, 1);
+	  shadowLight = new THREE.PointLight(0xffffff, 0.8);
+	  xLight = new THREE.PointLight(0xffffff, 0.8);
+	  shadowLight.position.set(0, 10, 7);
+	  xLight.position.set(0, 2, -7);
+	  scene.add(globalLight);
+	  scene.add(shadowLight);
+	  scene.add(xLight);
+	}
+
+	// window resize
+	window.addEventListener('resize', function(){
+	  camera.aspect = window.innerWidth / window.innerHeight;
+	  camera.updateProjectionMatrix();
+	  renderer.setSize( window.innerWidth, window.innerHeight );
+	}, false)
+
+
+
+
+	// loader type
+	var xloader = new THREE.BufferGeometryLoader();
+
+	// tape body
+	xloader.load(
+		'tapebody2.json',
+		function ( geometry ) {
+			var texture = new THREE.TextureLoader().load( 'tape-bg1.png' );
+			texture.magFilter = THREE.NearestFilter;
+			texture.minFilter = THREE.NearestFilter;
+			var material = new THREE.MeshLambertMaterial( { map: texture,
+				side:THREE.DoubleSide, } );
+			window.cassettetape = new THREE.Mesh( geometry, material );
+			cassettetape.scale.set(0.5,0.5,0.5)
+			cassettetape.position.set(1,0,0)
+			maingroup.add( cassettetape );
+		},
+		function ( xhr ) {
+		},
+		function ( xhr ) {
+			console.log( 'An error happened' );
+		}
+		);
+
+	// load model
+	const loader = new THREE.ObjectLoader();
+
+	loader.load(
+		"zx.json",
+		function ( obj ) {
+			zxgroup.add( obj );
+			
+
+	    obj.traverse( function ( child ) {
+	        if ( child instanceof THREE.Mesh ) {
+				child.material.map.magFilter = THREE.NearestFilter;
+				child.material.map.minFilter = THREE.NearestFilter;
+	        }
+	    } );
+
+
+		},
+		function ( xhr ) {console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );},
+		function ( err ) {console.error( 'An error happened' );}
+	);
+
+	// tape ribbon
+	var geometry = new THREE.PlaneBufferGeometry( 0.3, 5, 1 );
+
+	// transparent texture
+	var ribbontex = new THREE.TextureLoader().load( 'tex2.png' );
+	ribbontex.magFilter = THREE.NearestFilter;
+	ribbontex.minFilter = THREE.LinearMipMapLinearFilter;
+	ribbontex.repeat.set( 1/6, 22.5/6 );
+	ribbontex.wrapS = ribbontex.wrapT = THREE.RepeatWrapping;
+	var cmaterial = new THREE.MeshBasicMaterial( {
+	 map:ribbontex,
+	 color:0xff0000
+	  } );
+	ribbon = new THREE.Mesh( geometry, cmaterial );
+	ribbon.rotation.set(-Math.PI/2,Math.PI/2,0)
+	ribbon.position.set(2.2,0.2,0);
+	maingroup.add( ribbon );
+
+	// shadow
+	var shgeometry = new THREE.PlaneBufferGeometry( 6, 6 );
+	var shmaterial = new THREE.MeshBasicMaterial( { 
+		map: new THREE.TextureLoader().load( 'shadow.png' ),
+		opacity:0.5, transparent:true
+		 } );
+	shadow = new THREE.Mesh( shgeometry, shmaterial );
+	shadow.rotation.set(-Math.PI/2,0,Math.PI/2)
+	shadow.position.set(1,-0.3,0);
+	maingroup.add( shadow );
+
+
+
+
+	var mousedown = false;
+	let selectedObject = null;
+	const pointer = new THREE.Vector2();
+
+	document.addEventListener( 'pointerdown', onPointerDown );
+	document.addEventListener( 'pointerup', onPointerUp );
+	document.addEventListener( 'pointermove', onPointerMove );
+
+
+	function onPointerMove( event ) {
+
+		if ( selectedObject ) {
+
+			selectedObject.material.color.set( '#ff0000' );
+			selectedObject = null;
+
+		}
+
+		pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+		pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+		raycaster.setFromCamera( pointer, camera );
+
+		const intersects = raycaster.intersectObject( groundgroup, true );
+		// console.log(intersects)
+
+		if ( intersects.length > 0 ) {
+				const res = intersects.filter( function ( res ) {
+				return res && res.object;
+			} )[ 0 ];
+
+			if ( res && res.object ) {
+				selectedObject = res.object;
+				selectedObject.material.color.set( '#ffcc00' );
+			}
+
+		}
+
+	}
+
+
+	function onPointerUp() {mousedown=false;}
+
+
+	function onPointerDown( event ) {
+		mousedown=true;
+
+		pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+		pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+		raycaster.setFromCamera( pointer, camera );
+
+		const intersects = raycaster.intersectObject( groundgroup, true );
+
+		if ( intersects.length > 0 ) {
+
+		  	if (intersects[0].object.name == 'rwbtn') {
+		  		choosetape(-1)
+		  	}
+		  	if (intersects[0].object.name == 'ffbtn') {
+		  		choosetape(+1)
+		  	}
+		  	// if (intersects[0].object.name == 'playbtn') {
+		  	// 	swapscreen('trapdoor.png');
+
+		  	// }
+		  	// if (intersects[0].object.name == 'stopbtn') {
+		  	// 	swapscreen('hq.png');
+		  	// }
+		}
+
+	}
+
+	// computer run btn
+	function runtape(argument) {
+		console.log('scoo')
+	}
+
+
+	var tapes = [
+		"tape-bg1.png",
+		"tape-bg2.png",
+		"tape-bg3.png",
+		"tape-bg4.png",
+		"tape-bg5.png",
+		"tape-bg6.png",
+		"tape-bg7.png",
+	];
+	var tapenumber = 0;
+
+	
+	function choosetape(argument) {
+		tapenumber = tapenumber+argument;
+		if (tapenumber > tapes.length-1) {tapenumber = 0;}
+		if (tapenumber < 0) {tapenumber = tapes.length-1;}
+
+		if (tapenumber == 1){
+			loadup('enduro.png');
+		}
+		if (tapenumber == 2){
+			loadup('hq.png');
+		}
+		if (tapenumber == 3){
+			loadup('trapdoor.png');
+		}
+		if (tapenumber == 4){
+			loadup('rtype.png');			
+		}
+		if (tapenumber == 5){
+			loadup('hq.png')
+		}
+
+		cassettetape.material.map = new THREE.TextureLoader().load( tapes[tapenumber] );
+		cassettetape.material.map.update = true;
+		screen.visible = true;
+		// screen.material.map.needsUpdate = true;
+	}
+
+
+function loadup(argument) {
+	updatescreen = true;
+	runscreen();
+	setTimeout(function () {
+		updatescreen = false;
+		swapscreen(argument);
+	}, 2000)
+}
+function swapscreen(argument) {
+		screen.material.map =  new THREE.TextureLoader().load( argument );
+		screen.material.map.needsUpdate = true;
+}
+function runscreen() {
+		screen.material.map = new THREE.CanvasTexture(tcanvas);
+		screen.material.map.needsUpdate = true;
+}
+	// screen
+	function createscreen() {
+		var screengeometry = new THREE.PlaneBufferGeometry( 2, 2 );
+		var screenmaterial = new THREE.MeshBasicMaterial( { 
+			map : new THREE.CanvasTexture(tcanvas),
+			 } );
+		window.screen = new THREE.Mesh( screengeometry, screenmaterial );
+		screen.rotation.set(0,Math.PI,0)
+		screen.position.set(0.8,0.85,0.61);
+		screen.scale.set(0.75,0.5,0.75);
+		zxgroup.add( screen );
+		screen.visible = false;
+		screenmaterial.map.magFilter = THREE.NearestFilter;
+		screenmaterial.map.minFilter = THREE.NearestFilter;
+		
+		//
+		base_image = new Image();
+		base_image.src = 'hq.png';
+		base_image.onload = function(){
+			tctx.drawImage(base_image, 0, 0);
+		}
+	}
+
+	createscreen();
+
+	function animate() {
+		requestAnimationFrame( animate );
+		renderer.render( scene, camera );
+		if (updatescreen) {
+			screen.material.map.needsUpdate = true;
+		}
+	};
+
+	animate();
+</script>
+</body>
+</html>
