@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+	<title>eyes</title>
+
+<style>
+  body {margin: 0; overflow: hidden;}
+  #hud {
+  		position: absolute;
+      z-index: 99;
+  }
+</style>
+
+</head>
+<body>
+
+<script src="js/three.min.js"></script>
+<!-- <script src="js/OrbitControls.js"></script> -->
+<script src="js/GLTFLoader.js"></script>
+<script src="js/tween.min.js"></script>
+
+<script>
+function mouth_m() {
+if (mesh.morphTargetInfluences[1] === 0) {
+  tweenm.start();}
+if (mesh.morphTargetInfluences[2] === 1) {tweena0.start();}
+if (mesh.morphTargetInfluences[0] === 1) {tweensmile0.start();}
+}
+
+function mouth_a() {
+if (mesh.morphTargetInfluences[1] === 1) {
+  tweenm0.start();}
+if (mesh.morphTargetInfluences[2] === 0) {
+  tweena.start();}
+if (mesh.morphTargetInfluences[0] === 1) {tweensmile0.start();}
+}
+
+function mouth_v() {
+if (mesh.morphTargetInfluences[1] === 1) {
+  tweenm0.start();}
+if (mesh.morphTargetInfluences[2] === 1) {
+  tweena0.start();}
+if (mesh.morphTargetInfluences[0] === 0) {tweensmile.start();}
+}
+
+function mouth_d() {
+if (mesh.morphTargetInfluences[1] === 1) {
+  tweenm0.start();}
+if (mesh.morphTargetInfluences[2] === 1) {
+  tweena0.start();}
+if (mesh.morphTargetInfluences[0] === 1) {tweensmile0.start();}
+}
+
+
+// mouth shape tweens
+var tweenm = createTween(1, 0, 1);
+var tweena0 = createTween(2, 1, 0);
+var tweensmile0 = createTween(0, 1, 0);
+var tweenm0 = createTween(1, 1, 0);
+var tweena = createTween(2, 0, 1);
+var tweensmile = createTween(0, 0, 1);
+
+
+
+
+
+// tweenings
+function createTween(influence, start, end) {
+  return new TWEEN.Tween({val: start})
+  .to({val: end}, 150)
+  .onUpdate(function(value) {
+mesh.morphTargetInfluences[influence] = value.val;
+  }).onComplete(function(value) {
+    value.val = start;
+  });
+}
+//
+
+//raycaster
+let raycaster = new THREE.Raycaster();
+
+
+var pupils = [];
+var mouse = new THREE.Vector2();
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera( 
+75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+var renderer = new THREE.WebGLRenderer();
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+camera.position.z = 5;
+
+// var controls = new THREE.OrbitControls(camera, renderer.domElement);
+//
+var light = new THREE.AmbientLight( 0xeeeeee );
+scene.add( light );
+//
+var slight = new THREE.PointLight( 0xffffff, 1, 100 );
+slight.position.set( 0, 50, 80 );
+scene.add( slight );
+slight.castShadow = true;
+
+
+// main group
+eyes = new THREE.Group();
+eyes.position.z = -4;
+eyes.position.y = 1;
+scene.add( eyes );
+
+botheyes = new THREE.Group();
+botheyes.position.x = -2.5;
+eyes.add( botheyes );
+
+
+
+// cursor object
+var mouseGeometry = new THREE.SphereGeometry(0.1, 22, 22);
+var mouseMaterial = new THREE.MeshBasicMaterial({
+color: 0xffff00
+});
+mouseMesh = new THREE.Mesh(mouseGeometry, mouseMaterial);
+scene.add(mouseMesh);	
+
+
+// eye balls
+for ( var i = 0; i < 2; i ++ ) {
+// white
+var geometry = new THREE.SphereBufferGeometry( 2, 32, 32 );
+var material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
+var ball = new THREE.Mesh( geometry, material );
+botheyes.add( ball );
+ball.position.x = i*5;
+ball.rotation.y = i*8;
+
+if (i<1) {ball.scale.set(1, 1, 1);} 
+else {ball.scale.set(1.05, 1.05, 1.05);}
+
+// black
+var geometry = new THREE.SphereBufferGeometry( 0.6, 32, 32 );
+var material = new THREE.MeshBasicMaterial( {color: 0x222222} );
+var black = new THREE.Mesh( geometry, material );
+black.position.z = 1.9;
+black.scale.z = 0.5;
+ball.add( black );
+//
+pupils.push(ball);
+
+}
+
+//
+var loader = new THREE.GLTFLoader();
+var filepath = "2moot.glb";
+loader.load(filepath, function (gltf) {
+
+  gltf.scene.traverse(function (node) {
+      if (node.isMesh) mesh = node;
+  });
+
+mesh.material = new THREE.MeshLambertMaterial( {
+color: 0xff0000,
+side  : THREE.DoubleSide,
+morphTargets: true
+} ) ;
+
+mesh.scale.set(10,10,10);
+mesh.position.set(0,-2,-4);
+mesh.rotation.set(Math.PI,0,0);
+scene.add(mesh);
+mesh.morphTargetInfluences[0] = 1;
+}); // mouth gltf loader
+
+//
+
+//plane geometry
+let plgeometry = new THREE.PlaneBufferGeometry( 10, 10, 1, 1 );
+
+//plane material
+let plmaterial = new THREE.MeshBasicMaterial( { 
+wireframe:true,
+// transparent:true,
+// opacity:0
+} );
+
+//plane object3D
+let plane = new THREE.Mesh( plgeometry, plmaterial );
+plane.name = 'plane';
+plane.name = 'plane';
+scene.add( plane );
+
+
+//
+function movehero(x, y) {
+    mouseMesh.position.x = x;
+    mouseMesh.position.y = y;
+for ( var i = 0; i < pupils.length; i ++ ) { 
+  pupils[i].lookAt(mouseMesh.position) // follow mouse pos
+}
+
+}
+
+
+
+
+// update touch
+  let updateTouchCoordinates = function(evt) {
+  stopwarp = false; 
+  stretch();
+  mouse.x = ( evt.touches[0].pageX / window.innerWidth ) * 2 - 1;
+  mouse.y = - ( evt.touches[0].pageY / window.innerHeight ) * 2 + 1;
+  raycaster.setFromCamera( mouse, camera );
+  let intersects = raycaster.intersectObject( plane );
+  if (intersects.length > 0) { movehero(intersects[ 0 ].point.x, intersects[ 0 ].point.y); }
+};
+
+
+// update mouse
+let updateMouseCoordinates = function(evt) {
+  evt.preventDefault();
+
+  mouse.x = ( evt.clientX / window.innerWidth ) * 2 - 1;
+  mouse.y = - ( evt.clientY / window.innerHeight ) * 2 + 1;
+  raycaster.setFromCamera( mouse, camera );
+  let intersects = raycaster.intersectObject( plane );
+  if (intersects.length > 0) { movehero(intersects[ 0 ].point.x, intersects[ 0 ].point.y); }
+};
+
+window.addEventListener('touchstart', updateTouchCoordinates);
+window.addEventListener('touchmove', updateTouchCoordinates);
+window.addEventListener( 'mousemove', updateMouseCoordinates, false );
+// // follow mouse
+// window.addEventListener('mousemove', updateMouse, false);
+
+// function updateMouse() {
+// event.preventDefault();
+// mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+// mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+// // sphere follows mouse
+// var vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+// vector.unproject( camera );
+// var dir = vector.sub( camera.position ).normalize();
+// var distance = - camera.position.z / dir.z;
+// var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+// mouseMesh.position.copy(pos);
+
+// for ( var i = 0; i < pupils.length; i ++ ) { 
+// pupils[i].lookAt(pos) // follow mouse pos
+// }
+
+// }
+
+// resize
+window.addEventListener('resize', onWindowResize, false);
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+
+
+//
+	var animate = function () {
+		requestAnimationFrame( animate );
+		renderer.render( scene, camera );
+      TWEEN.update();
+
+		 
+// move the eyes
+  for ( var i = 0; i < pupils.length; i ++ ) { 
+    if ( Math.random() > 0.99 ) { 
+      pupils[i].children[0].scale.y = 0.001; 
+      pupils[i].rotation.y = Math.random()/2; 
+      pupils[i].rotation.x = Math.random()/2; 
+    }  else {
+      pupils[i].children[0].scale.y += ( 1 - pupils[i].children[0].scale.y ) * 0.2;
+    }
+  }
+
+if (mouseMesh.position.y>0 && mouseMesh.position.x<0) {
+  mouth_d();
+}
+
+if (mouseMesh.position.y>0 && mouseMesh.position.x>0) {
+  mouth_v();
+}
+
+if (mouseMesh.position.y<0 && mouseMesh.position.x<0) {
+  mouth_m();  
+}
+
+if (mouseMesh.position.y<0 && mouseMesh.position.x>0) {
+  mouth_a();
+}
+
+
+	};
+	animate();
+
+
+
+function goxr(arg){
+  var xr = (Math.floor(Math.random() * 10) + 1)/5;
+  arg.scale.set(xr,xr,1);
+}
+
+
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+
+// REPEAT/SAY DIRECT
++ say *
+- <person>.
+
+// character eat
++ eat
+- <call>eatchar</call>
+
+> object eatchar javascript
+eatchar();
+< object 
+
+
+//push inventory
++ goto *
+- <call>pushx <star></call>
+
+> object pushx javascript
+var variable = args[0];
+xpush(variable);
+return;
+< object 
+
+
+

@@ -1,0 +1,705 @@
+<html>
+<head>
+	<title>hi</title>
+  <meta name="viewport" content="width=device-width, user-scalable=no" />
+
+	<style>
+  @font-face {
+    font-family: 'oswaldstencil';
+    src: url('font/oswald-stencil-webfont.eot');
+    src: url('font/oswald-stencil-webfont.eot?#iefix') format('embedded-opentype'),
+    url('font/oswald-stencil-webfont.woff') format('woff'),
+    url('font/oswald-stencil-webfont.ttf') format('truetype'),
+    url('font/oswald-stencil-webfont.svg#oswaldstencil') format('svg');
+    font-weight: normal;
+    font-style: normal;
+
+  }
+
+  body { 
+    margin: 0; 
+    background: red; 
+    overflow: hidden; 
+    color: #fff; 
+    font-family: monospace;
+  }
+
+  canvas { width: 100%; height: 100% }
+
+     #hitcanvas { display: none;}
+    
+    #speech {
+      position: absolute; 
+      bottom: 0; left: 0; right: 0; 
+      width: 100%;
+      display: block;
+      text-align: center; 
+    }
+
+
+      #speech button:hover {
+        color: rgba(255,255,255,1);
+      }
+
+      #bubble {
+        display: inline-block;
+        font-family: 'oswaldstencil';
+        font-size: 2em;
+        user-select:none;
+        /*padding: 1px 20px 0px 20px;*/
+        max-width: 30%;
+      }
+
+@media (min-width:320px)  { 
+#bubble {max-width: 90%;}
+}
+/*@media (min-width:480px)  { }*/
+/*@media (min-width:600px)  { }*/
+/*@media (min-width:801px)  { }*/
+/*@media (min-width:1025px) { }*/
+/*@media (min-width:1281px) { }*/
+
+    </style>
+  </head>
+  <body onclick="sendrant()">
+  <div id="speech">
+    <p id="bubble">&nbsp;</p>
+  </div>
+
+    <script src="js/three.min.js"></script>
+    <script src='js/tween2.js'></script>
+    <script src="js/GLTFLoader.js"></script>
+    <script src="js/rant.min.js"></script>
+    <script src="js/sentimood.js"></script>
+    <script src="js/quaternion.min.js"></script>
+
+    <script>
+
+      var q = {
+        x: null,
+        y: null,
+        z: null,
+        w: null
+      };
+      var initial_angles = {
+        alpha: null,
+        beta: null,
+        gamma: null
+      };
+      
+
+
+    sentiment = new Sentimood();
+    var text = "",
+    height = 0.2,
+    txtsize = 20,
+    hover = 10,
+    curveSegments = 6,
+    bevelThickness = 0,
+    bevelSize = 0,
+    bevelSegments = 0,
+    bevelEnabled = false;
+    var font = null;
+    var area;
+
+
+    var xu = 0;
+    var xv = 0;
+
+
+
+//
+function sqhover(argument) {
+  spk(argument);
+  lips(argument);
+  bubble.innerHTML =  argument;
+  make4text (argument);
+}
+
+
+//
+function make4text(argument) {
+document.getElementById('bubble').innerHTML = argument;
+}
+
+//
+
+function createText() {
+  material = new THREE.MeshBasicMaterial( { color: 0xffffff } );
+
+  textGeo = new THREE.TextGeometry( text, {
+    font: font,
+    size: txtsize,
+    height: height,
+    curveSegments: curveSegments,
+    material: 0,
+    extrudeMaterial: 1
+  });
+
+  textGeo.computeBoundingBox();
+  textGeo.computeVertexNormals();
+
+  var centerOffset = -0.5 * ( textGeo.boundingBox.max.x - textGeo.boundingBox.min.x );
+
+  textMesh1 = new THREE.Mesh( textGeo, material );
+
+  textMesh1.position.x = -1;
+  textMesh1.position.y = 3;
+  textMesh1.position.z = 1.2;
+
+  textMesh1.rotation.x = 0;
+  textMesh1.rotation.y = Math.PI * 2;
+  textMesh1.scale.set(0.025,0.025,0.025);
+  character.add( textMesh1 );
+
+}
+//
+
+var xmove = 0.1;
+var speaking = false; 
+var reverse = false;
+var moveit = 0.05;
+	// var keyboard;
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+
+camera.position.z = 1;
+camera.position.y = 0;
+
+//
+var raycaster = new THREE.Raycaster();
+var mouse = new THREE.Vector2();
+
+
+
+// renderer
+var renderer = new THREE.WebGLRenderer( { alpha: true, antialias: true } );
+
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// lights
+var light = new THREE.PointLight( 0xffffff, 2, 30 );
+light.position.set( 0, 1, 12 );
+scene.add( light );
+
+// camera
+var pivot = new THREE.Object3D();
+pivot.add(camera);
+scene.add(pivot);
+
+
+
+// groups
+var hero = new THREE.Group();
+hero.position.set(0,-2,0);
+scene.add( hero );
+
+var selection = new THREE.Group();
+scene.add( selection );
+
+var selectpivot = new THREE.Group();
+selection.add( selectpivot );
+selectpivot.rotation.y = Math.PI*12;
+
+var character = new THREE.Group();
+character.position.set(0,-1.2,-2);
+// character.rotation.set(Math.PI/3,0,0);
+scene.add( character );
+
+var eyes = new THREE.Group();
+eyes.position.set(0,1.4,1.15);
+character.add( eyes );
+
+
+
+// cursor object
+// var mouseGeometry = new THREE.SphereGeometry(0.1, 32, 32);
+// var mouseMaterial = new THREE.MeshBasicMaterial({
+// color: 0x0000ff
+// });
+// mouseMesh = new THREE.Mesh(mouseGeometry, mouseMaterial);
+// mouseMesh.position.z = -5;
+
+// cursor group
+var mouseMesh = new THREE.Group();
+scene.add(mouseMesh);
+
+var faceskin = new THREE.TextureLoader().load( 'img/face_min.png' );
+faceskin.magFilter = THREE.NearestFilter;
+faceskin.minFilter = THREE.LinearMipMapLinearFilter;
+
+
+// face
+var loader = new THREE.GLTFLoader();
+var filepath = "models/facet.glb";
+loader.load(filepath, function (gltf) {
+
+  gltf.scene.traverse(function (node) {
+    if (node.isMesh) mesh = node;
+  });
+
+  mesh.material = new THREE.MeshBasicMaterial( {
+    color: 0xff0000,
+    morphTargets: true,
+    map:faceskin
+  } ) ;
+
+  mesh.scale.set(5,5,5);
+  mesh.position.set(0,-0.3,0);
+  // character.position.set(0,-0.5,-2);
+
+  mesh.rotation.set(Math.PI/2,Math.PI/2,Math.PI/2);
+  character.add(mesh);
+  mesh.morphTargetInfluences[0] = 1;
+}); // face gltf loader
+
+
+// tooth
+var loader = new THREE.BufferGeometryLoader();
+
+loader.load(
+  'models/tooth.json',
+  function ( geometry ) {
+   var material = new THREE.MeshBasicMaterial( { color:0xeeeeee
+   } );
+   var object = new THREE.Mesh( geometry, material );
+   object.scale.set(5,5,5);
+   object.position.set(0,-0.28,0.55);
+   object.rotation.set(0,-Math.PI/2,0);
+   object.name = 'tooth';
+   character.add( object );
+ }
+ );
+
+// eyes
+var geometry = new THREE.SphereBufferGeometry( 0.1, 60, 60 );
+
+var eyematerial = new THREE.MeshStandardMaterial({color: 0x000000
+  , roughness: 0.3
+});
+
+
+// eye LEFT
+var eyel = new THREE.Mesh( geometry, eyematerial );
+eyel.position.set(0.7,0,0);
+eyel.rotation.set(0,-Math.PI/2,0);
+eyes.add( eyel );
+//eye RIGHT
+var eyer = eyel.clone();
+eyer.position.set(-0.7,0,0);
+eyes.add(eyer);
+
+
+// //BG black  - Inside Mouth
+// var blkmat = new THREE.MeshBasicMaterial({
+// color:0x000000
+// });
+
+// var geometry = new THREE.PlaneBufferGeometry( 1, 1.1, 1 );
+// var bgblk = new THREE.Mesh( geometry, blkmat );
+// bgblk.position.set(0,1.2,1.1);
+// character.add( bgblk );
+
+
+// button (press-character)
+var geometry = new THREE.PlaneBufferGeometry( 1, 1, 1 );
+var mapmaterial = new THREE.MeshBasicMaterial( { color:0xfff000, wireframe:true} );
+meshbtn = new THREE.Mesh( geometry, mapmaterial );
+meshbtn.rotation.set(0,0,0);
+meshbtn.position.set(0,2,-1);
+hero.add( meshbtn );
+// dont render this
+meshbtn.material.colorWrite = false;
+meshbtn.material.depthWrite = false;
+
+// eyebrow textures
+var angrytexture = new THREE.TextureLoader().load( 'img/angry.png' );
+var sadtexture = new THREE.TextureLoader().load( 'img/sad.png' );
+var happytexture = new THREE.TextureLoader().load( 'img/happy.png' );
+var neutraltexture = new THREE.TextureLoader().load( 'img/neutral.png' );
+
+// brow objects
+var geometry = new THREE.PlaneBufferGeometry( 2, 2, 1 );
+var browmaterial = new THREE.MeshBasicMaterial( { 
+  color:0xffffff, map: neutraltexture
+  ,transparent: true
+  // , opacity:0.3
+  ,side  : THREE.DoubleSide
+} );
+Lbrow = new THREE.Mesh( geometry, browmaterial );
+Lbrow.scale.set(0.1,0.1,0.1);
+Lbrow.position.set(0.7,1.5,1.22);
+Lbrow.renderOrder = 1;
+character.add( Lbrow );
+//
+Rbrow = new THREE.Mesh( geometry, browmaterial );
+Rbrow.scale.set(0.1,0.1,0.1);
+Rbrow.position.set(-0.7,1.5,1.22);
+Rbrow.rotation.y = -Math.PI;
+Rbrow.renderOrder = 1;
+character.add( Rbrow );
+
+
+
+// resize
+window.addEventListener('resize', onWindowResize, false);
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+
+
+
+
+// loop
+var animate = function () {
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
+  TWEEN.update();
+  character.lookAt(mouseMesh.position.x,mouseMesh.position.y,mouseMesh.position.z+6);
+  //eye blink
+if ( Math.random() > 0.995 ) { eyes.scale.y = 0.001; }   
+eyes.scale.y += ( 1 - eyes.scale.y ) * 0.1;
+  };
+
+
+  animate();
+
+
+var source;
+var songLength;
+var audioLength = 2337;
+var eyeanim = 300;
+var bubble = document.getElementById('output');  
+
+
+function mouth_m() {
+  if (mesh.morphTargetInfluences[2] === 1) {tweenf0.start();}
+  if (mesh.morphTargetInfluences[0] === 0) {tweenm.start();}
+  if (mesh.morphTargetInfluences[4] === 1) {tweena0.start();}
+  if (mesh.morphTargetInfluences[1] === 1) {tweeno0.start();}
+  if (mesh.morphTargetInfluences[3] === 1) {tweenee0.start();}
+}
+
+function mouth_o() {
+  if (mesh.morphTargetInfluences[2] === 1) {tweenf0.start();}
+  if (mesh.morphTargetInfluences[1] === 0) {tweeno.start();}
+  if (mesh.morphTargetInfluences[4] === 1) {tweena0.start();}
+  if (mesh.morphTargetInfluences[0] === 1) {tweenm0.start();}
+  if (mesh.morphTargetInfluences[3] === 1) {tweenee0.start();}
+}
+
+function mouth_a() {
+  if (mesh.morphTargetInfluences[2] === 1) {tweenf0.start();}
+  if (mesh.morphTargetInfluences[4] === 0) {tweena.start();}
+  if (mesh.morphTargetInfluences[1] === 1) {tweeno0.start();}
+  if (mesh.morphTargetInfluences[0] === 1) {tweenm0.start();}
+  if (mesh.morphTargetInfluences[3] === 1) {tweenee0.start();}
+}
+
+function mouth_reset() {
+  if (mesh.morphTargetInfluences[2] === 1) {tweenf0.start();}
+  if (mesh.morphTargetInfluences[1] === 1) {tweeno0.start();}
+  if (mesh.morphTargetInfluences[4] === 1) {tweena0.start();}
+  if (mesh.morphTargetInfluences[0] === 1) {tweenm0.start();}
+  if (mesh.morphTargetInfluences[3] === 0) {tweenee.start();}
+}
+
+function mouth_smile() {
+  if (mesh.morphTargetInfluences[2] === 1) {tweenf0.start();}
+  if (mesh.morphTargetInfluences[1] === 1) {tweeno0.start();}
+  if (mesh.morphTargetInfluences[4] === 1) {tweena0.start();}
+  if (mesh.morphTargetInfluences[0] === 1) {tweenm0.start();}
+  if (mesh.morphTargetInfluences[3] === 0) {tweenee.start();}
+}
+
+function mouth_f() {
+  if (mesh.morphTargetInfluences[2] === 1) {tweenf.start();}
+  if (mesh.morphTargetInfluences[1] === 1) {tweeno0.start();}
+  if (mesh.morphTargetInfluences[4] === 1) {tweena0.start();}
+  if (mesh.morphTargetInfluences[0] === 1) {tweenm0.start();}
+  if (mesh.morphTargetInfluences[3] === 1) {tweenee.start();}
+}
+
+var synth = window.speechSynthesis;
+var voiceSelect = document.querySelector('select');
+var voices = [];
+var pitch = 1;
+var rate = 1;
+var audioplaying = false;
+
+
+// tweenings
+function createTween(influence, start, end) {
+  return new TWEEN.Tween({val: start})
+  .to({val: end}, 50*rate)
+  .onUpdate(function(value) {
+    mesh.morphTargetInfluences[influence] = value.val;
+  }).onComplete(function(value) {
+    value.val = start;
+  });
+}
+
+
+
+// create morphs
+var tweenf = createTween(2, 0, 1);
+var tweenm = createTween(0, 0, 1);
+var tweeno = createTween(1, 0, 1);
+var tweena = createTween(4, 0, 1);
+var tweenee = createTween(3, 0, 1);
+// remove morphs
+var tweenf0 = createTween(2, 1, 0);
+var tweenm0 = createTween(0, 1, 0);
+var tweeno0 = createTween(1, 1, 0);
+var tweena0 = createTween(4, 1, 0);
+var tweenee0 = createTween(3, 1, 0);
+
+
+// phonemes
+var lipz = [];
+
+function lips(ee) {
+  lipz = [];
+  // convert letters to phonemes
+  for (var i = 0, len = ee.length; i < len; i++) {
+    if (ee[i] == 'a') { lipz.push("a");}
+    if (ee[i] == 'e') { lipz.push("a");}
+    if (ee[i] == 'i') { lipz.push("a");}
+    if (ee[i] == 'o') { lipz.push("o");}
+    if (ee[i] == 'u') { lipz.push("o");}
+    if (ee[i] == 'q') { lipz.push("o");}
+    if (ee[i] == 'w') { lipz.push("o");}
+    if (ee[i] == 'r') { lipz.push("0");}
+    if (ee[i] == 't') { lipz.push("0");}
+    if (ee[i] == 'g') { lipz.push("m");}
+    if (ee[i] == 'h') { lipz.push("0");}
+    if (ee[i] == 'j') { lipz.push("o");}
+    if (ee[i] == 'x') { lipz.push("0");}
+    if (ee[i] == 'y') { lipz.push("0");}
+    if (ee[i] == 'd') { lipz.push("0");}
+    if (ee[i] == 'k') { lipz.push("0");}
+    if (ee[i] == 's') { lipz.push("0");}
+    if (ee[i] == 'c') { lipz.push("0");}
+    if (ee[i] == 'z') { lipz.push("0");}
+    if (ee[i] == 'm') { lipz.push("m");}
+    if (ee[i] == 'b') { lipz.push("m");}
+    if (ee[i] == 'p') { lipz.push("m");}
+    if (ee[i] == 'l') { lipz.push("0");}
+    if (ee[i] == 'n') { lipz.push("m");}
+    if (ee[i] == 'f') { lipz.push("m");}
+    if (ee[i] == 'v') { lipz.push("m");}
+    if (ee[i] == '') { lipz.push("0");}
+    if (ee[i] == '.') { lipz.push("0");}
+    if (ee[i] == ',') { lipz.push("0");}
+  };
+  lipz.push("0")
+  lipspk(lipz);
+}
+
+
+function lipspk(lipz) {
+  for (var i = 0; i < lipz.length; i++) {
+// for each phoneme with pause
+(function (i) {  
+  setTimeout(function () {
+    if (lipz[i] == 'a') { mouth_a(); }
+    else if (lipz[i] == 'o') { mouth_o(); }
+    else if (lipz[i] == 'm') { mouth_m(); }
+    else if (lipz[i] == '0') { mouth_reset(); }
+  }, 70/rate * i);
+})(i);
+};
+
+}
+
+
+
+
+function spk(text) {
+  var utterThis = new SpeechSynthesisUtterance(text);
+  var selectedOption = 'fred';
+  for(i = 0; i < voices.length ; i++) {
+    if(voices[i].name === selectedOption) {
+      utterThis.voice = voices[i];
+    }
+  }
+utterThis.pitch = pitch*(text.length * 0.3);
+utterThis.rate = rate;
+
+// change voice
+utterThis.voice = speechSynthesis.getVoices().filter(function(voice) {
+  return voice.name == "Tessa"
+})[0];
+
+synth.speak(utterThis);
+// bubble.innerHTML = text;
+//
+var analysis = sentiment.analyze(text);
+// console.log(analysis.score)
+if (analysis.score==0) {
+  browmaterial.map = neutraltexture;
+}
+if (analysis.score>0) {
+  browmaterial.map = happytexture;
+}
+if (analysis.score<0) { 
+  browmaterial.map = sadtexture;
+}
+if (analysis.score< -3) { 
+  browmaterial.map = angrytexture;
+}
+
+}
+
+
+
+
+// wait for voices to be loaded before fetching list
+window.speechSynthesis.onvoiceschanged = function() {
+  var xvoices = window.speechSynthesis.getVoices();
+};
+//
+
+
+function populateVoiceList() {
+  voices = synth.getVoices();
+
+  for(i = 0; i < voices.length ; i++) {
+    var option = document.createElement('option');
+    option.textContent = voices[i].name + ' (' + voices[i].lang + ')';
+    
+    if(voices[i].default) {
+      option.textContent += ' -- DEFAULT';
+    }
+
+    option.setAttribute('data-lang', voices[i].lang);
+    option.setAttribute('data-name', voices[i].name);
+  }
+}
+
+// populateVoiceList();
+if (speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = populateVoiceList;
+}
+
+
+
+// rant
+function sendrant() {
+  if (!speaking) {} else {return;}
+  eyes.scale.y = 0.6;
+  speaking = true;
+
+  var saythis = document.getElementById('expert');  
+  var rant = require("rant");
+
+var introsentence=rant('<adj> <noun vehicle plural> <quality physical more> than <noun animal plural>');  
+// var introsentence=rant('<noun>');  
+// var introsentence=rant('<firstname.male> <sconj> <firstname.female> <verb.ed>  <noun.plural>');  
+
+  setTimeout(function () {
+   spk(introsentence);
+   lips(introsentence);
+   make4text (introsentence);
+ }, 50);
+
+
+  setTimeout(function () {
+    speaking = false;
+  }, 70 * introsentence.length);
+
+
+}// sendrant
+
+
+// // hero click button
+// function onDocumentMouseDown(event) {
+//   event.preventDefault();
+
+//   mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+//   mouse.y =  - (event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+
+//   raycaster.setFromCamera(mouse, camera);
+
+//         meshObjects = [meshbtn]; // click handler
+
+//         var intersects = raycaster.intersectObjects(meshObjects);
+
+//         if (intersects.length > 0) {
+//           sendrant();
+//         }
+
+//       }
+
+//       document.addEventListener('mousedown', onDocumentMouseDown, false);
+
+// device gyro
+      var rad = Math.PI / 180;
+      window.addEventListener("deviceorientation", function(event) {
+        if (initial_angles.alpha === null) {
+          initial_angles.alpha = event.alpha;
+          initial_angles.beta = event.beta;
+          initial_angles.gamma = event.gamma;
+        }
+        q = Quaternion.fromEuler(
+          (event.alpha - initial_angles.alpha) * rad,
+          (event.beta - initial_angles.beta) * rad,
+          (event.gamma - initial_angles.gamma) * rad,
+          'ZXY');
+        
+        scene.quaternion.x = q.x / 1;
+        scene.quaternion.y = q.y / 1;
+        //scene.quaternion.z = q.z;
+        scene.quaternion.w = q.w;
+        
+        if (window.orientation === 90) {
+          scene.quaternion.x = -q.y / 1.5;
+          scene.quaternion.y = q.x / 1.5;
+        } else if (window.orientation === -90) {
+          scene.quaternion.x = q.y / 1.5;
+          scene.quaternion.y = -q.x / 1.5;
+        } else if (window.orientation === 180) {
+          scene.quaternion.x = -q.x / 1.5;
+          scene.quaternion.y = -q.y / 1.5;
+        }
+        
+      }, true);
+
+// rotate mobile
+      window.addEventListener('orientationchange', function(event) {
+        initial_angles.alpha = null;
+        initial_angles.beta = null;
+        initial_angles.gamma = null;
+        resizeCanvas();       
+      });
+
+
+// event
+window.addEventListener('mousemove', updateMouse, false);
+
+
+function updateMouse() {
+// Update the mouse variable
+event.preventDefault();
+mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+// // Make the sphere follow the mouse
+var vector = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+vector.unproject( camera );
+var dir = vector.sub( camera.position ).normalize();
+var distance = - camera.position.z / dir.z;
+var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+mouseMesh.position.copy(pos);
+}
+
+
+    </script>
+  </script>
+</body>
+</html>
