@@ -21,3 +21,4 @@ a collection of 3D and design work
 - https://type76.github.io/okra/wayo3D
 - https://type76.github.io/okra/wobbly
 - https://type76.github.io/okra/words
+- https://type76.github.io/okra/zx
