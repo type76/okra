@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<title>monk</title>
+	<style type="text/css">
+	* {margin: 0; padding: 0;}
+	*:focus {outline: none;}
+
+	body { margin: 0; 
+		background: #330000; 
+		color: #fff;
+		font-family: monospace;
+		user-select:none;
+		width: 100%;
+		height: 100%;
+	}
+
+	canvas { 
+		display: block; 
+		width: 100%; 
+		height: 100vh; 
+		position: relative;
+		z-index: 1;
+	}
+	
+
+</style>
+</head>
+<body>
+
+	<script src="js/three.min.js"></script>
+	<script src="js/OrbitControls.js"></script>
+
+
+	<script type="text/javascript">
+//
+function go(argument) {
+	console.log(argument)
+}
+
+
+// 3D
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// camera
+camera.position.z = 5;
+var controls = new THREE.OrbitControls( camera, renderer.domElement);
+controls.maxDistance = 8;
+controls.minDistance = 1;
+controls.maxPolarAngle = Math.PI * 0.48;
+
+// lights
+globalLight = new THREE.AmbientLight(0xffffff, 1);
+shadowLight = new THREE.DirectionalLight(0xffffff, 1);
+shadowLight.position.set(10, -220, 120);
+shadowLight.castShadow = true;
+shadowLight.shadow.camera.left = -40;
+shadowLight.shadow.camera.right = 40;
+shadowLight.shadow.camera.top = 40;
+shadowLight.shadow.camera.bottom = -80;
+shadowLight.shadow.camera.near = 1;
+shadowLight.shadow.camera.far = 1000;
+shadowLight.shadow.mapSize.width = shadowLight.shadow.mapSize.height = 512;
+scene.add(globalLight);
+scene.add(shadowLight);
+
+// load + create
+var xloader = new THREE.BufferGeometryLoader();
+createobject(scene ,'models/monk.json' ,'models/textures/monk.png');
+
+// create F
+function createobject(xobj, thisobj, tex) {
+xloader.load(
+  thisobj,
+  function ( geometry ) {
+    var texture = new THREE.TextureLoader().load( tex );
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    var material = new THREE.MeshLambertMaterial( { 
+      map: texture,
+       } );
+    cobj = new THREE.Mesh( geometry, material );
+    cobj.scale.set(5,5,5)
+    cobj.position.set(0,-1.5,0)
+    xobj.add( cobj );
+  },
+  function ( xhr ) {
+  },
+  function ( xhr ) {
+    console.log( 'An error happened' );
+  }
+);
+}
+
+
+// events
+window.addEventListener( 'resize', onWindowResize, false );
+// resize event
+function onWindowResize() {
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+
+function animate() {
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
+};
+
+
+//  START		<<<<<<<<<<<<<<<<  
+animate();
+
+</script>
+
+</body>
+</html>
