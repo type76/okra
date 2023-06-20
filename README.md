@@ -23,3 +23,4 @@ a collection of 3D and design work
 - [words](https://type76.github.io/okra/words)
 - [zx](https://type76.github.io/okra/zx)
 - [hi](https://type76.github.io/okra/hi)
+- [stones](https://type76.github.io/okra/stones)
