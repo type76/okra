@@ -1,7 +1,7 @@
 
 <html>
 <head>
-	<title>suella</title>
+	<title>suella with body</title>
 	<style>
 	body { margin: 0; background-color: #333;}
 	canvas { width: 100%; height: 100% }
@@ -30,6 +30,7 @@
 	var imageCount = 0;
 
 	// photo array
+	// 8 facial expressions (colour + bump)
 	var syncData = [
 	{"col":"cruella.png", "bmp":"cruellabmp.png"},
 	{"col":"cruella2.png", "bmp":"cruellabmp2.png"},
@@ -178,7 +179,7 @@
 	oface = new THREE.Mesh( geometry, omaterial );
 	oface.scale.set(1.06,1.06,1.06);
 	head.add( oface );
-	// head.scale.set(1,1.3,1)
+	
 
 	// cruella body
 	const bgeometry = new THREE.CylinderGeometry( 18, 18, 50, 34, 100, 100 );
