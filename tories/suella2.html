@@ -1,0 +1,319 @@
+
+<html>
+<head>
+	<title>suella with body</title>
+	<style>
+	body { margin: 0; background-color: #333;}
+	canvas { width: 100%; height: 100% }
+	#box {position: absolute; top: 0; z-index: 3;
+		color: red; display:inline-block;}
+		button {padding: 12px;}
+	#bumpcanvas {position: absolute; top: 130px; display: block; width: 256px; height: 128px;}
+	#colcanvas {position: absolute; top: 0px; display: block; width: 256px; height: 128px;}
+</style>
+</head>
+<body>
+
+
+	<script src="js/three.min.js"></script>
+	<script src="js/OrbitControls.js"></script>
+
+	<script>
+	// globals
+	var paused = false;
+	var oldframe = 1;
+
+	var thisframe = 0;
+	var loadedcol = false;
+	const images = [];
+	const bimages = [];
+	var imageCount = 0;
+
+	// photo array
+	var syncData = [
+	{"col":"cruella.png", "bmp":"cruellabmp.png"},
+	{"col":"cruella2.png", "bmp":"cruellabmp2.png"},
+	{"col":"cruellaoo.png", "bmp":"cruellaoobmp.png"},
+	{"col":"cruella3.png", "bmp":"cruella3bmp.png"},
+	{"col":"cruellaaa.png", "bmp":"cruellaaabmp.png"},
+	{"col":"cruellaff.png", "bmp":"cruellaffbmp.png"},
+	{"col":"cruellaxx.png", "bmp":"cruellaxxbmp.png"},
+	{"col":"cruellaevil.png", "bmp":"cruellaevilbmp.png"}
+	];
+	var player = {
+	  count:syncData.length,
+	  fps:2,
+	};
+	
+	// parse array
+	syncData.forEach(function(element, index){
+		const colimage = new Image();
+		colimage.src = element.col;
+		colimage.onload = ()=>{ 
+			imageCount += 1;
+	         if(imageCount === syncData.length){ 
+	 			coltx.drawImage(images[0], 0, 0);
+	 			loadedcol = true;
+	         }
+	     }
+
+	    //
+		const bmpimage = new Image();
+		bmpimage.src = element.bmp;
+		bmpimage.onload = ()=>{ 
+	         if(imageCount === syncData.length && loadedcol == true){ 
+		 		bumptx.drawImage(images[0], 0, 0);
+		        init();
+	         }
+	     }        
+
+	     images.push(colimage); 
+	     bimages.push(bmpimage); 
+	 });
+
+
+	// blink image overlay
+    var blinkimage = new Image();
+	blinkimage.src = 'cruellablink.png';
+	// blinkimage.onload = ()=>{ console.log(blinkimage)} 
+
+	// ear image overlay
+    var earimage = new Image();
+	earimage.src = 'cruellaears.png';
+	earimage.onload = ()=>{ 
+		coltx.drawImage(earimage, 0, 0);
+		bumptx.drawImage(earimage, 0, -128);
+
+	} 
+
+	// hair image overlay
+    var hairimage = new Image();
+	hairimage.src = 'cruellahair.png';
+
+	// face bump layer
+	var bumpcanvas = document.createElement('canvas');
+	bumptx = bumpcanvas.getContext('2d');
+	bumpcanvas.id = "bumpcanvas";
+	bumpcanvas.width = 256;
+	bumpcanvas.height = 128;
+	// document.body.appendChild(bumpcanvas);
+
+	// face colour layer
+	var colcanvas = document.createElement('canvas');
+	coltx = colcanvas.getContext('2d');
+	colcanvas.id = "colcanvas";
+	colcanvas.width = 256;
+	colcanvas.height = 128;
+	// document.body.appendChild(colcanvas);
+
+	// scene
+	var scene = new THREE.Scene();
+	var clock = new THREE.Clock();
+
+	var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+
+	var renderer = new THREE.WebGLRenderer({
+		alpha: true,
+		antialias: true
+	});
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( renderer.domElement );
+
+	// camera
+	camera.position.z = 100;
+
+	// controls
+	controls = new THREE.OrbitControls(camera, renderer.domElement);
+	controls.enablePan = false;
+	controls.enableDamping = true;
+	controls.dampingFactor = 0.9;
+	controls.maxDistance = 300;
+	controls.minDistance = 40;
+
+	// light
+	var light3 = new THREE.PointLight( 0xffefef, 0.5 );
+	light3.position.set( 20, 1, 30 );
+	scene.add( light3 );
+	//
+	var light = new THREE.AmbientLight( 0x666666 );
+	scene.add( light );
+
+	// backlight
+	var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.2 );
+	directionalLight.position.set(0,200,100)
+	directionalLight.rotation.set(-Math.PI/2,0,0)
+	scene.add( directionalLight );
+
+	// head
+	let head = new THREE.Group();
+	head.rotation.y = -Math.PI/2;
+	// head.position.y = 10;
+	scene.add( head );
+
+
+	// sphere face 
+	var geometry = new THREE.SphereBufferGeometry( 20, 100, 100 );
+	var material = new THREE.MeshStandardMaterial( { 
+		metalness: 0,
+		roughness: 2,
+		map : new THREE.CanvasTexture(colcanvas),
+		displacementMap: new THREE.CanvasTexture(bumpcanvas),
+		displacementScale: 11
+	} );
+
+	face = new THREE.Mesh( geometry, material );
+	face.rotation.z = Math.PI/0.1;
+	head.add( face );
+	face.material.map.magFilter = THREE.NearestFilter;
+	face.material.map.minFilter = THREE.NearestFilter;
+
+	// outline
+	omaterial = new THREE.MeshStandardMaterial( { 
+		color:0x000000,
+		roughness: 100,
+		displacementMap: new THREE.CanvasTexture(bumpcanvas),
+		displacementScale: 11,
+	    side:THREE.BackSide
+	} );
+	oface = new THREE.Mesh( geometry, omaterial );
+	oface.scale.set(1.06,1.06,1.06);
+	head.add( oface );
+	head.scale.set(1,1.3,1)
+
+	// cruella body
+	const bgeometry = new THREE.CylinderGeometry( 18, 18, 50, 34, 100, 100 );
+	const bmaterial = new THREE.MeshStandardMaterial( { 
+		// wireframe:true,
+		roughness: 100,
+		map: new THREE.TextureLoader().load( 'cruellabodycol.png' ),
+		displacementMap: new THREE.TextureLoader().load( 'cruellabodybmp.png' ),
+		displacementScale: -15,
+	    // side:THREE.BackSide
+	} );
+	const cylinder = new THREE.Mesh( bgeometry, bmaterial );
+	cylinder.position.y = -60;
+	cylinder.rotation.y = -Math.PI;
+	scene.add( cylinder );
+
+	// outline
+	bdymaterial = new THREE.MeshStandardMaterial( { 
+		color:0x000000,
+		roughness: 100,
+		displacementMap: new THREE.TextureLoader().load( 'cruellabodybmp.png' ),
+		displacementScale: -15,
+	    side:THREE.BackSide
+	} );
+	ocylinder = new THREE.Mesh( bgeometry, bdymaterial );
+	ocylinder.scale.set(1.06,1.06,1.06);
+	cylinder.add( ocylinder );
+
+// CylinderGeometry(
+ // radiusTop : Float,
+ // radiusBottom : Float,
+ // height : Float,
+ // radialSegments : Integer,
+ // heightSegments : Integer,
+ // openEnded : Boolean,
+ // thetaStart : Float,
+ // thetaLength : Float)
+
+	// visibility change
+	document.addEventListener("visibilitychange", function() {
+		document.title = document.hidden ? "bye" : "hi";
+
+		if (document.visibilityState === 'visible') {
+			pause = false;
+		} else {
+			pause = true;
+		}
+
+	});
+
+
+	// events
+	window.addEventListener( 'resize', onWindowResize, false );
+	// resize event
+	function onWindowResize() {
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+		renderer.setSize( window.innerWidth, window.innerHeight );
+	}
+
+
+	// render loop
+	var animate = function () {
+		if(paused) return;
+
+		// RAF
+		requestAnimationFrame( animate );
+		renderer.render( scene, camera );
+
+		// update face
+		var t = clock.getElapsedTime();
+		thisframe = Math.floor( ( t * player.fps ) % player.count);
+
+		if (thisframe != oldframe) {
+			coltx.drawImage(images[thisframe], 0, 0);
+			bumptx.drawImage(bimages[thisframe], 0, 0);
+			coltx.drawImage(earimage, 0, 0);
+			bumptx.drawImage(earimage, 0, -128);
+			bumptx.drawImage(hairimage, 0, 0);
+			face.material.map.needsUpdate = true;
+			face.material.displacementMap.needsUpdate = true;
+			oface.material.displacementMap.needsUpdate = true;
+			oldframe = thisframe;
+		}
+
+		// blink
+		if ( Math.random() > 0.99) { blink(); }
+
+	} // end loop
+
+
+
+// init
+function init() {
+	if (!loadedcol) {return}
+	coltx.drawImage(images[0], 0, 0);
+	bumptx.drawImage(bimages[0], 0, 0);
+	coltx.drawImage(earimage, 0, 0);
+	bumptx.drawImage(earimage, 0, -128);
+	bumptx.drawImage(hairimage, 0, 0);
+
+	face.material.map.needsUpdate = true;
+	face.material.displacementMap.needsUpdate = true;
+	animate();
+}
+
+
+// blink eyes
+function blink(){
+
+	if (typeof blinkimage == "undefined") {
+	   return
+	}
+
+	// closed eye
+	coltx.drawImage(blinkimage, 0, 0);
+	bumptx.drawImage(blinkimage, 0, -128);
+	// bumptx.drawImage(hairimage, 0, 0);
+	face.material.map.needsUpdate = true;
+	face.material.displacementMap.needsUpdate = true;
+	oface.material.displacementMap.needsUpdate = true;
+
+	// back to normal
+	setTimeout(function() {
+		coltx.drawImage(images[thisframe], 0, 0);
+		bumptx.drawImage(bimages[thisframe], 0, 0);
+		coltx.drawImage(earimage, 0, 0);
+		bumptx.drawImage(earimage, 0, -128);
+		bumptx.drawImage(hairimage, 0, 0);
+		face.material.map.needsUpdate = true;
+		face.material.displacementMap.needsUpdate = true;
+		oface.material.displacementMap.needsUpdate = true;
+	}, 400);
+}
+
+</script>
+</body>
+</html>
