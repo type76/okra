@@ -1,0 +1,457 @@
+
+
+<html>
+<head>
+	<title>bump mapping</title>
+	<style>
+	body { margin: 0; background-color: #222;}
+	canvas { width: 100%; height: 100% }
+	#bos {position: absolute; top: 0; z-index: 3;
+		color: red; display:inline-block;}
+	#bumpcanvas {position: absolute; top: 260px; display: block; width: 267px; height: 128px;}
+	#colcanvas {position: absolute; top: 0px; display: block; width: 256px; height: 128px;}
+
+	input[type=range]:after {
+		content:'';
+		display: block;
+		position: absolute;
+		top: -4px;
+		left: -4px;
+		width: 308px;
+		height: 13px;
+		background: rgba(0,0,0,0.8);
+		border-radius: 8px;
+		z-index: -3;
+	}
+
+	input[type=range] {
+		display: block;
+		-webkit-appearance: none; 
+		background: transparent;
+		width:300px;
+		margin: 26px;
+		position: absolute; 
+		z-index: 2;
+	}
+
+	input[type=range]::-webkit-slider-thumb {
+		-webkit-appearance: none;
+	}
+
+	input[type=range]:focus {
+		outline: none;
+		opacity: 1;
+	}
+
+	input[type=range]::-ms-track {
+		cursor: pointer;
+		background: transparent; 
+		border-color: transparent;
+		color: transparent;
+	}
+
+	/* thumb circle button */
+	input[type=range]::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		height: 40px;
+		width: 40px;
+		background: #fff;
+		border-radius: 100%;
+		cursor: pointer;
+		margin-top: -17px;
+		transform-origin: center;
+		border:rgba(0,0,0,1) 4px solid;
+		box-shadow: 0 0 5px rgba(0,0,0,0.5);
+	}
+
+	/* Firefox */
+	input[type=range]::-moz-range-thumb {
+		height: 40px;
+		width: 40px;
+		background: #fff;
+		border-radius: 100%;
+		cursor: pointer;
+	}
+
+	/* IE */
+	input[type=range]::-ms-thumb {
+		height: 40px;
+		width: 40px;
+		background: #fff;
+		border-radius: 100%;
+		cursor: pointer;
+	}
+
+	input[type=range]::-webkit-slider-runnable-track {
+		height: 5px;
+		border-radius: 5px;
+		cursor: pointer;
+		background: #888;
+	}
+
+	/* track */
+	input[type=range]:focus::-webkit-slider-runnable-track {
+		background: #888;
+	}
+
+	input[type=range]::-moz-range-track {
+		height: 5px;
+		border-radius: 5px;
+		cursor: pointer;
+		background: #888;
+	}
+
+	input[type=range]::-ms-track {
+		height: 5px;
+		border-radius: 5px;
+		cursor: pointer;
+		background: transparent;
+		color: transparent;
+	}
+
+	input[type=range]::-webkit-slider-thumb:hover {
+		transition: all 0.2s ease-in-out;
+		background: red !important;
+		transform: scale(1.1);
+	}
+
+	button {
+		padding: 10px;
+		position: relative;
+		z-index: 3;
+		top: 0px;
+	}
+
+	#hud {
+		display: block;
+		width: 100vw;
+		text-align: center;
+		margin: 0;
+		position: absolute;
+		bottom: 60px;
+		}	
+
+	.cntr {margin: 0 auto; display: block; width: 360px;}
+	button {background-color: rgba(0,0,0,0.4); 
+		color: #eee; 
+		border:none; outline: none;
+		font-family: monospace;
+		position: absolute;
+		top: 10px;
+		left: 10px;
+		z-index: 99;
+		font-size: 3em;
+		cursor: pointer;
+		border-radius: 5%;}
+		button:hover {background: rgba(0,0,255,0.9); color: #fff;}
+</style>
+</head>
+<body>
+
+	<button onclick="refresh()" title="next" id="nxt">next</button>
+
+
+	<div id="hud">
+		<div class="cntr">
+			<input id="sldr" type="range" value="30" min="0" max="100" step="1" title="pixellate" oninput="setbmp(value)" />
+		</div>
+	</div>
+
+
+
+	<script src="js/three.min.js"></script>
+	<script src="js/OrbitControls.js"></script>
+
+	<script>
+	var paused = false;
+	var oldframe = 1;
+	var index = 0;
+	var bumpval = 30;
+
+
+	// set bump height
+function setbmp(value) {
+	bumpval = Math.floor(value);
+	scene.remove( head );
+	makeface()
+}
+
+
+	// refresh
+	function refresh() {
+		index++;
+		if (index>syncData.length-1) {index=0;}
+		// console.log(index)
+
+ 		bumptx.drawImage(bimages[index], 0, 0, 256, 128);
+ 		coltx.drawImage(images[index], 0, 0, 256, 128);
+ 		face.material.map.needsUpdate = true;	
+		face.material.displacementMap.needsUpdate = true;
+		oface.material.displacementMap.needsUpdate = true;
+	}
+	
+	// photo array
+	var syncData = [
+	{"start":"0", "col":"mogg.png", "bmp":"moggbmp.png", "viz":true},
+	{"start":"0", "col":"zahawi.png", "bmp":"zahawibmp.png", "viz":true},
+	{"start":"0", "col":"sunak.png", "bmp":"sunakbmp.png", "viz":true},
+	{"start":"0", "col":"cruella.png", "bmp":"cruellabmp.png", "viz":true},
+	{"start":"0", "col":"bojo.png", "bmp":"bojobmp.png", "viz":true},
+	{"start":"0", "col":"gullis.png", "bmp":"gullisbmp.png", "viz":true},
+	];
+
+
+player = {
+  count:syncData.length,
+  fps:2,
+};
+
+// overlay
+const images = [];
+const bimages = [];
+var imageCount = 0;
+	//
+	syncData.forEach(function(element, index){
+		const colimage = new Image();
+		colimage.src = element.col;
+		colimage.onload = ()=>{ 
+			imageCount += 1;
+	         if(imageCount === syncData.length){ 
+	 			coltx.drawImage(images[0], 0, 0, 256, 128);
+	         }
+	     }
+	     //
+		const bmpimage = new Image();
+		bmpimage.src = element.bmp;
+		bmpimage.onload = ()=>{ 
+	         if(imageCount === syncData.length){ 
+		 		bumptx.drawImage(images[0], 0, 0, 256, 128);
+		        init();
+	         }
+	     }     
+
+
+	     images.push(colimage); 
+	     bimages.push(bmpimage); 
+	 });
+
+
+
+	// face colour layer
+	var bumpcanvas = document.createElement('canvas');
+	bumptx = bumpcanvas.getContext('2d');
+	bumpcanvas.id = "bumpcanvas";
+	bumpcanvas.width = 256;
+	bumpcanvas.height = 128;
+	// document.body.appendChild(bumpcanvas);
+
+	var colcanvas = document.createElement('canvas');
+	coltx = colcanvas.getContext('2d');
+	colcanvas.id = "colcanvas";
+	colcanvas.width = 256;
+	colcanvas.height = 128;
+	// document.body.appendChild(colcanvas);
+
+	//
+	var scene = new THREE.Scene();
+	var clock = new THREE.Clock();
+
+	var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+
+	var renderer = new THREE.WebGLRenderer({
+		alpha: true,
+		antialias: true
+	});
+	// renderer.gammaInput = true;
+	// renderer.gammaOutput = true;
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( renderer.domElement );
+
+	camera.position.z = 200;
+
+	// controls
+	controls = new THREE.OrbitControls(camera, renderer.domElement);
+	controls.enablePan = false;
+	controls.enableDamping = true;
+	controls.dampingFactor = 0.9;
+	controls.maxDistance = 300;
+	controls.minDistance = 40;
+
+	// light
+	var light3 = new THREE.PointLight( 0xffefef, 0.5 );
+	light3.position.set( 20, 1, 30 );
+	scene.add( light3 );
+	//
+	var light = new THREE.AmbientLight( 0x666666 );
+	scene.add( light );
+
+	// backlight
+	var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.2 );
+	directionalLight.position.set(0,200,100)
+	directionalLight.rotation.set(-Math.PI/2,0,0)
+	scene.add( directionalLight );
+
+
+	makeface()
+
+// create 3D face models
+function makeface() {
+	// head
+	window.head = new THREE.Group();
+	head.rotation.y = -Math.PI/2;
+	head.scale.set(1,1.2,1)
+	scene.add( head );
+
+	// sphere 
+	var geometry = new THREE.SphereBufferGeometry( 50, 100, 100 );
+	var material = new THREE.MeshStandardMaterial( { 
+		metalness: 0,
+		roughness: 2,
+		map : new THREE.CanvasTexture(colcanvas),
+		displacementMap: new THREE.CanvasTexture(bumpcanvas),
+		displacementScale: bumpval
+	} );
+
+	face = new THREE.Mesh( geometry, material );	
+	head.add( face );
+
+	face.material.map.magFilter = THREE.NearestFilter;
+	face.material.map.minFilter = THREE.NearestFilter;
+
+	// outline
+	omaterial = new THREE.MeshStandardMaterial( { 
+		color:0x000000,
+		roughness: 100,
+		displacementMap: new THREE.CanvasTexture(bumpcanvas),
+		displacementScale: bumpval,
+	    side:THREE.BackSide
+	} );
+	oface = new THREE.Mesh( geometry, omaterial );
+	oface.scale.set(1.05,1.05,1.05);
+	face.add( oface );
+}
+
+
+	document.addEventListener("visibilitychange", function() {
+		document.title = document.hidden ? "bye" : "hi";
+
+		if (document.visibilityState === 'visible') {
+			pause = false;
+		} else {
+			pause = true;
+		}
+
+	});
+
+
+	// events
+	window.addEventListener( 'resize', onWindowResize, false );
+	// resize event
+	function onWindowResize() {
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+		renderer.setSize( window.innerWidth, window.innerHeight );
+	}
+
+
+	// render loop
+	var animate = function () {
+		if(paused) return;
+
+		// RAF
+		requestAnimationFrame( animate );
+		renderer.render( scene, camera );
+		// update();
+
+		// update face
+		// var t = clock.getElapsedTime();
+		// var thisframe = Math.floor( ( t * player.fps ) % player.count);
+
+		// if (thisframe != oldframe) {
+		// 	teeth.visible = syncData[thisframe].viz;			
+		// 	coltx.drawImage(images[thisframe], 0, 0, 512, 256);
+		// 	coltx.drawImage(overlayimage, 0, 0, 512, 256);
+		// 	bumptx.drawImage(bimages[thisframe], 0, 0, 512, 256);
+		// 	face.material.map.needsUpdate = true;
+		// 	face.material.displacementMap.needsUpdate = true;
+		// 	oldframe = thisframe;
+		// }
+
+		// blink
+		// if ( Math.random() > 0.985) { blink(); }
+
+
+	} // end loop
+
+
+
+
+function createhair() {
+	var hgeometry = new THREE.SphereBufferGeometry( 20, 70, 70 );
+	var hmaterial = new THREE.MeshStandardMaterial( { 
+		metalness: 0,
+		roughness: 2,
+		// map : new THREE.TextureLoader().load( 'haircol.png' ),
+		map: new THREE.TextureLoader().load( 'snkhairbmp.png' ),
+		// displacementMap: new THREE.TextureLoader().load( 'snkhairbmp.png' ),
+		// displacementScale: -2,
+		side: THREE.DoubleSide
+	} );
+
+	hair = new THREE.Mesh( hgeometry, hmaterial );
+	// hair.rotation.z = Math.PI/0.12;
+	// hair.position.y = -2;
+	hair.position.x = -10;
+	hair.position.y = 5;
+	head.add( hair );
+	// face.material.map.magFilter = THREE.NearestFilter;
+	// face.material.map.minFilter = THREE.NearestFilter;
+	//  const geometry = new THREE.ConeGeometry( 10, 70, 40, 40, 40 );
+	// //const geometry = new THREE.CylinderGeometry( 5, 10, 80, 32 );
+	// const material = new THREE.MeshStandardMaterial( {
+	// 	// color: 0x000000, 
+	// 	map : new THREE.TextureLoader().load( 'body.png' ),
+	// 	displacementMap: new THREE.TextureLoader().load( 'bodybmp.png' ),
+	// 	displacementScale: 10,
+	// 	 });
+	// const cone = new THREE.Mesh( geometry, material );
+	// cone.position.y = -40;
+	// cone.position.z = -5;
+	// scene.add( cone );
+}
+
+
+
+
+// init
+function init(argument) {
+	coltx.drawImage(images[0], 0, 0, 256, 128);
+	bumptx.drawImage(bimages[0], 0, 0, 256, 128);
+	face.material.map.needsUpdate = true;
+	face.material.displacementMap.needsUpdate = true;
+	animate();
+}
+
+
+// blink eyes
+function blink(){
+		// eyes
+	eyematerial = new THREE.MeshPhongMaterial({
+	  color: 0x000000
+	 ,shininess:500
+	});
+	eyematerial.map.needsUpdate = true;
+
+	setTimeout(function() {
+	// eyes
+	eyematerial = new THREE.MeshPhongMaterial({
+	  color: 0x000000
+	 ,shininess:500
+	});
+		eyematerial.map.needsUpdate = true;
+	}, 200);
+}
+
+</script>
+</body>
+</html>
