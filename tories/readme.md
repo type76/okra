@@ -6,3 +6,7 @@ displacement mapping the tories
 
 [suella3 : animated face + body](https://type76.github.io/okra/tories/suella3.html)
 8 facial expressions (colour.png + bump.png)
+
+
+
+	![suellacomp](suellacomp.gif)
