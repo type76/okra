@@ -1,0 +1,168 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>fugees</title>
+	<style>
+	body {
+		background: radial-gradient(ellipse at center, #333333 0%,#000000 150%); margin: 0; overflow: hidden; user-select:none; font-family: monospace; cursor: default;}
+		canvas { width: 100%; height: 100%; }
+	</style>
+</head>
+<body>
+	<script src="https://cdn.jsdelivr.net/npm/three@0.120.0/build/three.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/three@0.120.0/examples/js/controls/OrbitControls.js"></script>
+	<script src="Water.js"></script>
+
+	<script>
+
+	var n = 0;
+
+	var parameters = {
+		size: 1,
+		distortionScale: 2.7,
+		alpha: 0.2
+	};
+
+
+// make water
+function setWater() {
+	var waterGeometry = new THREE.PlaneGeometry( 100, 100, 200, 200 );
+
+	window.water = new THREE.Water(
+		waterGeometry,
+		{
+			textureWidth: 512,
+			textureHeight: 512,
+			waterNormals: new THREE.TextureLoader().load( 'waternormals.jpg', function ( texture ) {
+				texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+			}),
+			waterColor: 0x000000,
+			distortionScale: parameters.distortionScale,
+		}
+		);
+	water.position.set(0,-2,0);
+
+	water.rotation.x = - Math.PI / 2;
+	water.material.uniforms.alpha.value = parameters.alpha;
+	scene.add( water );
+}
+
+
+
+
+// three
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 100 );
+scene.add(camera);
+
+var renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+var controls = new THREE.OrbitControls( camera, renderer.domElement );
+controls.maxDistance = 50;
+controls.minDistance = 2;
+
+
+// camera
+camera.position.y = 2;
+camera.position.z = 20;
+
+
+// lights 
+var pointLight = new THREE.PointLight( 0xffffff, 1.5, 20 );
+scene.add( pointLight );
+
+// stones group
+boatgroup = new THREE.Group();
+boatgroup.name = "boatgroup";
+boatgroup.rotation.y = Math.PI/2;
+scene.add( boatgroup );
+
+// models
+var people = [];
+var objects = [];
+var xloader = new THREE.BufferGeometryLoader();
+createobject(objects ,boatgroup ,'boat.json' ,'boat.png', 0, -3, 3, 0);
+
+createobject(people ,boatgroup ,'person1.json' ,'person3.png', 0, -3, 10.6, 0);
+createobject(people ,boatgroup ,'person1.json' ,'person3.png', -1.5, -3, 9.4, -1);
+createobject(people ,boatgroup ,'person1.json' ,'person3.png', 1.5, -3, 9.4, 1);
+createobject(people ,boatgroup ,'person1.json' ,'person3.png', 2, -3, 7.2, 1.6);
+createobject(people ,boatgroup ,'person1.json' ,'person3.png', -2, -3, 7.2, -1.6);
+createobject(people ,boatgroup ,'person1.json' ,'person3.png', -2, -3, 4.7, -1.6);
+createobject(people ,boatgroup ,'person1.json' ,'person3.png', 2, -3, 4.7, 1.6);
+
+createobject(people ,boatgroup ,'person1.json' ,'person3.png', -2, -3, 2.2, -1.6);
+createobject(people ,boatgroup ,'person1.json' ,'person3.png', 2, -3, 2.2, 1.6);
+createobject(people ,boatgroup ,'person1.json' ,'person3.png', -2, -3, -0.3, -1.6);
+createobject(people ,boatgroup ,'person1.json' ,'person3.png', 2, -3, -0.3, 1.6);
+
+createobject(people ,boatgroup ,'person1.json' ,'person3.png', -1.3, -2.8, -2, Math.PI);
+createobject(people ,boatgroup ,'person1.json' ,'person3.png', 1.3, -2.8, -2, Math.PI);
+
+// create F
+function createobject(array ,xobj, thisobj, tex, x, y, z, rot) {
+	xloader.load(
+		thisobj,
+		function ( geometry ) {
+			var texture = new THREE.TextureLoader().load( tex );
+			texture.magFilter = THREE.NearestFilter;
+			texture.minFilter = THREE.NearestFilter;
+			var material = new THREE.MeshBasicMaterial( { 
+				map: texture,
+			} );
+			cobj = new THREE.Mesh( geometry, material );
+			cobj.position.set(x,y,z)
+			cobj.rotation.y = rot;
+			cobj.scale.set(5,5,5)
+			xobj.add( cobj );
+			array.push(cobj);
+		},
+		function ( xhr ) {
+		},
+		function ( xhr ) {
+			console.log( 'An error happened' );
+		}
+		);
+}
+
+
+// window resize
+window.addEventListener('resize', function(){
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}, false)
+
+
+
+var animate = function () {
+	n++;
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );	
+	water.material.uniforms[ 'time' ].value += (n/1000);
+	
+	for(var i = 0; i < people.length; i++) {       
+		people[i].rotation.x = Math.cos(n*0.2)*0.06;
+	}
+
+	boatgroup.rotation.x = Math.sin(n*0.6)*0.006;
+};
+
+
+
+// start
+setWater();
+animate();
+
+//
+for(var i = 0; i < people.length; i++) {       
+	var rnd = Math.random();
+	people[i].scale.set(5-rnd,5-rnd,5-rnd)
+}
+
+</script>
+</body>
+</html>
