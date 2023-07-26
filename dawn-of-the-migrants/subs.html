@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>subs</title>
+	<style type="text/css">
+		@font-face {
+		font-family: 'din';
+		src: url('font/din-condensed-bold-webfont.woff') format('woff'),
+		url('font/din-condensed-bold.ttf') format('truetype');
+		} 
+		@font-face {
+	    font-family: indigo;
+	    font-weight: bold;
+	    src: url("font/indigo.otf") format("opentype");
+		}
+		body {font-family: 'din', monospace; color: #fff;
+			font-size: 2em; overflow: hidden; background-color: maroon;}
+		a {display: block; line-height: 1.4em;}
+		audio {width: 90%; position: relative; z-index: 9999;}
+		canvas {width: 100%; height: 100%;}
+		#subtitles {width: 50%; font-family: 'din'; display: n
+		color:#fff;}
+		#cnt {position: absolute; top: 0; left: 0; width: 100%; display: block; margin: 12px; color:#fff;}
+		#canvas {
+			position: absolute; 
+			z-index: 100; 
+			top: 0; right: 0; 
+			width: 512px; height: 512px;
+			display: none;
+		}
+	</style>
+</head>
+<body>
+
+	<div id="cnt">
+		<audio id="audioPlayer" src="dawn-of-the-migrants.mp3" controls></audio>
+		<p id="time"></p>
+		<p id="subtitles"></p>
+	</div>
+
+    <canvas id="canvas"></canvas>
+
+<script src="js/three.min.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="sub.js"></script>
+<script>
+
+      
+let canvas = document.getElementById('canvas');
+let ctx = canvas.getContext('2d');
+
+canvas.width = 512 ;
+canvas.height = 512;
+
+const wrapText = function(ctx, text, x, y, maxWidth, lineHeight) {
+
+    let words = text.split(' ');
+    let line = '';
+    let testLine = '';
+    let lineArray = [];
+
+
+    for(var n = 0; n < words.length; n++) {
+        testLine += `${words[n]} `;
+        let metrics = ctx.measureText(testLine);
+        let testWidth = metrics.width;
+        if (testWidth > maxWidth && n > 0) {
+            lineArray.push([line, x, y]);
+            y += lineHeight;
+            line = `${words[n]} `;
+            testLine = `${words[n]} `;
+        }
+        else {
+            line += `${words[n]} `;
+        }
+        if(n === words.length - 1) {
+            lineArray.push([line, x, y]);
+        }
+    }
+    return lineArray;
+}
+
+
+//
+function create2Dtext(thetext, cap, fnt){
+	ctx.clearRect(0, 0, 512, 512);
+
+	if (fnt == 1) {ctx.font = '700 85px din';}
+	if (fnt == 2) {ctx.font = '600 65px indigo';}
+
+	ctx.fillStyle = 'white';
+
+	if (cap == true) {thetext = thetext.toUpperCase();}
+	let wrappedText = wrapText(ctx, thetext, 30, 80, 470, 70);
+
+	wrappedText.forEach(function(item) {
+	    ctx.fillText(item[0], item[1], item[2]); 
+	})
+}
+
+
+
+
+// 3D
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// camera
+camera.position.z = 5;
+
+var controls = new THREE.OrbitControls( camera, renderer.domElement);
+controls.maxDistance = 20;
+controls.minDistance = 1;
+
+// lights
+globalLight = new THREE.AmbientLight(0xffffff, 1);
+scene.add(globalLight);
+
+//
+const geometry = new THREE.PlaneGeometry( 3, 3);
+const material = new THREE.MeshBasicMaterial( { 
+	map : new THREE.CanvasTexture(canvas),
+	transparent:true,
+ } );
+window.cube = new THREE.Mesh( geometry, material );
+scene.add( cube );
+cube.material.map.magFilter = THREE.NearestFilter;
+cube.material.map.minFilter = THREE.NearestFilter;
+
+
+const size = 3.3;
+const divisions = 1;
+
+const gridHelper = new THREE.GridHelper( size, divisions );
+gridHelper.rotation.x = -Math.PI/2;
+scene.add( gridHelper );
+
+// const trigridHelper = new THREE.GridHelper( size*3, divisions );
+// trigridHelper.rotation.x = -Math.PI/2;
+// scene.add( trigridHelper );
+
+
+// events
+window.addEventListener( 'resize', onWindowResize, false );
+// resize event
+function onWindowResize() {
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+
+function animate() {
+	ths = (audioPlayer.currentTime/100).toFixed(2)
+	time.innerHTML = ths;
+
+	// create text
+	subs.forEach(function(element, index){
+		if( ths == element.start){
+			text = element.text;
+			// createText();
+			// document.getElementById('subtitles').innerHTML = text;
+			create2Dtext(text, element.cap, element.font)
+			cube.material.map.needsUpdate = true;
+			text = '';			
+		}
+		if (ths == element.end) {
+			text = '';
+		}
+	});// subs
+
+
+
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
+};
+
+
+// for(var n = 0; n < subs.length; n++) {
+// 	console.log(n)
+// }
+
+console.log(subs.length);
+
+// for(var n = 0; n < subs.length; n++) {
+// 	// ctx.clearRect(0, 0, 512, 512);
+// 	create2Dtext(subs[n].text, subs[n].cap, subs[n].font)
+
+// 	const ggeometry = new THREE.PlaneGeometry( 2, 2);
+// 	const gmaterial = new THREE.MeshBasicMaterial( { 
+// 		// color:'red',
+// 		map : new THREE.CanvasTexture(canvas),
+// 		transparent:true,
+// 	 } );
+// 	gcube = new THREE.Mesh( ggeometry, gmaterial );
+// 	scene.add( gcube );
+// 	gcube.position.x = (n*1.1)-12;
+// 	gcube.position.y = -2;
+// 	// gcube.material.map.magFilter = THREE.NearestFilter;
+// 	// gcube.material.map.minFilter = THREE.NearestFilter;
+// 	// gcube.material.map.needsUpdate = true;
+
+// 	// console.log(n, subs[n].text)
+// }
+
+
+
+//  START		<<<<<<<<<<<<<<<<  
+animate();
+
+
+</script>
+</body>
+</html>
