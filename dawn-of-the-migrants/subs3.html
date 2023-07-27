@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>subs</title>
+    <link rel="preload" as="font" href="font/indigo.otf" crossorigin>
+    <link rel="preload" as="font" href="font/din-condensed-bold.ttf" crossorigin>
+    <link rel="preload" as="font" href="font/din-condensed-bold-webfont.woff" crossorigin>
+
+	<style type="text/css">
+		@font-face {
+		font-family: 'din';
+		src: url('font/din-condensed-bold-webfont.woff') format('woff'),
+		url('font/din-condensed-bold.ttf') format('truetype');
+		} 
+		@font-face {
+	    font-family: 'indigo';
+	    font-weight: bold;
+	    src: url("font/indigo.otf") format("opentype");
+		}
+		body {font-family: 'din', monospace; color: #fff;
+			font-size: 2em; overflow: hidden; background-color: maroon;
+			margin: 0;}
+		a {display: block; line-height: 1.4em;}
+		audio {width: 80%; position: relative; z-index: 9999;}
+		canvas {width: 100%; height: 100%;}
+		#cnt {position: absolute; bottom: 40px; left: 0; width: 100%; display: block; margin: 0 12px; color:#fff; height: 20px;}
+		#time {margin: 12px; position: absolute; right: 12px; top: 0;}
+		#canvas {
+			position: absolute; 
+			z-index: 100; 
+			top: 0; right: 0; 
+			width: 512px; height: 512px;
+			display: none;
+		}
+		.font_preload {visibility: hidden;}
+	</style>
+</head>
+<body>
+
+	<div id="cnt">
+		<audio id="audioPlayer" src="dawn-of-the-migrants.mp3" controls></audio>
+		<p id="time"></p>
+	</div>
+
+    <canvas id="canvas"></canvas>
+
+	<div class="font_preload">
+	    <span style="font-family: 'din';"></span>
+	    <span style="font-family: 'indigo';"></span>
+	</div>
+
+<!-- <script src="js/three.min.js"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.130.0/build/three.min.js"></script>
+
+<script src="js/OrbitControls.js"></script>
+<script src="sub.js"></script>
+<script src="Water.js"></script>
+
+
+<script>
+var thisscene = 0;
+      
+let canvas = document.getElementById('canvas');
+let ctx = canvas.getContext('2d');
+
+canvas.width = 512 ;
+canvas.height = 512;
+
+const wrapText = function(ctx, text, x, y, maxWidth, lineHeight) {
+
+    let words = text.split(' ');
+    let line = '';
+    let testLine = '';
+    let lineArray = [];
+
+
+    for(var n = 0; n < words.length; n++) {
+        testLine += `${words[n]} `;
+        let metrics = ctx.measureText(testLine);
+        let testWidth = metrics.width;
+        if (testWidth > maxWidth && n > 0) {
+            lineArray.push([line, x, y]);
+            y += lineHeight;
+            line = `${words[n]} `;
+            testLine = `${words[n]} `;
+        }
+        else {
+            line += `${words[n]} `;
+        }
+        if(n === words.length - 1) {
+            lineArray.push([line, x, y]);
+        }
+    }
+
+    return lineArray;
+}
+
+
+//
+function create2Dtext(thetext, cap, fnt){
+	ctx.clearRect(0, 0, 512, 512);
+
+	if (fnt == 1) {ctx.font = '700 85px din';}
+	if (fnt == 2) {ctx.font = '600 65px indigo';}
+
+	ctx.fillStyle = 'white';
+
+	if (cap == true) {thetext = thetext.toUpperCase();}
+	let wrappedText = wrapText(ctx, thetext, 30, 80, 470, 70);
+
+	wrappedText.forEach(function(item) {
+	    ctx.fillText(item[0], item[1], item[2]); 
+	})
+}
+
+
+
+
+// 3D
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// camera
+camera.position.y = 2;
+camera.position.z = 20;
+
+var controls = new THREE.OrbitControls( camera, renderer.domElement);
+controls.maxDistance = 50;
+controls.minDistance = 1;
+controls.maxPolarAngle = Math.PI * 0.47;
+
+
+// lights
+globalLight = new THREE.AmbientLight(0xffffff, 1);
+scene.add(globalLight);
+
+textplane = new THREE.Group();
+textplane.name = "textplane";
+textplane.position.set(2,7,0)
+scene.add( textplane );
+
+
+//
+const geometry = new THREE.PlaneGeometry( 9, 9);
+const material = new THREE.MeshBasicMaterial( { 
+	map : new THREE.CanvasTexture(canvas),
+	transparent:true,
+ } );
+plane = new THREE.Mesh( geometry, material );
+textplane.add( plane );
+plane.material.map.magFilter = THREE.NearestFilter;
+plane.material.map.minFilter = THREE.NearestFilter;
+
+// square line
+const size = 9.3;
+const divisions = 1;
+
+const gridHelper = new THREE.GridHelper( size, divisions );
+gridHelper.rotation.x = -Math.PI/2;
+textplane.add( gridHelper );
+
+// events
+window.addEventListener( 'resize', onWindowResize, false );
+// resize event
+function onWindowResize() {
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+
+// people group
+boatgroup = new THREE.Group();
+boatgroup.name = "boatgroup";
+boatgroup.rotation.set(0, -Math.PI/2, 0);
+boatgroup.position.set(4, 1, 0);
+boatgroup.scale.set(0.5,0.5,0.5)
+scene.add( boatgroup );
+
+// models
+var people = [];
+var objects = [];
+var xloader = new THREE.BufferGeometryLoader();
+createobject(objects, boatgroup, 'boat.json', 'boat.png', 0, -3, 3, 0);
+createobject(people, boatgroup, 'person1.json', 'person3.png', 0, -3, 10.6, 0);
+createobject(people, boatgroup, 'person1.json', 'person3.png', -1.5, -3, 9.4, -1);
+createobject(people, boatgroup, 'person1.json', 'person3.png', 1.5, -3, 9.4, 1);
+createobject(people, boatgroup, 'person1.json', 'person3.png', 2, -3, 7.2, 1.6);
+createobject(people, boatgroup, 'person1.json', 'person3.png', -2, -3, 7.2, -1.6);
+createobject(people, boatgroup, 'person1.json', 'person3.png', -2, -3, 4.7, -1.6);
+createobject(people, boatgroup, 'person1.json', 'person3.png', 2, -3, 4.7, 1.6);
+createobject(people, boatgroup, 'person1.json', 'person3.png', -2, -3, 2.2, -1.6);
+createobject(people, boatgroup, 'person1.json', 'person3.png', 2, -3, 2.2, 1.6);
+createobject(people, boatgroup, 'person1.json', 'person3.png', -2, -3, -0.3, -1.6);
+createobject(people, boatgroup, 'person1.json', 'person3.png', 2, -3, -0.3, 1.6);
+createobject(people, boatgroup, 'person1.json', 'person3.png', -1.3, -2.8, -2, Math.PI);
+createobject(people, boatgroup, 'person1.json', 'person3.png', 1.3, -2.8, -2, Math.PI);
+
+// create F
+function createobject(array ,xobj, thisobj, tex, x, y, z, rot) {
+	xloader.load(
+		thisobj,
+		function ( geometry ) {
+			var texture = new THREE.TextureLoader().load( tex );
+			texture.magFilter = THREE.NearestFilter;
+			texture.minFilter = THREE.NearestFilter;
+			var material = new THREE.MeshBasicMaterial( { 
+				map: texture,
+			} );
+			cobj = new THREE.Mesh( geometry, material );
+			cobj.position.set(x,y,z)
+			cobj.rotation.y = rot;
+			cobj.scale.set(5,5,5)
+			xobj.add( cobj );
+			array.push(cobj);
+		},
+		function ( xhr ) {
+		},
+		function ( xhr ) {
+			console.log( 'An error happened' );
+		}
+		);
+}
+
+
+var parameters = {
+	size: 1,
+	distortionScale: 2.7,
+	alpha: 0.2
+};
+
+
+// make water
+function setWater() {
+	var waterGeometry = new THREE.PlaneGeometry( 100, 100, 200, 200 );
+
+	// window.water = new THREE.Water(
+	// 	waterGeometry,
+	// 	{
+	// 		textureWidth: 512,
+	// 		textureHeight: 512,
+	// 		waterNormals: new THREE.TextureLoader().load( 'waternormals.jpg', function ( texture ) {
+	// 			texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+	// 		}),
+	// 		waterColor: 0x000000,
+	// 		distortionScale: parameters.distortionScale,
+	// 	}
+	// 	);
+	const wmaterial = new THREE.MeshBasicMaterial( { 
+		color: 0x000000,
+		transparent:true,
+		opacity:0.4
+	 } );
+	water = new THREE.Mesh( waterGeometry, wmaterial );
+
+	water.position.set(0,0,0);
+
+	water.rotation.x = - Math.PI / 2;
+	// water.material.uniforms.alpha.value = parameters.alpha;
+	scene.add( water );
+}
+
+function animate() {
+	ths = (audioPlayer.currentTime/100).toFixed(2)
+
+	// create text
+	subs.forEach(function(element, index){
+		if( ths == element.start){
+			text = element.text;
+			once(text, element.cap, element.font);
+			if (index != thisscene) {
+				xswitch = false;
+			}
+			thisscene = index;
+		}		
+	});// subs
+
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
+};
+
+
+
+// do once
+var xswitch = false;
+
+var once = (function(a, b, c) {
+    return function( a, b, c) {
+        if (!xswitch) {
+            xswitch = true;
+		    // 
+			create2Dtext(a, b, c)
+			plane.material.map.needsUpdate = true;
+			text = '';			
+			time.innerHTML = 'sc'+thisscene +' '+ths;
+			// document.body.style.backgroundColor = 'rgb('+ (255-(thisscene*4)) +', 0, 0)';
+        }
+    };
+})();
+
+
+// spacebar
+document.body.onkeyup = function(e){
+    if(e.keyCode == 32){
+    	audioPlayer.paused ? audioPlayer.play() : audioPlayer.pause()
+    }
+}
+
+
+
+//  START		<<<<<<<<<<<<<<<<  
+setWater();
+animate();
+// console.log(subs.length);
+
+
+
+</script>
+</body>
+</html>
