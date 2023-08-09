@@ -1,0 +1,368 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>performance capture</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+	body {
+		background-color: #f0f0f0;
+		color: #444;
+		margin: 0; padding: 0;
+		overflow: hidden;
+		font-family: monospace;
+		user-select:none;
+	}
+	#hud {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		padding: 10px;
+		line-height: 50px;
+		width: 100%;
+	}
+	button {
+		font-family: monospace;
+		display: block;
+		width: 50px;
+		height: 50px;
+		outline: none; border:none;
+		background-color: transparent;
+		color: #fff;
+		background-color: #666;
+		margin: 10px 0; padding: 0;
+		cursor: pointer;
+		border-radius: 5px;
+	}
+	button:hover {background-color: #660000;}
+	#recording {
+		line-height: 50px;
+		display: block;
+		width: 50px;
+		height: 50px;	
+		background-color: #ff0000;
+		margin: 0; padding: 0;
+		border-radius: 100%;	
+	}
+	#frames {
+		line-height: 50px;
+		display: block;
+		width: 50px;
+		height: 50px;		
+		background-color: #eeeeee;
+		text-align: center;	
+	}
+	.hide {
+		/*visibility: hidden;*/
+		opacity: 0.2;
+	}
+	#thisframe {position: absolute; top: 0; padding: 20px;}
+</style>
+</head>
+<body>
+		<span id="thisframe">0</span>
+
+<div id="hud">
+	<span id="frames">0</span>
+	<button id="resetbtn" onclick="reset()" class="reset">clr</button>
+	<button id="playme" onclick="playanimation()">
+		play
+	</button>
+	<span id="recording" class="hide"></span>
+</div>
+	<script src="https://cdn.jsdelivr.net/npm/three@0.132.0/build/three.js"></script>
+
+
+	<script >
+
+	let rec = document.getElementById("recording");
+	let playbtn = document.getElementById("playme");
+	let resetbtn = document.getElementById("resetbtn");
+	let frames = document.getElementById("frames");
+	let thisframe = document.getElementById("thisframe");
+	
+
+	let frame = 0;
+	let playingframe = 0;
+	let recording = false;
+	let playing = false;
+	let camera, scene, renderer;
+	let plane;
+	let pointer, raycaster, isShiftDown = false;
+
+	let rollOverMesh, rollOverMaterial;
+	let cubeGeo, cubeMaterial;
+
+	let objects = [];
+	const stage = [];
+	let intersect = [];
+
+
+	init();
+	animate();
+
+	function init() {
+
+		camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
+		camera.position.set( 0, 40, 700 );
+		camera.lookAt( 0, 0, 0 );
+
+		scene = new THREE.Scene();
+		scene.background = new THREE.Color( 0xf0f0f0 );
+
+		group = new THREE.Group();
+		scene.add( group );
+
+	// roll-over helpers
+
+	const rollOverGeo = new THREE.BoxGeometry( 50, 50, 50 );
+	rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.5, transparent: true } );
+	rollOverMesh = new THREE.Mesh( rollOverGeo, rollOverMaterial );
+	scene.add( rollOverMesh );
+
+	// cubes
+
+	cubeGeo = new THREE.PlaneGeometry( 5, 5 );
+	cubeMaterial = new THREE.MeshLambertMaterial( { color: 0xff0000, 
+		// map: new THREE.TextureLoader().load( 'textures/square-outline-textured.png') 
+	} );
+
+	// grid
+
+	const gridHelper = new THREE.GridHelper( 2000, 20 );
+	// geometry.rotateX( - Math.PI / 2 );
+	gridHelper.position.y = -100;
+	scene.add( gridHelper );
+
+	// ray cast plane
+
+	raycaster = new THREE.Raycaster();
+	pointer = new THREE.Vector2();
+
+	const geometry = new THREE.PlaneGeometry( 1000, 500 );
+	
+
+	plane = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( {
+		wireframe:true,
+		color:0x606060
+		// visible: false
+	} ) );
+	scene.add( plane );
+
+	stage.push( plane );
+
+	// lights
+
+	const ambientLight = new THREE.AmbientLight( 0x606060 );
+	scene.add( ambientLight );
+
+	const directionalLight = new THREE.DirectionalLight( 0xffffff );
+	directionalLight.position.set( 1, 0.75, 0.5 ).normalize();
+	scene.add( directionalLight );
+
+	renderer = new THREE.WebGLRenderer( { antialias: true } );
+	renderer.setPixelRatio( window.devicePixelRatio );
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( renderer.domElement );
+
+	document.addEventListener( 'pointermove', onPointerMove );
+	document.addEventListener( 'pointerdown', onPointerDown );
+	document.addEventListener( 'pointerup', onPointerUp );
+	document.addEventListener( 'onmouseup', onPointerUp );
+	document.addEventListener( 'keydown', onDocumentKeyDown );
+	document.addEventListener( 'keyup', onDocumentKeyUp );
+
+	//
+
+	window.addEventListener( 'resize', onWindowResize );
+
+}
+
+function onWindowResize() {
+
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+
+	renderer.setSize( window.innerWidth, window.innerHeight );
+
+	animate();
+
+}
+
+
+// on release
+function onPointerUp( event ) {
+	recording = false;
+	rec.classList = 'hide';
+	resetbtn.classList = '';
+	playbtn.classList = '';
+	frames.innerHTML = objects.length;
+	// playingframe = 0;
+}
+
+
+// on mouse move
+function onPointerMove( event ) {
+
+	pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
+
+	raycaster.setFromCamera( pointer, camera );
+
+	const intersects = raycaster.intersectObjects( stage, false );
+
+	if ( intersects.length > 0 ) {
+		
+		intersect = intersects[ 0 ];
+		rollOverMesh.position.copy( intersect.point );
+		// rollOverMesh.position.copy( intersect.point ).add( intersect.face.normal );
+		// rollOverMesh.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 );
+
+		animate();
+
+	}
+
+}
+
+// on press
+function onPointerDown( event ) {
+
+	pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
+
+	raycaster.setFromCamera( pointer, camera );
+
+	const intersects = raycaster.intersectObjects( stage, false );
+
+	if ( intersects.length > 0 ) {
+
+		intersect = intersects[ 0 ];
+		// console.log(intersect)
+
+		// delete cube
+
+		if ( isShiftDown ) {
+
+			if ( intersect.object !== plane ) {
+
+				scene.remove( intersect.object );
+
+				objects.splice( objects.indexOf( intersect.object ), 1 );
+
+			}
+
+			// create cube
+
+		} else {
+			recording = true;
+			makekeyframe(intersect);
+			resetbtn.classList = 'hide';
+		}
+	
+		rec.classList = '';
+		animate();
+
+	}
+
+}
+
+
+// create keys on mouse press
+function makekeyframe(intersect){
+	const voxel = new THREE.Mesh( cubeGeo, cubeMaterial );
+	intersect.point.z = 0;
+	voxel.position.copy( intersect.point );
+	group.add( voxel );
+	objects.push( voxel.position );
+}
+
+
+// keydown
+function onDocumentKeyDown( event ) {
+
+	switch ( event.keyCode ) {
+
+		case 16: isShiftDown = true; break;
+
+	}
+
+}
+
+// keyup
+function onDocumentKeyUp( event ) {
+
+	switch ( event.keyCode ) {
+
+		case 16: isShiftDown = false; break;
+
+	}
+
+}
+
+
+// play recorded track
+function playanimation(){
+	playing = true;
+	playingframe = 0;
+	console.log(objects)
+	animate();
+	// console.log(objects[34].position.x)
+
+}
+
+// reset recorded track
+function reset(){
+	objects = [];
+	for( var i = group.children.length - 1; i >= 0; i--) { 
+     obj = group.children[i];
+     group.remove(obj); 
+	}
+
+	frame = 0;
+	frames.innerHTML = 0;
+
+	console.log('deleted: '+objects, group)
+	animate()
+}
+
+
+// renderloop();
+
+// loop
+function animate() {
+	if (recording) {
+		frame++;
+		frames.innerHTML = frame;
+		playbtn.classList = 'hide';
+		reset.classList = 'hide';
+		makekeyframe(intersect);
+	}
+	if (playing ) {
+		playingframe++
+		thisframe.innerHTML = playingframe;
+
+	if (playingframe>objects.length-1) {
+		playing = false;
+		playingframe = 0;
+		thisframe.innerHTML = 0;		
+	}
+
+	rollOverMesh.position.x = objects[playingframe].x;
+	rollOverMesh.position.y = objects[playingframe].y;
+
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
+
+	} 
+
+
+	renderer.render( scene, camera );
+}
+
+
+// function 	renderloop(){
+// 	renderer.render( scene, camera );
+// }
+</script>
+
+</body>
+</html>
