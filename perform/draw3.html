@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta content='width=device-width, initial-scale=1' name='viewport'/>
+    <title>quadratic</title>
+    <style>
+    * {margin: 0; padding: 0;}
+    html { user-select:none; font-family: monospace;
+        background-color: #111;}
+        body { overflow: hidden; height: 100%; width: 100%; 
+            background-color: rgba(100,100,100,1); 
+        }
+        canvas {display: block; }
+        #center {
+         display: flex;
+         justify-content: center;
+         align-items: center;
+         height: 100vh;
+     }
+     #hud {
+        position: absolute;
+        z-index: 99;
+        bottom: 0;
+        left: 0;
+        max-width: 22px;
+    }
+    #hud button {
+        padding: 2em;
+        margin: 4px;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: #fff;
+        font-family: monospace;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+
+    <div id="center">
+        <canvas  id="drawcanvas"></canvas>
+    </div>
+
+    <div id="hud">
+        <button id="clearbtn" >&#x2715;</button>
+        <button id="playbtn" >&#9654;</button>
+    </div>
+
+
+
+
+    <script>
+// vars
+var Xpos = [],
+Ypos = [],
+i = -1;
+var recording = [];
+var isMouseDown = false;
+var frame = 0;
+var stopped = false;
+var pointer = [{"x":0, "y":0}];
+
+// canvas
+var drawcanvas = document.getElementById('drawcanvas'); 
+
+drawcanvas.width = window.innerWidth;
+drawcanvas.height = window.innerHeight;
+
+context = drawcanvas.getContext('2d');
+
+
+// events
+function onPointerUp() {
+    isMouseDown = false;
+    ++i;
+    Xpos = [];
+    Ypos = [];
+    i = -1;
+    recstate = false;
+}
+
+// function mouseup() {
+//     isMouseDown = false;
+//     ++i;
+//     Xpos = [];
+//     Ypos = [];
+//     i = -1;
+//     recstate = false;
+// }
+
+// function mousedown(e) {
+//     e.preventDefault();
+//     isMouseDown = true;
+//     recstate = true;
+// }
+
+  function onPointerDown( e ) {
+    // mousedown=true;
+    // pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    // pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    e.preventDefault();
+    isMouseDown = true;
+    recstate = true;
+    }
+
+    
+  function onPointerMove( event ) {
+    if (isMouseDown){
+        var rect = event.target.getBoundingClientRect();   
+        ++i;
+        Xpos[i] = event.clientX - rect.left;
+        Ypos[i] = event.clientY - rect.top; 
+        var x1 = Xpos[i-2];
+        var y1 = Ypos[i-2];
+        var x2 = Xpos[i-1];
+        var y2 = Ypos[i-1];
+        var x3 = Xpos[i];
+        var y3 = Ypos[i];
+        var mid1x = (x1 + x2)/2;
+        var mid1y = (y1 + y2)/2;
+        var mid2x = (x2 + x3)/2;
+        var mid2y = (y2 + y3)/2;
+
+        if(i>1) {
+            recstate = true;
+            drawQuadraticThreePoints(mid1x, mid1y, x2, y2, mid2x, mid2y);
+        }
+    } // ifmousedown
+  }
+
+// playback stroke
+function moveit(x, y) {
+        //
+        ++i;
+        Xpos[i] = x;
+        Ypos[i] = y; 
+        var x1 = Xpos[i-2];
+        var y1 = Ypos[i-2];
+        var x2 = Xpos[i-1];
+        var y2 = Ypos[i-1];
+        var x3 = Xpos[i];
+        var y3 = Ypos[i];
+        var mid1x = (x1 + x2)/2;
+        var mid1y = (y1 + y2)/2;
+        var mid2x = (x2 + x3)/2;
+        var mid2y = (y2 + y3)/2;
+
+        if(i>1) {
+            drawQuadraticThreePoints(mid1x, mid1y, x2, y2, mid2x, mid2y);
+        }
+}// if mousedown
+
+
+// events
+window.addEventListener( 'pointerup', onPointerUp, true );
+window.addEventListener( 'pointerdown', onPointerDown, true );
+window.addEventListener( 'pointermove', onPointerMove, true );
+
+// draw
+function drawQuadraticThreePoints (x1,y1,x2,y2,x3,y3, distance, velocity) {
+    context.strokeStyle = 0x000000;
+    context.lineWidth   = 10;  
+    context.beginPath();
+    context.moveTo(x1,y1);
+    context.quadraticCurveTo(x2,y2,x3,y3); // curved
+    // context.lineTo(x3, y3); // straight
+    context.stroke();
+    if (recstate) {recording.push({x1,y1})}
+
+}
+
+// play btn
+var playbtn = document.getElementById('playbtn');
+playbtn.addEventListener('click', playfn, false);
+function playfn(argument) {
+    stopped = false;
+    context.clearRect(0,0,drawcanvas.width,drawcanvas.height);
+    animate()
+}
+
+// clear btn
+var clearbtn = document.getElementById('clearbtn');
+clearbtn.addEventListener('click', clrfn, false);
+function clrfn(argument) {
+    recording = [];
+    context.clearRect(0,0,drawcanvas.width,drawcanvas.height);
+    frame = 0;    
+    stopped = true;
+}
+
+
+// play
+function animate() {
+    frame++;
+    if (frame>recording.length-1) {frame=0; return}
+    moveit(recording[frame].x1, recording[frame].y1)
+    if (stopped || frame>recording.length) {return}
+        reqAnim = window.requestAnimationFrame(animate);
+}
+</script>
+
+</body>
+</html>
