@@ -1,0 +1,255 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>paper club variable logo</title>
+	<style type="text/css">
+	body {
+		margin: 0; padding:0; 
+		font-size: 2em;
+		background: #e1d8d0 url('whtppr.jpg') center center no-repeat;
+		background-attachment: fixed;
+		background-size: cover;		
+		width: 100%; height: 100%;
+		text-align: center;
+	}
+	
+	input[type=range]:after {
+		content:'';
+		display: block;
+		position: absolute;
+		top: -4px;
+		left: -4px;
+		width: 308px;
+		height: 13px;
+		background: rgba(0,0,0,0.8);
+		border-radius: 8px;
+		z-index: -3;
+	}
+
+	input[type=range] {
+		display: block;
+		-webkit-appearance: none; 
+		background: transparent;
+		width:300px;
+		margin: 26px;
+		position: absolute; 
+		z-index: 2;
+	}
+
+	input[type=range]::-webkit-slider-thumb {
+		-webkit-appearance: none;
+	}
+
+	input[type=range]:focus {
+		outline: none;
+		opacity: 1;
+	}
+
+	input[type=range]::-ms-track {
+		cursor: pointer;
+		background: transparent; 
+		border-color: transparent;
+		color: transparent;
+	}
+
+	/* thumb circle button */
+	input[type=range]::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		height: 40px;
+		width: 40px;
+		background: #fff;
+		border-radius: 100%;
+		cursor: pointer;
+		margin-top: -17px;
+		transform-origin: center;
+		border:rgba(0,0,0,1) 4px solid;
+		box-shadow: 0 0 5px rgba(0,0,0,0.5);
+	}
+
+	/* Firefox */
+	input[type=range]::-moz-range-thumb {
+		height: 40px;
+		width: 40px;
+		background: #fff;
+		border-radius: 100%;
+		cursor: pointer;
+	}
+
+	/* IE */
+	input[type=range]::-ms-thumb {
+		height: 40px;
+		width: 40px;
+		background: #fff;
+		border-radius: 100%;
+		cursor: pointer;
+	}
+
+	input[type=range]::-webkit-slider-runnable-track {
+		height: 5px;
+		border-radius: 5px;
+		cursor: pointer;
+		background: #888;
+	}
+
+	/* track */
+	input[type=range]:focus::-webkit-slider-runnable-track {
+		background: #888;
+	}
+
+	input[type=range]::-moz-range-track {
+		height: 5px;
+		border-radius: 5px;
+		cursor: pointer;
+		background: #888;
+	}
+
+	input[type=range]::-ms-track {
+		height: 5px;
+		border-radius: 5px;
+		cursor: pointer;
+		background: transparent;
+		color: transparent;
+	}
+
+	input[type=range]::-webkit-slider-thumb:hover {
+		transition: all 0.2s ease-in-out;
+		background: red !important;
+		transform: scale(1.1);
+	}
+
+	#logoimg {
+	  position: fixed;
+	  top: 50%;
+	  left: 50%;
+	  transform: translate(-50%, -50%);
+	}	
+
+	#hud {
+		display: block;
+		width: 100vw;
+		text-align: center;
+		margin: 0;
+		position: absolute;
+		bottom: 80px;
+		}	
+
+	.cntr {
+		margin: 0 auto; 
+		display: block; 
+		width: 360px;
+		text-align: left;
+		background: red;
+		
+	}
+
+	#logoimg:hover {
+		cursor: pointer;
+	}
+	#hud button {
+		display: none;
+	}
+</style>
+</head>
+<body>
+
+
+		<svg id="logoimg" class="logo" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none" x="0px" y="0px" width="300px" height="300px" viewBox="0 0 300 300" onclick="logoanim();">
+
+			<path id="logopath" 
+			stroke="#000000" 
+			stroke-width="5" 
+			stroke-linejoin="round" 
+			stroke-linecap="round" 
+			fill="none" d="
+			M 291.85 109.8
+			Q 291.2533203125 106.089453125 288.9 103.55 288.2 102.7 287.35 102.15 286.4 101.6 285.6 101.3 284.85 101 283.35 101.5 281.45 102.05 279.6 103.4
+			L 273.7 108.45
+			Q 269.7765625 112.09375 266.35 116.225 262.9234375 120.35625 257 133.1
+			L 258.975 127.675
+			Q 259.4158203125 126.52421875 259.675 125.875 259.99609375 125.0388671875 260.025 125 260.034375 124.973046875 260.05 124.95 264.5033203125 114.7212890625 267.45 104.3 266.4033203125 107.109375 265.35 109.925 265.02109375 110.86171875 262 117.2 252.95 124.6 238.05 130.85 234.55 132.15 230.6 132.95 225.85 134 220.8 134.15 215.5 134.3 211.45 132.8 207.05 131.25 205.1 127.75 203.5474609375 125.1013671875 204.25 120.9 221.811328125 113.8921875 230.2 107.95 227.9 102 222.2 101 216.55 99.95 210.95 107.3 205.4 114.6 204.7 118.7 204.62421875 118.965625 204.55 119.225 205.141015625 118.28046875 205.75 116.2 206.356640625 114.1140625 211.75 107.375 217.1486328125 100.6421875 222.2 101.55 227.3 102.45 229.35 107.75 218.2853515625 114.4890625 204.4 120.1 186 126.2 165.85 128.95 154.72890625 130.9478515625 149 128.75 152 129.5 154.95 129.55 158.65 129.5 161.95 128.75 164.65 128.1 167.5 126.95 167.85 126.75 168.25 126.55 172.35 124.5 175.6 121 176.25 120.15 176.9 119.2 178.8 116.25 179.4 113.35 180 109.8 177.65 107.7 177.2 107.3 176.9 107.05 176.6 106.9 176.5 106.85 172.35 105.75 168.3 107.7 167.65 107.9 167 108.3 164.1 109.8 160.65 112.6 154.9 117.2 148.45 126.5 140.5 137.45 133.45 155.1
+			L 127.8 166.55 157.55 96.7 153.6 104.1 149.725 113.7
+			Q 149.1435546875 115.6673828125 147.6 117.25 135.4 126.7 115.65 132.8 111 133.65 107.55 133.85 103.05 134.35 101.35 132.45 99.55 130.5 99.6 127.3 99.7 124.85 100.7 121.85 100.85 121.4 101.15 120.65 101.4 119.95 101.55 119.7 101.6 119.45 103.2 115.55 104.064453125 113.48046875 106 109.775 107.7576171875 106.41328125 110.4 101.7
+			L 106 108.15 89.1 125.75
+			Q 88.05 126.85 87.7 127.15 86.05 128.65 84.4 128.7 84.25 128.55 84.25 128.5 83.85 126.15 84.45 123.7 85.0912109375 121.2119140625 86.2 118.9 88.2986328125 115.338671875 91.025 113.35 93.750390625 111.3537109375 95.3 110.25 97.5 108.45 100.45 108.45 102.3328125 108.45 104.95 108.85 101.8 107.45 99.45 107.45 96.5 107.45 94.3 109.25 92.75 110.35 91.25 111.85 89.85 113.15 88.7 114.7 84.35 119.45 80.7 121.5 77 123.9 73.25 125.3
+			L 70.4 126.25
+			Q 58.6 129.95 46.1 130.15 39.82578125 130.6 34 129.6 31.2658203125 128.8833984375 30.2 127.75 33.1900390625 129.26015625 35.9 129.35 38.605078125 129.437109375 39.475 129.35 40.3451171875 129.254296875 42.775 128.65 45.1923828125 128.048046875 46.65 127.475 48.1103515625 126.9005859375 48.325 126.825 48.546484375 126.7498046875 48.95 126.55 52.85 124.5 55.95 121 56.6 120.15 57.2 119.2 59 116.25 59.55 113.35 60.2 109.8 57.9 107.7 57.5 107.3 57.15 107.05 56.95 106.9 56.8 106.85 52.85 105.75 49.05 107.7 48.4 107.9 47.8 108.3 45.05 109.8 41.7 112.6 36.25 117.2 30.1 126.5
+			L 22.45 138.7
+			Q 19.35 143.85 17.65 149.2
+			L 8.45 172.65 12.1 160.45 36.4 102.55 39 97.85
+			M 182.3 173
+			L 180.8 173.75 179.1 174.15 176.8 174.4
+			Q 174.45 174.4 172.45 173.65 170.4 172.9 168.85 171.45 167.3 170.05 166.45 168 165.6 166.05 165.6 163.55
+			L 165.8 161.15
+			Q 166.1 160 166.5 159 167.4 157 168.9 155.55 170.45 154.15 172.4 153.4 174.45 152.6 176.55 152.6
+			L 178.7 152.75 181.85 153.7
+			M 196 152.6
+			L 196 174.25 206.05 174.25
+			M 217.95 152.1
+			L 217.95 167.65
+			Q 217.95 174.4 225.15 174.4 232.4 174.4 232.4 167.65
+			L 232.4 152.1
+			M 247.3 152.5
+			L 247.35 174.25 253.6 174.25
+			Q 256.85 174.25 258.8 172.95 260.75 171.65 260.75 168.6 260.75 167.15 260.25 166.1 259.7 165 258.7 164.35 257.7 163.7 256.4 163.35 255.05 163 253.6 163
+			L 249.05 162.85 253.65 162.8
+			Q 256.9 162.8 258.35 161.35 259.8 159.95 259.8 157.65 259.8 156.55 259.45 155.65 259.05 154.65 258.35 153.95 256.9 152.5 253.65 152.5
+			L 247.8 152.5"/></path>
+		</svg>
+		
+	<div id="hud">
+		<div class="cntr">
+			<input id="sldr" type="range" value="5" min="0.1" max="15" step="0.1" title="pixellate" oninput="set(value)" />
+
+
+			<button id="join" onclick="val=round; setlinejoin(event)">round</button>
+			<button id="cap" onclick="val=bevel; setlineend(event)">bevel</button>
+
+		</div>
+	</div>
+
+<script>
+function set(value) {
+	document.getElementById("logopath").setAttribute('stroke-width',value);
+}
+function setlinejoin(value) {
+		thisbut.classList.toggle('round');
+	if ( thisbut.classList != "round") {
+		mesh.morphTargetInfluences[ thismorph ] = 0;
+		thisgroup.visible = true;
+		inspost.visible = false;
+		event.target.classList = 'txtlbl';
+	} else {
+		mesh.morphTargetInfluences[ thismorph ] = 1;
+		thisgroup.visible = false;
+		inspost.visible = true;
+	}
+
+	// bevel / round
+	document.getElementById("logopath").setAttribute('stroke-linejoin',value);
+}
+function setlineend(value) {
+	// square / round
+	document.getElementById("logopath").setAttribute('stroke-linecap',value);
+}
+
+// animate logo
+function logoanim() {
+	var path = document.querySelector('.logo path');
+	var length = path.getTotalLength();
+	path.style.transition = path.style.WebkitTransition = 'none';
+	path.style.strokeDasharray = length + ' ' + length;
+	path.style.strokeDashoffset = -length;
+	path.getBoundingClientRect();
+	path.style.transition = path.style.WebkitTransition =
+	'stroke-dashoffset 3s ease-out';
+	path.style.strokeDashoffset = '0';		
+}
+
+// start
+logoanim();
+</script>
+
+
+</body>
+</html>
