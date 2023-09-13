@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, target-densityDpi=device-dpi, minimal-ui' />
 
 	<title>paper club</title>
 
@@ -15,7 +15,9 @@
 	}
 	html {
 		scroll-behavior: smooth;
-		background: #e1d8d0;
+		background: #333 url('whtppr.jpg') center center no-repeat;
+		background-attachment: fixed;
+		background-size: cover;
 	}
 	body {
 		font-family: LeagueGothic-Regular;
@@ -26,17 +28,7 @@
 		text-align: center;
 		user-select:none;
 	}
-	body:after {
-		content:"";
-		position:fixed;
-		top:0; left: 0;
-		z-index:-1;
-		width:100vw;
-		height:100vh;
-		background:url(whtppr.jpg) no-repeat;
-		background-size: cover;
-		background-attachment: fixed;
-	}
+
 	a {
 		text-decoration: none;
 	}
@@ -161,6 +153,7 @@
 		position: fixed;
 		right: 0;
 		top: 0;		
+
 		text-align: right;
 		margin: 32px;
 		line-height: 32px;
