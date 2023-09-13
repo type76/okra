@@ -15,9 +15,7 @@
 	}
 	html {
 		scroll-behavior: smooth;
-		background: #e1d8d0 url('whtppr.jpg') center center no-repeat;
-		background-attachment: fixed;
-		background-size: cover;
+		background: #e1d8d0;
 	}
 	body {
 		font-family: LeagueGothic-Regular;
@@ -28,7 +26,17 @@
 		text-align: center;
 		user-select:none;
 	}
-
+	body:after {
+		content:"";
+		position:fixed;
+		top:0; left: 0;
+		z-index:-1;
+		width:100vw;
+		height:100vh;
+		background:url(whtppr.jpg) no-repeat;
+		background-size: cover;
+		background-attachment: fixed;
+	}
 	a {
 		text-decoration: none;
 	}
@@ -139,7 +147,6 @@
 		position: relative;
 		display: block;
 		height: 100vh;
-		height: 100lvh;
 		font-size: 32px;
 	}
 	#shop img {
