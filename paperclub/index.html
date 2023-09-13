@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, target-densityDpi=device-dpi, minimal-ui' />
+	<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, minimal-ui' />
 
 	<title>paper club</title>
 
@@ -430,6 +430,14 @@ let observer = new IntersectionObserver(callback, {
 		renderer.render( scene, camera );
 	};
 
+	// hide-address-bar
+	window.addEventListener("load",function() {
+		// Set a timeout...
+		setTimeout(function(){
+			// Hide the address bar!
+			window.scrollTo(0, 1);
+		}, 0);
+	});
 
 	// start
 	init()
