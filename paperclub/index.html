@@ -1,197 +1,361 @@
 <!DOCTYPE html>
 <html>
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, minimal-ui' />
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, minimal-ui' />
 
-	<title>paper club</title>
+    <title>paper club</title>
+    
+    <style type="text/css">
+      @font-face {
+        font-family: LeagueGothic-Regular;
+        font-weight: bold;
+        src: url("font/LeagueGothic-Regular.otf") format("opentype");
+      }
 
-	<style type="text/css">
-	@font-face {
-		font-family: LeagueGothic-Regular;
-		font-weight: bold;
-		src: url("font/LeagueGothic-Regular.otf") format("opentype");
-	}
-	html {
-		scroll-behavior: smooth;
-		background: #333;
-	}
-	body {
-		font-family: LeagueGothic-Regular;
-		margin: 0; 
-		padding: 0;
-		width: 100%; 
-		height: 100%;
-		text-align: center;
-		user-select:none;
-	}
+      html {
+        scroll-behavior: smooth;
+        background: #333 url('css/whtppr.jpg') center center no-repeat;
+        background-attachment: fixed;
+        background-size: cover;
+      }
 
-	a {
-		text-decoration: none;
-	}
+      body {
+        font-family: LeagueGothic-Regular;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        text-align: center;
+        user-select: none;
+      }
 
-	button {
-		margin: 0; padding: 0;
-		border:none;
-		outline: none;
-		background: transparent;
-	}
-	#cnv {
-		position: fixed; 
-		top: 0; left: 0;
-		width: 100%;
-		height: 100%;
-		z-index: -1;
-		background: #333 url('whtppr.jpg') center center no-repeat
-	}
-	#perlincol {
-		display: none;
-	}
+      a {
+        color: #330000;
+        text-decoration: none;
+      }
 
-	#logobtn {
-		display: block;
-		width: 300px;
-		height: 300px;
-		margin: 0px auto;
-	}
-	#logoimg {
-		display: block;
-	}
-	#logobtn::after {
-		content: '';
-		text-align: center;
-		width: 0px;
-		height: 4px;
-		background: rgba(0,0,0,0.2);
-		display: block;
-		margin: 12px auto;	
-		transition: all 0.2s ease-in-out;
-		position: relative;
-		top: -80px;
-	}
-	#logobtn:hover::after {
-		width: 200px;
-	}
-	.tagline {
-		opacity: 0.4;
-		position: relative;
-		top: -100px;
-		z-index: -1;
-	}
-	.tagline::before, article::before {
-		content: '';
-		text-align: center;
-		width: 200px;
-		height: 4px;
-		background: rgba(0,0,0,0.2);
-		display: block;
-		margin: 0 auto;
+      button {
+        margin: 0;
+        padding: 0;
+        border: none;
+        outline: none;
+        background: transparent;
+      }
 
-	}
-	.centered {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-	}		
-	.animating {
-		/*background: red !important;*/
-	}
+      #cnv {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+      }
 
-	a:hover, button:hover {
-		cursor: pointer;
-	}
-	.nextpage {
-		display: block;
-		color: rgba(0,0,0,0.3);
-		width: 60px;
-		height: 60px;
-		line-height: 70px;
-		margin: 0 auto;
-		background: transparent;
-		font-size: 20px;
-		position: relative;
-		z-index: 9;
-		text-shadow: 0 0 5px rgba(255,255,255,0.6);
-		text-decoration: none;
-	}
-	.nextpage:hover {
-		color: #fff;
-		text-shadow: 0 0 6px rgba(0,0,0,0.2);
-		transform: scale(1.4);
-	}
-	.flip:hover {
-		transform: scale(1.4) rotate(180deg);
-	}
+      #perlincol {
+        display: none;
+      }
 
-	svg {
-		filter: drop-shadow(3px 3px 2px rgb(0 0 0 / 0.3));
-	}
-	.nextpage:hover svg path {
-		stroke:#ff0000: 
-	}
-	.flip {
-		transform: rotate(180deg);
-	}
-	article, header {
-		position: relative;
-		display: block;
-		height: 100vh;
-		height: 100lvh;
-		font-size: 32px;
-	}
-	#shop img {
-		max-width: 200px;
-		height: auto;
-	}
-	li {list-style-type: none;}
-	#nav, ul, li {
-		margin: 0; padding: 0;
-	}
-	#nav {
-		position: fixed;
-		right: 0;
-		top: 0;		
+      #logobtn {
+        display: block;
+        width: 300px;
+        height: 300px;
+        margin: 0px auto;
+      }
 
-		text-align: right;
-		margin: 32px;
-		line-height: 32px;
-		z-index: 99;
-	}
-	#nav li a {
-		font-size: 32px;
-		color: #000;
-		text-shadow: 0 0 5px rgba(255,255,255,0.6);
-	}
-	.active {background-color: red !important;}
-	#xvar {
-		position: fixed;
-		bottom: 12px;
-		left: 12px;
-	}
-</style>
-</head>
-<body class="bdy">
-	
-	<ul id="nav">
-		<li><a href="#">home</a></li>
-		<li><a href="#about">about</a></li>
-		<li><a href="#shop">shop</a></li>
-		<li><a href="#contact">contact</a></li>
-	</ul>
+      #logoimg {
+        display: block;
+      }
 
-	<header  id="home">
-	<div class="centered" >
-		<button href="#" id="logobtn" style="  visibility: hidden;">
-			<svg id="logoimg" class="logo" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none" x="0px" y="0px" width="300px" height="300px" viewBox="0 0 300 300" onclick="logoanim();" 
-			style="display: none;">
-				<path id="logopath" 
-				stroke="#000000" 
-				stroke-width="6" 
-				stroke-linejoin="round" 
-				stroke-linecap="round" 
-				fill="none" d="
+      #logobtn::after {
+        content: '';
+        text-align: center;
+        width: 0px;
+        height: 4px;
+        background: rgba(0, 0, 0, 0.2);
+        display: block;
+        margin: 12px auto;
+        transition: all 0.2s ease-in-out;
+        position: relative;
+        top: -80px;
+      }
+
+      #logobtn:hover::after {
+        width: 200px;
+      }
+
+      .tagline {
+        opacity: 0.4;
+        position: relative;
+        top: -100px;
+        z-index: -1;
+      }
+
+      .scrolltext {
+        color: rgba(0, 0, 0, 0.5);
+        font-size: 80%;
+        line-height: 1px;
+        margin: 0;
+        padding: 0;
+      }
+
+      .tagline::before {
+        content: '';
+        text-align: center;
+        width: 200px;
+        height: 4px;
+        background: rgba(0, 0, 0, 0.2);
+        display: block;
+        margin: 0 auto;
+      }
+
+      .centered {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1;
+        width: 100%;
+      }
+
+      a:hover,
+      button:hover {
+        cursor: pointer;
+      }
+
+      .nextpage {
+        display: block;
+        color: rgba(0, 0, 0, 1);
+        width: 60px;
+        height: 60px;
+        line-height: 70px;
+        margin: 0 auto;
+        background: transparent;
+        font-size: 20px;
+        position: relative;
+        z-index: 9;
+        text-shadow: 0 0 5px rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+      }
+
+      .nextpage:hover {
+        color: #fff;
+        text-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+        transform: scale(1.4);
+        opacity: 1;
+      }
+
+      .flip:hover {
+        transform: rotate(180deg);
+      }
+
+      svg {
+        filter: drop-shadow(3px 3px 2px rgb(0 0 0 / 0.3));
+      }
+
+      .flip {
+        transform: rotate(180deg);
+      }
+
+      .totop {
+        width: 100%;
+        position: absolute;
+        bottom: 0;
+      }
+
+      article,
+      header {
+        position: relative;
+        display: block;
+        min-height: 100vh;
+        min-height: 100dvh;
+        font-size: 32px;
+      }
+
+      li {
+        list-style-type: none;
+      }
+
+      #nav,
+      ul,
+      li {
+        margin: 0;
+        padding: 0;
+      }
+
+      #nav {
+        position: fixed;
+        right: 0;
+        top: 0;
+        text-align: right;
+        margin: 32px;
+        line-height: 32px;
+        z-index: 99;
+      }
+
+      #nav li a {
+        font-size: 32px;
+        color: #000;
+        text-shadow: 0 0 5px rgba(255, 255, 255, 0.6);
+      }
+
+      .active a {
+        color: red !important;
+      }
+
+      #xvar {
+        position: fixed;
+        bottom: 12px;
+        left: 12px;
+      }
+
+      #shop .centered {
+        max-width: 600px;
+      }
+
+      #shop a.product img {
+        display: block;
+        max-width: 200px;
+        height: auto;
+      }
+
+      #shop a.product {
+        display: inline-block;
+        max-width: 200px;
+        min-height: 120px;
+        background: rgba(255, 255, 255, 0.2);
+        margin: 8px;
+        padding: 22px;
+        border-radius: 5px;
+        transition: all 0.2s ease-in-out;
+      }
+
+      #shop a.product:hover {
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      #contact svg {
+        margin: 0 auto;
+      }
+
+      #shopcontent {
+        display: none;
+        background: red;
+        width: 100%;
+        /*width: 300px;*/
+        /*height: 300px;*/
+        overflow-y: scroll;
+        margin: 2em auto;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        /*transform: translateX(-1000px);*/
+        transform: rotate3d(0, 0, 0, 0);
+        transition: all 0.2s ease-in-out;
+      }
+
+      #xcontent {
+        display: none;
+      }
+
+      #xcontent.show {
+        transform: rotate3d(0, 0.5, 0, 90deg);
+      }
+
+      #closebtn {
+        width: 60px;
+        height: 60px;
+        position: fixed;
+        top: 22px;
+        right: 22px;
+        font-size: 32px;
+        z-index: 9999;
+        cursor: pointer;
+        transition: 0.2s;
+        animation-delay: 0.2s;
+        visibility: hidden;
+        color: #fff;
+      }
+
+      .showpopup {
+        overflow-y: hidden;
+      }
+
+      .showpopup #closebtn {
+        transform: rotate(90deg);
+        visibility: visible;
+      }
+
+      #closebtn:hover {
+        transform: rotate(0deg);
+      }
+
+      #frame,
+      #xframe,
+      #xframe h2 {
+        margin: 0;
+        padding: 0;
+      }
+
+      #frame {
+        position: fixed;
+        top: -110%;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 999;
+        background-color: rgba(0, 0, 0, 0.7);
+        transition: 0.2s;
+      }
+
+      .showpopup #frame {
+        top: 0;
+        overflow: auto;
+      }
+
+      #xframe {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: block;
+        max-width: 540px;
+        min-height: 300px;
+        border-radius: 5px;
+        margin: 0 auto;
+        padding: 30px;
+        z-index: 999;
+        background: rgba(255, 255, 255, 1);
+        box-shadow: 0 0 15px rgba(0,0,0,0.3);
+        font-size:24px;
+      }
+
+      #frame:hover {
+        cursor: pointer;
+      }
+
+      #frame img:hover {
+        cursor: default;
+      }
+
+      #xframe img {
+        background-color: #fff;
+        padding: 4px;
+        box-shadow: 0 0 16px rgba(0, 0, 0, 0.5);
+      }
+    </style>
+  </head>
+  <body class="bdy">
+    <button id="closebtn" onclick="xpopup()">&#10006;</button>
+    <div id="frame">
+      <div src="#" id="xframe"></div>
+    </div>
+    <header id="home">
+      <div class="centered">
+        <button href="#" id="logobtn" style="visibility: hidden;">
+          <svg id="logoimg" class="logo" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none" x="0px" y="0px" width="300px" height="300px" viewBox="0 0 300 300" onclick="logoanim();">
+            <path id="logopath" stroke="#000000" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" fill="none" d="
 				M 291.85 109.8
 				Q 291.2533203125 106.089453125 288.9 103.55 288.2 102.7 287.35 102.15 286.4 101.6 285.6 101.3 284.85 101 283.35 101.5 281.45 102.05 279.6 103.4
 				L 273.7 108.45
@@ -224,224 +388,279 @@
 				Q 256.85 174.25 258.8 172.95 260.75 171.65 260.75 168.6 260.75 167.15 260.25 166.1 259.7 165 258.7 164.35 257.7 163.7 256.4 163.35 255.05 163 253.6 163
 				L 249.05 162.85 253.65 162.8
 				Q 256.9 162.8 258.35 161.35 259.8 159.95 259.8 157.65 259.8 156.55 259.45 155.65 259.05 154.65 258.35 153.95 256.9 152.5 253.65 152.5
-				L 247.8 152.5"/></path>
-			</svg>
-		</button>
+				L 247.8 152.5" />
+            </path>
+          </svg>
+        </button>
+        <p class="tagline">quality papers &amp; filters</p>
+        <p class="scrolltext">scroll <button class="nextpage" onclick="window.scrollTo(0, window.innerHeight) ">&#9660;</button>
+        </p>
+      </div>
+      <!-- centered -->
+    </header>
+    <article id="about">
+      <!-- <a class="nextpage" href="#shop">&#9660;</a> -->
+    </article>
+    <article id="shop">
+      <div class="centered">
+        <a href="#paypay" class="product">green papers <img src="img/pay-pay-nuevo-historia.png" width="618" height="271">
+        </a>
+        <a href="#bilit" class="product">rice papers <img src="img/bilit.png" width="500" height="160">
+        </a>
+        <a href="#raw" class="product">hemp papers <img src="img/raw.png" width="433" height="242">
+        </a>
+        <a href="#purize" class="product">carbon filters <img src="img/purize.png" width="420" height="170">
+        </a>
+      </div>
+      <div id="xcontent"></div>
+    </article>
+    <article id="contact">
+      <!-- <a class="nextpage flip" href="#">&#9660;</a> -->
+      <p class="scrolltext totop">top <button class="nextpage flip" href="" onclick="window.scrollTo(0, 0) ">&#9660;</button>
+      </p>
+    </article>
+    <script src="js/three.js"></script>
+    <script src='js/perlin.js'></script>
+    <script src="js/marked.min.js"></script>
+    <script>
+      // vars
+      var end = false;
+      var attop = false;
+      var num = 0;
+      var lerpnum = 0;
+      var thisnum = 0;
+      var animating = false;
+      // create html from md file
+      async function runpage(thisplace, here) {
+        let file = await fetch(here + '.md');
+        let text = await file.text();
+        var article = document.createElement('div');
+        article.classList = 'centered';
+        article.innerHTML = marked.parse(text);
+        thisplace.appendChild(article)
+      }
+      // marked options
+      marked.setOptions({
+        breaks: true
+      })
+      // animate logo
+      function logoanim() {
+        if (animating) {
+          return
+        }
+        document.getElementById('logobtn').style.visibility = 'visible';
+        lerpnum = 3;
+        animating = true;
+        var path = document.querySelector('.logo path');
+        var length = path.getTotalLength();
+        path.style.transition = path.style.WebkitTransition = 'none';
+        // 
+        path.style.stroke = '#000000'
+        path.style.strokeDasharray = length + ' ' + length;
+        path.style.strokeDashoffset = -length;
+        path.getBoundingClientRect();
+        path.style.transition = path.style.WebkitTransition = 'stroke-dashoffset 3s ease-out';
+        path.style.strokeDashoffset = '0';
+        setTimeout(function() {
+          animating = false;
+          lerpnum = 0;
+        }, 3000);
+      }
+      // draw perlin noise texture
+      function drawFrame() {
+        num++;
+        thisnum += (lerpnum - thisnum) * 0.1;
+        num = num + thisnum;
+        var max = -Infinity,
+          min = Infinity;
+        var noisefn = noise.simplex3;
+        for (var x = 0; x < perlincol.width; x++) {
+          for (var y = 0; y < perlincol.height; y++) {
+            var value = noisefn((x / 64) - (num / 700), (y / 64) + (num / 500), 2);
+            if (max < value) max = value;
+            if (min > value) min = value;
+            value = (1 + value) * 0.7 * 128;
+            var cell = (x + y * perlincol.width) * 4;
+            data[cell] = data[cell + 1] = data[cell + 2] = value;
+            data[cell + 3] = 255;
+          }
+        }
+        // use image
+        ctx.putImageData(ximage, 0, 0);
+        smoke.material.displacementMap.needsUpdate = true;
+        smoke.material.map.needsUpdate = true;
+      }
+      // three.js init
+      function init() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        //  renderer = new THREE.WebGLRenderer();
+        renderer = new THREE.WebGLRenderer({
+          alpha: true,
+          antialias: true
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.domElement.id = 'cnv';
+        document.body.appendChild(renderer.domElement);
+        // camera
+        camera.position.z = 5;
+        // lights
+        const globalLight = new THREE.AmbientLight(0xffffff, 1);
+        shadowLight = new THREE.DirectionalLight(0xffffff, 1);
+        shadowLight.position.set(10, 10, 10);
+        scene.add(globalLight);
+        scene.add(shadowLight);
+        // perlin
+        perlincol = document.createElement('canvas');
+        ctx = perlincol.getContext('2d');
+        perlincol.id = "perlincol";
+        document.body.appendChild(perlincol);
+        // texture options
+        perlincol.width = 256;
+        perlincol.height = 256;
+        var xspeed = 2000;
+        var fn = 'simplex'
+        ximage = ctx.createImageData(perlincol.width, perlincol.height);
+        data = ximage.data;
+        // smoke plane
+        var geometry = new THREE.PlaneBufferGeometry(200, 200, 100, 100);
+        var material = new THREE.MeshStandardMaterial({
+          displacementMap: new THREE.CanvasTexture(perlincol),
+          displacementScale: 30,
+          map: new THREE.TextureLoader().load('css/bg3.png'),
+          metalness: 0,
+          roughness: 20,
+          transparent: true,
+          opacity: 0.4
+        });
+        // smoke mesh
+        smoke = new THREE.Mesh(geometry, material);
+        material.depthWrite = false
+        smoke.name = 'smoke';
+        smoke.rotation.y = Math.PI / 2.1;
+        smoke.position.x = -10;
+        smoke.position.z = -120;
+        scene.add(smoke);
+        // icosahedron
+        var icogeometry = new THREE.IcosahedronBufferGeometry(1, 0);
+        var icomaterial = new THREE.MeshPhongMaterial({
+          color: 0x156289,
+          emissive: 0x072534,
+          flatShading: true
+        });
+        startobj = new THREE.Mesh(icogeometry, icomaterial);
+        startobj.position.y = -10;
+        scene.add(startobj);
+        // octahedron
+        var icogeometry2 = new THREE.OctahedronBufferGeometry(1, 0);
+        endobj = new THREE.Mesh(icogeometry2, icomaterial);
+        endobj.position.y = 10;
+        scene.add(endobj);
+      } // init
+      // resize event
+      window.addEventListener('resize', function() {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+      }, false);
+      // scroll event
+      window.onscroll = function(e) {
+        this.oldScroll = this.scrollY;
+        if (this.oldScroll >= this.scrollY) {
+          num = num + (this.scrollY / 100);
+        }
+        // restart logo anim
+        if (this.scrollY === 0) {
+          document.getElementById('logobtn').style.visibility = 'visible';
+          logoanim();
+          attop = true;
+        } else {
+          attop = false;
+        }
+        // hide logo on scroll down
+        if (this.scrollY > window.innerHeight - 100) {
+          document.getElementById('logobtn').style.visibility = 'hidden';
+        }
+        // end
+        if ((window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 100)) {
+          end = true;
+        } else {
+          end = false;
+        }
+      }
+      // loop
+      function animate() {
+        drawFrame();
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+        if (end) {
+          startobj.position.y += (0 - startobj.position.y) * 0.1;
+          startobj.rotation.y = num / 100;
+        } else {
+          startobj.position.y += (-10 - startobj.position.y) * 0.1;
+        }
+        if (attop) {
+          endobj.position.y += (1 - endobj.position.y) * 0.1;
+          endobj.rotation.y = num / 100;
+        } else {
+          endobj.position.y += (10 - endobj.position.y) * 0.1;
+        }
+        if (animating) {
+          endobj.rotation.z = thisnum;
+        } else {
+          endobj.rotation.z = thisnum;
+        }
+      };
+      // start
+      // render pages
+      runpage(about, 'about');
+      runpage(contact, 'contact');
+      runpage(xcontent, 'shopcontent');
+      init()
+      animate();
+      setTimeout(function() {
+        if (window.scrollY == 0) {
+          attop = true;
+          document.getElementById('logobtn').style.visibility = 'visible';
+          logoanim();
+        }
+      }, 900)
+      // show pop up 
+      function xpopup() {
+        xcontent.classList.toggle('show');
+        if (xcontent.classList != "show") {
+          document.body.classList = ''
+        } else {
+          document.body.classList = 'showpopup'
+        }
+      }
+      // click inside shop event 
+      document.getElementById("shop").addEventListener("click", function(e) {
+        // e.target
+        e.preventDefault();
+        var xcomposed = e.composedPath();
+        if (e.target && e.target.nodeName == "IMG") {
+          var url = xcomposed[1].href;
+          var hash = url.substring(url.indexOf('#') + 1);
+        }
+        if (e.target && e.target.nodeName == "A") {
+          var url = xcomposed[0].href;
+          var hash = url.substring(url.indexOf('#') + 1);
+        }
+        //
+        var firstDivContent = document.getElementById(hash);
+        var secondDivContent = document.getElementById('xframe');
+        secondDivContent.innerHTML = firstDivContent.innerHTML;
+        document.body.classList = 'showpopup';
+      });
 
-		<p class="tagline">quality papers &amp; filters</p>
-<!-- 		<a class="nextpage" href="#about">&#9660;</a>
- -->
-	</div> <!-- centered -->
-	</header>
-
-
-	<article id="about" >
-		<div class="centered">
-			<h2>about</h2>
-			<p>hello</p>
-			<!-- <a class="nextpage" href="#shop">&#9660;</a> -->
-		</div>
-		
-	</article>
-
-
-	<article id="shop" >
-		<div class="centered">
-			<h2>shop</h2>
-				<p><img src="img/pay-pay-nuevo-historia.png" width="618" height="271"></p>
-				<p><img src="img/bilit.png" width="500" height="160"></p>
-				<p><img src="img/raw.png" width="433" height="242"></p>
-
-			<!-- <a class="nextpage" href="#contact">&#9660;</a> -->
-		</div>
-	</article>
-
-	<article id="contact" >
-		<div class="centered">
-			<h2>contact</h2>
-			<p>hello</p>
-			<!-- <a class="nextpage flip" href="#">&#9660;</a> -->
-		</div>
-	</article>
-
-
-<p id="xvar"></p>
-
-	<script src="js/three.js"></script>
-	<script src='js/perlin.js'></script>
-
-	<script>
-var thisscene = 'home';
-
-let callback = (entries, observer) => {
-  entries.forEach(entry => {
-  	    if (entry.isIntersecting) {
-	    	thisscene = entry.target.id;
-	    	console.log(thisscene);
-	    	xvar.innerHTML = thisscene;
-		}
-  })
-}
-let observer = new IntersectionObserver(callback, {
-  threshold: [0.5]
-});
-
-
-
-['home', 'about', 'shop', 'contact'].forEach(d => {
-  const div = document.getElementById(d);
-  if (div) observer.observe(div);
-})
-
-
-
-	// vars
-	var num = 0;
-
-	// animate logo
-	function logoanim() {
-		document.getElementById('logobtn').classList = 'animating';
-		var path = document.querySelector('.logo path');
-		var length = path.getTotalLength();
-		path.style.transition = path.style.WebkitTransition = 'none';
-		// 
-		path.style.stroke = '#000000'
-		path.style.strokeDasharray = length + ' ' + length;
-		path.style.strokeDashoffset = -length;
-		path.getBoundingClientRect();
-		path.style.transition = path.style.WebkitTransition =
-		'stroke-dashoffset 3s ease-out';
-		path.style.strokeDashoffset = '0';		
-		
-		setTimeout(function () {
-			document.getElementById('logobtn').classList = '';
-		}, 3000)
-
-	}
-
-
-	// bring the noise
-	function drawFrame() {
-		num++;
-		var max = -Infinity, min = Infinity;
-		var noisefn = noise.simplex3;
-
-		for (var x = 0; x < perlincol.width; x++) {
-			for (var y = 0; y < perlincol.height; y++) {
-				var value = noisefn((x / 64), (y / 64)+(num/300), 2);
-
-				if (max < value) max = value;
-				if (min > value) min = value;
-
-				value = (1 + value) * 0.7 * 128;
-
-				var cell = (x + y * perlincol.width) * 4;
-				data[cell] = data[cell + 1] = data[cell + 2] = value;
-				data[cell + 3] = 255;
-			}
-		}
-
-	  // put perlin image
-	  ctx.putImageData(ximage, 0, 0);
-
-	  groundplane.material.displacementMap.needsUpdate = true;
-	  groundplane.material.map.needsUpdate = true;
-	}
-
-
-	function init() {
-  	// three.js init
-  	 scene = new THREE.Scene();
-  	 camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-
-	//  renderer = new THREE.WebGLRenderer();
-	 renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-	renderer.setSize( window.innerWidth, window.innerHeight );
-	renderer.domElement.id = 'cnv';
-	document.body.appendChild( renderer.domElement );
-
-	// camera
-	camera.position.z = 5;
-
-	// lights
-	const globalLight = new THREE.AmbientLight(0xffffff, 1);
-	shadowLight = new THREE.DirectionalLight(0xffffff, 1);
-	shadowLight.position.set(10, 10, 10);
-	scene.add(globalLight);
-	scene.add(shadowLight);
-
-	// perlin
-	perlincol = document.createElement('canvas');
-	ctx = perlincol.getContext('2d');
-	perlincol.id = "perlincol";
-	document.body.appendChild(perlincol);
-
-	// texture options
-	perlincol.width = 256;
-	perlincol.height = 256;
-	var xspeed = 2000;
-	var fn = 'simplex'
-	ximage = ctx.createImageData(perlincol.width, perlincol.height);
-	data = ximage.data;
-
-	// groundplane
-	var geometry = new THREE.PlaneBufferGeometry( 100, 100, 100, 100 );
-	var material = new THREE.MeshStandardMaterial( { 
-		displacementMap: new THREE.CanvasTexture(perlincol),
-		displacementScale: 10,
-		map:new THREE.TextureLoader().load( 'bg3.png' ),
-		metalness: 0,
-		roughness:20,
-		transparent:true,
-	} );
-
-	groundplane = new THREE.Mesh( geometry, material );
-	groundplane.name = 'groundplane';
-	groundplane.rotation.y = Math.PI/2;
-	groundplane.receiveShadow = true;
-	groundplane.castShadow = true;
-	scene.add( groundplane );
-	
-	} // init
-
-
-
-	// resize event
-	window.addEventListener('resize', function(){
-		renderer.setSize( window.innerWidth, window.innerHeight );
-		camera.aspect	= window.innerWidth / window.innerHeight;
-		camera.updateProjectionMatrix();
-	}, false);
-
-
-	// loop
-	function animate() {
-		if (thisscene=='home') {
-			groundplane.material.opacity += (1-groundplane.material.opacity)*0.1;
-		} else {
-			groundplane.material.opacity += (0-groundplane.material.opacity)*0.1;
-		}
-		// groundplane.scale.y = groundplane.material.opacity+1;
-		if (groundplane.material.opacity>0.001) {
-			drawFrame();
-		}
-
-		requestAnimationFrame( animate );
-		renderer.render( scene, camera );
-	};
-
-
-	// start
-	init()
-	animate();
-	setTimeout(function () {
-		document.getElementById('logoimg').style.display = 'block';
-		document.getElementById('logobtn').style.visibility = 'visible';
-		logoanim();
-	}, 900)
-
-</script>
-
-
-</body>
+	// close on click of popup background 
+	document.getElementById("frame").addEventListener("click",function(e) {
+		var composed = e.composedPath()
+		if (composed[0].id === 'frame') {
+	  		document.body.classList = '';
+	  	}
+	});
+    </script>
+  </body>
 </html>
