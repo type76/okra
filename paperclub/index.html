@@ -503,11 +503,11 @@
         renderer.domElement.id = 'cnv';
         document.body.appendChild(renderer.domElement);
         // camera
-        camera.position.z = 5;
+        camera.position.z = 7;
         // lights
-        const globalLight = new THREE.AmbientLight(0xffffff, 1);
+        const globalLight = new THREE.AmbientLight(0xffffff, 0.7);
         shadowLight = new THREE.DirectionalLight(0xffffff, 1);
-        shadowLight.position.set(10, 10, 10);
+        shadowLight.position.set(10, 40, 30);
         scene.add(globalLight);
         scene.add(shadowLight);
         // perlin
@@ -541,6 +541,18 @@
         smoke.position.x = -10;
         smoke.position.z = -120;
         scene.add(smoke);
+
+        // olive wreath
+        window.endobj = new THREE.Group();
+        scene.add(endobj);
+        //
+        window.startobj = new THREE.Group();
+        startobj.visible = false;
+        scene.add(startobj);
+
+        xloader = new THREE.BufferGeometryLoader();
+        createmodel('olive.json', startobj );
+
         // icosahedron
         var icogeometry = new THREE.IcosahedronBufferGeometry(1, 0);
         var icomaterial = new THREE.MeshPhongMaterial({
@@ -548,119 +560,155 @@
           emissive: 0x072534,
           flatShading: true
         });
-        startobj = new THREE.Mesh(icogeometry, icomaterial);
-        startobj.position.y = -10;
-        scene.add(startobj);
-        // octahedron
-        var icogeometry2 = new THREE.OctahedronBufferGeometry(1, 0);
-        endobj = new THREE.Mesh(icogeometry2, icomaterial);
-        endobj.position.y = 10;
-        scene.add(endobj);
-      } // init
-      // resize event
-      window.addEventListener('resize', function() {
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-      }, false);
-      // scroll event
-      window.onscroll = function(e) {
-        this.oldScroll = this.scrollY;
-        if (this.oldScroll >= this.scrollY) {
-          num = num + (this.scrollY / 100);
-        }
-        // restart logo anim
-        if (this.scrollY === 0) {
-          document.getElementById('logobtn').style.visibility = 'visible';
-          logoanim();
-          attop = true;
-        } else {
-          attop = false;
-        }
-        // hide logo on scroll down
-        if (this.scrollY > window.innerHeight - 100) {
-          document.getElementById('logobtn').style.visibility = 'hidden';
-        }
-        // end
-        if ((window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 100)) {
-          end = true;
-        } else {
-          end = false;
-        }
-      }
-      // loop
-      function animate() {
-        drawFrame();
-        requestAnimationFrame(animate);
-        renderer.render(scene, camera);
-        if (end) {
-          startobj.position.y += (0 - startobj.position.y) * 0.1;
-          startobj.rotation.y = num / 100;
-        } else {
-          startobj.position.y += (-10 - startobj.position.y) * 0.1;
-        }
-        if (attop) {
-          endobj.position.y += (1 - endobj.position.y) * 0.1;
-          endobj.rotation.y = num / 100;
-        } else {
-          endobj.position.y += (10 - endobj.position.y) * 0.1;
-        }
-        if (animating) {
-          endobj.rotation.z = thisnum;
-        } else {
-          endobj.rotation.z = thisnum;
-        }
-      };
-      // start
-      // render pages
-      runpage(about, 'about');
-      runpage(contact, 'contact');
-      runpage(xcontent, 'shopcontent');
-      init()
-      animate();
-      setTimeout(function() {
-        if (window.scrollY == 0) {
-          attop = true;
-          document.getElementById('logobtn').style.visibility = 'visible';
-          logoanim();
-        }
-      }, 900)
-      // show pop up 
-      function xpopup() {
-        xcontent.classList.toggle('show');
-        if (xcontent.classList != "show") {
-          document.body.classList = ''
-        } else {
-          document.body.classList = 'showpopup'
-        }
-      }
-      // click inside shop event 
-      document.getElementById("shop").addEventListener("click", function(e) {
-        // e.target
-        e.preventDefault();
-        var xcomposed = e.composedPath();
-        if (e.target && e.target.nodeName == "IMG") {
-          var url = xcomposed[1].href;
-          var hash = url.substring(url.indexOf('#') + 1);
-        }
-        if (e.target && e.target.nodeName == "A") {
-          var url = xcomposed[0].href;
-          var hash = url.substring(url.indexOf('#') + 1);
-        }
-        //
-        var firstDivContent = document.getElementById(hash);
-        var secondDivContent = document.getElementById('xframe');
-        secondDivContent.innerHTML = firstDivContent.innerHTML;
-        document.body.classList = 'showpopup';
-      });
+        icomesh = new THREE.Mesh(icogeometry, icomaterial);
+        icomesh.position.y = -10;
+        endobj.add(icomesh);
 
-	// close on click of popup background 
-	document.getElementById("frame").addEventListener("click",function(e) {
-		var composed = e.composedPath()
-		if (composed[0].id === 'frame') {
-	  		document.body.classList = '';
-	  	}
-	});
+        // octahedron
+        // var icogeometry2 = new THREE.OctahedronBufferGeometry(1, 0);
+        // startingobject2 = new THREE.Mesh(icogeometry2, icomaterial);
+        // startingobject2.position.y = 10;
+        // scene.add(startingobject2);
+
+      } // init
+
+
+  function createmodel(texname, group) {
+    xloader.load(
+      'models/'+texname,
+      function ( geometry ) {
+        // var texture = new THREE.TextureLoader().load( 'models/'+texfile );
+        // texture.magFilter = THREE.NearestFilter;
+        // texture.minFilter = THREE.NearestFilter;
+        var material = new THREE.MeshLambertMaterial( { 
+          // map: texture,
+          color:'0x56ac48',
+          side:THREE.DoubleSide 
+        } );
+        obj = new THREE.Mesh( geometry, material );
+        obj.rotation.set(Math.PI/2,0,0);
+        group.add( obj );
+        //
+        obj2 = new THREE.Mesh( geometry, material );
+        obj2.rotation.set(Math.PI/2,0,0);
+        obj2.scale.set(-1,1,1);
+        group.add( obj2 );
+      
+                      },
+      function ( xhr ) {
+      },
+      function ( xhr ) {
+        console.log( 'An error happened' );
+      }
+    );
+  }
+
+    // resize event
+    window.addEventListener('resize', function() {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    }, false);
+    // scroll event
+    window.onscroll = function(e) {
+      this.oldScroll = this.scrollY;
+      if (this.oldScroll >= this.scrollY) {
+        num = num + (this.scrollY / 100);
+      }
+      // restart logo anim
+      if (this.scrollY === 0) {
+        document.getElementById('logobtn').style.visibility = 'visible';
+        logoanim();
+        attop = true;
+      } else {
+        attop = false;
+      }
+      // hide logo on scroll down
+      if (this.scrollY > window.innerHeight - 100) {
+        document.getElementById('logobtn').style.visibility = 'hidden';
+      }
+      // end
+      if ((window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 100)) {
+        end = true;
+      } else {
+        end = false;
+      }
+    }
+    // loop
+    function animate() {
+      drawFrame();
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+      if (end) {
+        endobj.position.y += (10 - endobj.position.y) * 0.1;
+        endobj.rotation.y = num / 100;
+      } else {
+        endobj.position.y += (-10 - endobj.position.y) * 0.1;
+      }
+      if (attop) {
+        startobj.position.y += (1 - startobj.position.y) * 0.1;
+      } else {
+        startobj.position.y += (10 - startobj.position.y) * 0.1;
+      }
+      // if (animating) {} 
+      startobj.rotation.y += (lerpnum - startobj.rotation.y) * 0.1;
+    };
+    // start
+    // render pages
+    runpage(about, 'about');
+    runpage(contact, 'contact');
+    runpage(xcontent, 'shopcontent');
+    init();
+    animate();
+
+    // scroll event
+    setTimeout(function() {
+      if (window.scrollY == 0) {
+        attop = true;
+        document.getElementById('logobtn').style.visibility = 'visible';
+        logoanim();
+        startobj.visible = true;
+      }
+    }, 900)
+
+
+    // show pop up 
+    function xpopup() {
+      xcontent.classList.toggle('show');
+      if (xcontent.classList != "show") {
+        document.body.classList = ''
+      } else {
+        document.body.classList = 'showpopup'
+      }
+    }
+
+    // click inside shop event 
+    document.getElementById("shop").addEventListener("click", function(e) {
+      // e.target
+      e.preventDefault();
+      var xcomposed = e.composedPath();
+      if (e.target && e.target.nodeName == "IMG") {
+        var url = xcomposed[1].href;
+        var hash = url.substring(url.indexOf('#') + 1);
+      }
+      if (e.target && e.target.nodeName == "A") {
+        var url = xcomposed[0].href;
+        var hash = url.substring(url.indexOf('#') + 1);
+      }
+      //
+      var firstDivContent = document.getElementById(hash);
+      var secondDivContent = document.getElementById('xframe');
+      secondDivContent.innerHTML = firstDivContent.innerHTML;
+      document.body.classList = 'showpopup';
+    });
+
+  	// close on click of popup background 
+  	document.getElementById("frame").addEventListener("click",function(e) {
+  		var composed = e.composedPath()
+  		if (composed[0].id === 'frame') {
+  	  		document.body.classList = '';
+  	  	}
+  	});
     </script>
   </body>
 </html>
