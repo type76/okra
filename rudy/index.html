@@ -1,0 +1,772 @@
+<html>
+<head>
+<title>rudy2</title>
+<style>
+@font-face {
+font-family: 'uni0553-webfont';
+src: url('font/uni0553-webfont.eot');
+src: url('font/uni0553-webfont.eot?#iefix') format('embedded-opentype'),
+url('font/uni0553-webfont.woff') format('woff'),
+url('font/uni0553-webfont.ttf') format('truetype');
+font-weight: normal;
+font-style: normal;
+font-smooth: never;}
+
+
+html {background: #444;}
+body { margin: 0; font-family: monospace; color: #fff; user-select:none; transition: all 0.2s ease;
+}
+body.on {background: #222;}
+body.off {background: #111; opacity: 0.5;}
+canvas { width: 100%; height: 100%;
+position:absolute; z-index: 10;}
+#sub {position: absolute; bottom: 10%; left: 0;
+width: 100%; text-align: center; font-size: 2em;
+z-index: 99; font-family: 'uni0553-webfont'; }
+audio {position: absolute; top: 0; right : 0; margin: 4px; z-index: 9999;}
+audio {outline: none !important;}
+#timecode {position: absolute; top: 0; left:0; margin:1em; font-size:1.2em;  font-family: 'uni0553-webfont'; }
+.nipple {visibility: hidden; opacity: 0;}
+
+</style>
+</head>
+<body>
+<div class="joy" id="joy"></div>
+
+
+<audio id="audiofile" src="8bit.mp3" controls="" tabindex="1" onplay="playme()" onpause="stopme()" ></audio>
+
+<p id="timecode">0</p>
+<p id="sub"> </p>
+
+
+
+<!-- <script src="js/tss.js"></script> -->
+<script src="js/three.min.js"></script>
+<script src="js/nipple.min.js"></script>
+
+
+<script>
+var synth = window.speechSynthesis;
+var voiceSelect = document.querySelector('select');
+var voices = [];
+var pitch = 1;
+var rate = 1;
+var audioplaying = false;
+var speaking = false; 
+
+
+//tss voices
+// f0  = 200;
+// var scn = 1;
+// var fromscn = 0;
+
+
+var cnt = 0;
+var meshes = [];
+
+// KEYBOARD
+window.addEventListener('keyup', function(event) { keyboard.onKeyup(event); }, false);
+window.addEventListener('keydown', function(event) { keyboard.onKeydown(event);
+}, false);
+
+keyboard = {
+_pressed: {},
+
+LEFT: 37,
+// UP: 38,
+RIGHT: 39,
+// DOWN: 40,
+
+isDown: function(keyCode) {
+return this._pressed[keyCode];
+},
+
+onKeydown: function(event) {
+this._pressed[event.keyCode] = true;
+},
+
+onKeyup: function(event) {
+// direction = 'none';
+// legtex.offset.x = 0;
+delete this._pressed[event.keyCode];
+}
+};
+
+
+
+// player
+player = {
+width:8*5,
+size:8,
+count:4,
+// fps:1.5,
+fps:12,
+xpos:-0.04,
+ipx:0,
+indoors:false
+};
+
+// globals
+var myspeed = 4;
+var direction = 'none';
+var playing = false;
+
+function playme() {
+playing = true;
+audioContext= new audioCtx();
+
+buildAudioGraph();
+requestAnimationFrame(render);
+audioPlayer.play();
+
+}
+
+function stopme() {
+playing = false;
+audioPlayer.pause();
+}
+
+var audioCtx = window.AudioContext || window.webkitAudioContext;
+var audioContext, canvasContext;
+
+var filters = [];
+
+var analyser;
+var dataArray, bufferLength;
+var masterGain, stereoPanner;
+
+
+function buildAudioGraph() {
+var sourceNode =   audioContext.createMediaElementSource(audioPlayer);
+
+// Create an analyser node
+analyser = audioContext.createAnalyser();
+analyser.fftSize = 256;
+bufferLength = analyser.frequencyBinCount;
+dataArray = new Uint8Array(bufferLength);
+
+// create the equalizer. It's a set of biquad Filters
+// Set filters
+[2, 10000].forEach(function(freq, i) {
+var eq = audioContext.createBiquadFilter();
+eq.frequency.value = freq;
+eq.type = "peaking";
+eq.gain.value = 0;
+filters.push(eq);
+});
+
+// Connect filters
+sourceNode.connect(filters[0]);
+for(var i = 0; i < filters.length - 1; i++) {
+filters[i].connect(filters[i+1]);
+}
+
+// Master volume
+masterGain = audioContext.createGain();
+masterGain.value = 1;
+
+// last filter
+filters[filters.length - 1].connect(masterGain);
+
+// stereo balancing
+stereoPanner = audioContext.createStereoPanner();
+// master volume output to the panner
+masterGain.connect(stereoPanner);
+
+// stereo panner to analyser
+stereoPanner.connect(analyser);  
+analyser.connect(audioContext.destination);
+}
+
+
+//
+var mouse = new THREE.Vector2();
+var currenttime = 0;
+var audioPlayer = document.getElementById("audiofile");
+var sub = document.getElementById("sub");
+
+var syncData = [
+{ "start": "0","text": " " },
+{ "start": "19","text": "Stop your running about"  },
+{ "start": "23 ","text": "It's time you straighten right out" },
+{ "start": "28","text": "Stop your running around" },
+{ "start": "30","text": "Making problems in town" },
+{ "start": "35","text": "Ah ha" },
+{ "start": "37","text": "Rudy" },
+{ "start": "39","text": "A message to you Rudy" },
+{ "start": "44","text": "A message to you" },
+{ "start": "48","text": " " },
+{ "start": "56","text": "You're growing older each day" },
+{ "start": "61","text": "You want to think of your future" },
+{ "start": "65","text": "Or you will wind up in jail" },
+{ "start": "68","text": "And you will suffer" },
+{ "start": "72","text": "Ah ha" },
+{ "start": "74","text": "Rudy" },
+{ "start": "77","text": "A message to you Rudy" },
+{ "start": "81","text": "A message to you" },
+{ "start": "84","text": " " },
+{ "start": "94","text": "Stop your running about" },
+{ "start": "99","text": "It's time you straighten right out" },
+{ "start": "103","text": "Stop your running around" },
+{ "start": "105","text": "Making problems in town" },
+{ "start": "111","text": "Ah ha" },
+{ "start": "112","text": "Rudy" },
+{ "start": "115","text": "A message to you Rudy" },
+{ "start": "119","text": "A message to you" },
+{ "start": "122","text": " " },
+{ "start": "150","text": "You're growing older each day" },
+{ "start": "155","text": "You want to think of your future" },
+{ "start": "160","text": "Or you will wind up in jail" },
+{ "start": "162","text": "And you will suffer" },
+{ "start": "166","text": "Ah ha" },
+{ "start": "168","text": "Rudy" },
+{ "start": "171","text": "A message to you Rudy" },
+{ "start": "175","text": " " },
+{ "start": "224","text": "end" }];
+
+// global vars
+var text = "";
+var textcheck = 'x';
+
+// three.js
+var scene = new THREE.Scene();
+scene.position.set(0,40,0)
+
+var clock = new THREE.Clock();
+
+var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1500 );
+
+var renderer = new THREE.WebGLRenderer( { alpha: true, antialias: true, transparent:true } );
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// // groups
+hero = new THREE.Group();
+scene.add( hero );
+
+bodygroup = new THREE.Group();
+hero.add( bodygroup );
+
+leggroup = new THREE.Group();
+leggroup.position.z = -30;
+leggroup.position.y = -115;
+hero.add( leggroup );
+
+
+armgroupL = new THREE.Group();
+// armgroupL.position.set(-130,10,-30);
+armgroupL.position.set(-115,-20,-30);
+armgroupL.rotation.set(0,0,Math.PI/2);
+bodygroup.add( armgroupL );
+armgroupL.scale.set(-1,1,1);
+
+armgroupR = new THREE.Group();
+// armgroupR.position.set(130,10,-30);
+armgroupR.position.set(115,-20,-30);
+armgroupR.rotation.set(0,0,Math.PI/2);
+bodygroup.add( armgroupR );
+
+
+
+// camera
+camera.position.z = 200;
+
+
+// OBJECTS
+// square back screen
+var geometry = new THREE.PlaneBufferGeometry( 10000, 10000, 1 );
+var material = new THREE.MeshBasicMaterial( {color: 0xff0000, side: THREE.DoubleSide} );
+var screen = new THREE.Mesh( geometry, material );
+screen.rotation.x = -Math.PI/2;
+screen.position.y = -144.1;
+screen.position.z = -150;
+scene.add( screen );
+
+
+// arm planes
+var armtex = new THREE.TextureLoader().load( 'arm.png' );
+var geometry = new THREE.PlaneGeometry( 60, 30 );
+// transform for rotation center
+geometry.translate( 25, 0, 0 );
+var material = new THREE.MeshBasicMaterial( { 
+map: armtex, transparent : true, 
+color:0x000000,
+side: THREE.DoubleSide
+} );
+var armL = new THREE.Mesh( geometry, material );
+armgroupL.add( armL );
+
+// right arm
+var armR = armL.clone();
+armR.scale.y = -1;
+armgroupR.add(armR);
+
+
+// leg plane
+var legtex = new THREE.TextureLoader().load( 'legs.png' );
+legtex.wrapT = THREE.RepeatWrapping;
+legtex.repeat.set( 0.2, 1 );
+legtex.offset.x = 0;
+//
+var legstill = new THREE.TextureLoader().load( 'leg-still.png' );
+legstill.wrapT = THREE.RepeatWrapping;
+legstill.repeat.set( 0.5, 1 );
+legstill.offset.x = 0;
+
+var geometry = new THREE.PlaneGeometry( 30, 60 );
+var material = new THREE.MeshBasicMaterial( { 
+map: legtex, transparent : true,
+// color:0x000000,
+side: THREE.DoubleSide
+} );
+var leg = new THREE.Mesh( geometry, material );
+leg.renderOrder = 4;
+leg.rotation.y = Math.PI;
+leggroup.add( leg );
+
+// eye
+var eyetex = new THREE.TextureLoader().load( 'eye.png' );
+eyetex.wrapS = THREE.RepeatWrapping;
+eyetex.repeat.set( 1, 0.5 );
+eyetex.offset.y = 0.5;
+var imaterial = new THREE.MeshBasicMaterial( { 
+map: eyetex,
+transparent : true
+} );
+
+
+var igeo = new THREE.PlaneGeometry(150, 75, 1, 1);
+var eye = new THREE.Mesh( igeo, imaterial );
+eye.name = "eye";
+eye.position.set (0, 10, 20);
+eye.renderOrder = 1;
+bodygroup.add( eye );
+
+
+
+
+
+//MOUTH
+var mouthtex = new THREE.TextureLoader().load( 'mouthshapes.png' );
+// mouthtex.magFilter = THREE.NearestFilter;
+// mouthtex.minFilter = THREE.NearestFilter;
+mouthtex.wrapT = THREE.RepeatWrapping;
+mouthtex.repeat.set( 0.125, 1 );
+mouthtex.offset.x = 0;
+var material = new THREE.MeshBasicMaterial( { 
+map: mouthtex,
+transparent : true
+} );
+
+
+var mouthgeo = new THREE.PlaneGeometry(60, 60, 1, 1);
+var mouthshps = new THREE.Mesh( mouthgeo, material );
+mouthshps.name = "mouthshps";
+mouthshps.uvsNeedUpdate = true;
+mouthshps.position.set (0, 0, 20.1);
+mouthshps.renderOrder = 2;
+bodygroup.add( mouthshps );
+
+
+var mouthobject = scene.getObjectByProperty( 'name', 'mouthshps', true );
+
+// shadow plane
+var shadowtex = new THREE.TextureLoader().load( 'shadow.png' );
+var geometry = new THREE.PlaneGeometry( 200, 200 );
+var material = new THREE.MeshBasicMaterial( { 
+map: shadowtex, transparent : true, color:0x000000} );
+var shadow = new THREE.Mesh( geometry, material );
+shadow.position.z = -30;
+shadow.position.y = -144;
+shadow.rotation.x = -Math.PI/2;
+shadow.renderOrder = 1;
+hero.add( shadow );
+
+
+
+// body object
+var loader = new THREE.BufferGeometryLoader();
+
+// load a resource
+loader.load(
+// resource URL
+'head.json',
+
+// onLoad callback
+function ( geometry ) {
+var material = new THREE.MeshBasicMaterial( { color: 0xF5F5F5,
+// side: THREE.BackSide
+// wireframe:true
+} );
+var object = new THREE.Mesh( geometry, material );
+object.scale.set(150,150,150);
+object.position.set(0,0,-37);
+bodygroup.add( object );
+},
+
+// onProgress callback
+function ( xhr ) {},
+// onError callback
+function ( err ) {
+console.log( 'An error happened' );
+}
+);
+
+
+
+// resize
+window.addEventListener('resize', onWindowResize, false);
+
+function onWindowResize() {
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+
+
+// make text object
+var createText = (function() {
+return function(argument) {
+// only do if the text isn't textcheck
+if (textcheck != text) {
+// set textcheck var 
+textcheck = text;
+// subtitles HTML text
+sub.innerHTML = text;
+// lips
+sendMessage(text);
+
+}// txtchk if
+};
+})();
+
+
+// mouth stuff
+
+var lipz = [];
+
+function lips(ee) {
+for (var i = 0, len = ee.length; i < len; i++) {
+if (ee[i] == 'a') { lipz.push("a");}
+if (ee[i] == 'e') { lipz.push("e");}
+if (ee[i] == 'i') { lipz.push("i");}
+if (ee[i] == 'o') { lipz.push("o");}
+if (ee[i] == 'u') { lipz.push("o");}
+if (ee[i] == 'q') { lipz.push("o");}
+if (ee[i] == 'w') { lipz.push("w");}
+if (ee[i] == 'r') { lipz.push("x");}
+if (ee[i] == 't') { lipz.push("t");}
+if (ee[i] == 'g') { lipz.push("e");}
+if (ee[i] == 'h') { lipz.push("i");}
+if (ee[i] == 'j') { lipz.push("e");}
+if (ee[i] == 'x') { lipz.push("i");}
+if (ee[i] == 'y') { lipz.push("i");}
+if (ee[i] == 'd') { lipz.push("t");}
+if (ee[i] == 'k') { lipz.push("t");}
+if (ee[i] == 's') { lipz.push("t");}
+if (ee[i] == 'c') { lipz.push("t");}
+if (ee[i] == 'z') { lipz.push("t");}
+if (ee[i] == 'm') { lipz.push("m");}
+if (ee[i] == 'b') { lipz.push("m");}
+if (ee[i] == 'p') { lipz.push("m");}
+if (ee[i] == 'l') { lipz.push("l");}
+if (ee[i] == 'n') { lipz.push("l");}
+if (ee[i] == 'f') { lipz.push("m");}
+if (ee[i] == 'v') { lipz.push("m");}
+if (ee[i] == ' ') { lipz.push("1");}
+if (ee[i] == '.') { lipz.push("0");}
+if (ee[i] == ',') { lipz.push("0");}
+};
+// console.log(lipz);
+lipz.push("0");
+lipspk(lipz);
+mouthobject.material.map.offset.x = 0;
+}
+
+
+
+function lipspk(lipz) {
+for (var i = 0; i < lipz.length; i++) {
+// for each with pause
+(function (i) {
+setTimeout(function () {
+if (lipz[i] == 'a') { mouthobject.material.map.offset.x = 0.125; }
+else if (lipz[i] == 'e') { mouthobject.material.map.offset.x = 0.25; }
+else if (lipz[i] == 'i') { mouthobject.material.map.offset.x = 0.25; }
+else if (lipz[i] == 'o') { mouthobject.material.map.offset.x = 0.375; }
+else if (lipz[i] == 'w') { mouthobject.material.map.offset.x = 0.5; }
+else if (lipz[i] == 't') { mouthobject.material.map.offset.x = 0.25; }
+else if (lipz[i] == 'm') { mouthobject.material.map.offset.x = 0.75; }
+else if (lipz[i] == 'l') { mouthobject.material.map.offset.x = 0.375; }
+else if (lipz[i] == 'x') { mouthobject.material.map.offset.x = 0.875; }
+else if (lipz[i] == '1') { mouthobject.material.map.offset.x = 0.0; }
+else if (lipz[i] == '0') { mouthobject.material.map.offset.x = 0.0; }
+}, 100 * i);
+})(i);
+};
+}
+
+
+
+// send bot message / print to output
+function sendMessage(text) {
+
+if (text !== '') {
+try {
+
+// lipsync
+lipz.length = 0
+var liptxt = text.toLowerCase().replace(/\?/g, '.');;
+//lipsync message then reset lips
+lips(liptxt, function() {
+mouthobject.material.map.offset.x = 0.0;
+});
+
+// speak
+spk(text);
+
+
+
+} catch(e) {
+window.alert(e.message + "\n" + e.line);
+}
+return false;
+}
+}
+
+
+// speak text
+function speakMsg(text) {
+    try {
+        var f1 = f0;
+        var speed = 0.3;
+
+        var seconds = text.length;
+        var waveBytes = SAMPLE_FREQUENCY * 2 * 2 * seconds;
+        var buf = new Int16Array(new ArrayBuffer(waveBytes));
+        SynthSpeech(buf, text, f1, speed, 0);
+        playAudioBuffer(buf); 
+    } catch (e) {
+        alert("Something went horribly wrong:\n" + e);
+    }
+};
+
+
+//play spktxt
+function playAudioBuffer(buf) {
+    var maxAmp = 22000;
+    var audioString = "";
+
+    for (var i=0; i<buf.length; i++) {
+        var y = buf[i] / maxAmp * 0x7800;
+        audioString += String.fromCharCode(y & 255, (y >> 8) & 255);
+    }
+    var audio = new Audio("data:audio/wav;base64,"+btoa(atob("UklGRti/UABXQVZFZm10IBAAAAABAAIARKwAABCxAgAEABAAZGF0YbS/UAA") + audioString));
+    audio.play();
+}
+
+
+// bpm
+var beatcounter = 0;
+
+
+
+// render loop
+function render() {
+if (playing) {
+if (beatcounter >= 10)  {
+bodygroup.position.y = 0;
+eyetex.offset.y = 0.5;
+legstill.offset.x = 0;
+}
+
+beatcounter++;
+//
+if (beatcounter >= 70)  {
+// one second has passed
+bodygroup.position.y = -8;
+legstill.offset.x = 0.5;
+// eyetex.offset.y = 0;
+lastTime = beatcounter;
+beatcounter = 0;
+// movearms();
+}
+
+// audio freq analyser
+analyser.getByteFrequencyData(dataArray);
+var nbFreq = dataArray.length;
+
+// green [almost working]
+armgroupR.rotation.z = 4.7+0.01*dataArray[Math.round((120 * nbFreq) / 256)];
+armgroupL.rotation.z = -4.7-0.01*dataArray[Math.round((120 * nbFreq) / 256)];
+
+// red [change]
+// beat.position.y = 4+0.3*dataArray[Math.round((2 * nbFreq) / 128)];
+// yellow [change]
+// bounce.position.y = 6-0.6*dataArray[Math.round((127 * nbFreq) / 128)];
+
+
+
+// // screen
+// var xcos = 1+0.2*dataArray[Math.round((120 * nbFreq) / 256)];
+// screen.scale.set(xcos,xcos,xcos);
+
+// make words
+currenttime = Math.floor(audioPlayer.currentTime);
+document.getElementById("timecode").innerHTML = currenttime;
+syncData.forEach(function(element, index){
+if( currenttime == element.start ){
+text = element.text;
+createText();
+text = '';			
+}
+});
+
+
+} //ifplaying
+
+//eye blink
+if ( Math.random() > 0.995 ) {
+eyetex.offset.y = 0;
+} 
+
+playerupdate()
+renderer.render( scene, camera );
+//    
+requestAnimationFrame(render);
+}
+// end render loop
+
+
+
+// player movement update
+function playerupdate() {
+if (keyboard.isDown(keyboard.LEFT)  || direction == 'left')   {
+hero.position.x -= myspeed; 
+walk();
+leg.scale.x = 1;
+}
+else if (keyboard.isDown(keyboard.RIGHT)  || direction == 'right' )   {
+walk();
+hero.position.x += myspeed; 
+leg.scale.x = -1;
+}  
+else if (direction == 'none' )   {
+legtex.offset.x = 0;
+leg.material.map = legstill;
+}    
+}
+
+
+
+// walk
+function walk() {
+leg.material.map = legtex;
+var t = clock.getElapsedTime();
+
+legtex.offset.x = Math.floor( ( t * player.fps ) % player.count ) * player.size / player.width;
+
+}
+
+
+
+// space bar controls
+window.addEventListener('keyup', event => {
+if (event.code === 'Space') {
+if (audioPlayer.duration > 0 && !audioPlayer.paused) {
+audioPlayer.pause();
+} else {
+audioPlayer.play();
+
+}
+}
+});
+
+
+// joystick
+var options = {
+zone: document.body,
+};
+
+// initialise joystick
+var joy = nipplejs.create(options);
+
+// joystick events
+joy.on('move dir start', function (evt, data) {
+if (data.force>0) {force = data.force; }
+
+if (data.direction){ 
+
+if (data.direction.x=='right') {//222
+direction = data.direction.x;
+}// R
+
+if (data.direction.x=='left') {   
+direction = data.direction.x;
+}// L
+
+}// if direction
+});// on start
+
+
+// release joystick
+joy.on('end', function (evt, data) {
+direction = 'none';
+});// on end
+
+// SPEAK FUNCTIONS
+// wait for voices to be loaded before fetching list
+window.speechSynthesis.onvoiceschanged = function() {
+  var xvoices = window.speechSynthesis.getVoices();
+};
+//
+
+function populateVoiceList() {
+  voices = synth.getVoices();
+
+  for(i = 0; i < voices.length ; i++) {
+    var option = document.createElement('option');
+    option.textContent = voices[i].name + ' (' + voices[i].lang + ')';
+    
+    if(voices[i].default) {
+      option.textContent += ' -- DEFAULT';
+    }
+
+    option.setAttribute('data-lang', voices[i].lang);
+    option.setAttribute('data-name', voices[i].name);
+  }
+}
+
+// populateVoiceList();
+if (speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = populateVoiceList;
+}
+
+function spk(text) {
+  var utterThis = new SpeechSynthesisUtterance(text);
+  var selectedOption = 'fred';
+  for(i = 0; i < voices.length ; i++) {
+    if(voices[i].name === selectedOption) {
+      utterThis.voice = voices[i];
+    }
+  }
+utterThis.pitch = pitch*(text.length * 0.3);
+utterThis.rate = rate;
+
+// change voice
+utterThis.voice = speechSynthesis.getVoices().filter(function(voice) {
+  return voice.name == "Tessa"
+})[0];
+
+synth.speak(utterThis);
+
+
+}
+
+
+
+</script>
+</body>
+</html>	
