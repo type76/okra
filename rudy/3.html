@@ -1,0 +1,379 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>io76</title>
+	<style>
+	body { background: radial-gradient(ellipse at center, #333333 0%,#000000 150%); margin: 0; overflow: hidden; user-select:none; font-family: monospace;}
+	#threecnv canvas { width: 100%; height: 100%;}
+	#hud {position: absolute;}
+	button {padding: 12px;}
+	p {font-size: 2em; color: #fff; padding: 5px;}
+	#xcanvas {position: absolute; top: 0; left: 0; z-index: 2;
+		border: red 1px solid;}
+	</style>
+</head>
+<body>
+
+  <script src="js/three.min.js"></script>
+  <script src="js/OrbitControls.min.js"></script>
+
+<script>
+    var X = [],
+    Y = [],
+    i = -1;
+
+// KEYBOARD
+window.addEventListener('keyup', function(event) { keyboard.onKeyup(event); }, false);
+window.addEventListener('keydown', function(event) { keyboard.onKeydown(event);
+}, false);
+
+keyboard = {
+_pressed: {},
+
+LEFT: 37,
+// UP: 38,
+RIGHT: 39,
+// DOWN: 40,
+
+isDown: function(keyCode) {
+return this._pressed[keyCode];
+},
+
+onKeydown: function(event) {
+leg.material.map=legtex;
+// bighead.material.map.
+bighead.material.map=oocol;
+bighead.material.displacementMap=oobmp;
+bighead.material.map.needsUpdate = true;	
+bighead.material.displacementMap.needsUpdate = true;
+this._pressed[event.keyCode] = true;
+},
+
+onKeyup: function(event) {
+// direction = 'none';
+bighead.material.map=grincol;
+bighead.material.displacementMap=grinbmp;
+bighead.material.map.needsUpdate = true;	
+bighead.material.displacementMap.needsUpdate = true;	
+lids.rotation.set(-Math.PI*0.5,0,0);
+leg.material.map=legstill;
+legtex.offset.x = 0;
+delete this._pressed[event.keyCode];
+}
+};
+
+
+
+	// player
+	player = {
+	width:8*5,
+	size:8,
+	count:4,
+	// fps:1.5,
+	fps:12,
+	xpos:-0.04,
+	ipx:0,
+	indoors:false
+	};
+
+	var clock = new THREE.Clock();
+	var scene = new THREE.Scene();
+	var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 100 );
+	scene.add(camera);
+
+	var renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.domElement.id = 'threecnv';
+	document.body.appendChild( renderer.domElement );
+
+	// controls
+	var controls = new THREE.OrbitControls( camera, renderer.domElement );
+	// controls.minPolarAngle = Math.PI/2;
+	// controls.maxPolarAngle = Math.PI/2;
+	controls.enablePan = false
+	controls.enableDamping = true;
+	controls.dampingFactor = 0.3;
+	controls.rotateSpeed = 0.1;
+	// smooth Zoom
+	controls.smoothZoom = true;
+	controls.zoomDampingFactor = 0.2;
+	controls.smoothZoomSpeed = 5.0;
+
+	// camera
+	camera.position.z = 15;
+
+	// light
+	var light = new THREE.AmbientLight( 0x666666 );
+	scene.add( light );
+
+	// dayLights 
+	var pointLight = new THREE.PointLight( 0xffffff, 1.5, 20 );
+	pointLight.position.y = 8;
+	pointLight.position.z = 8;
+	scene.add( pointLight );
+
+	// groups
+	maingroup = new THREE.Group();
+	maingroup.position.y = 0.5;
+	scene.add( maingroup );
+
+	group = new THREE.Group();
+	camera.add( group );
+
+	rgroup = new THREE.Group();
+	scene.add( rgroup );
+
+	eyes = new THREE.Group();
+	eyes.position.y = 0.45;
+	maingroup.add( eyes );
+
+	lids = new THREE.Group();
+	lids.position.set(1.65,0.45,1.8);
+	lids.rotation.set(-Math.PI*0.5,0,0);
+	maingroup.add( lids );
+
+	// shadow plane
+	// shdtexture = new THREE.TextureLoader().load( 'shadow.png' );  
+	var geometry = new THREE.PlaneBufferGeometry( 10, 10, 1 );
+	var material = new THREE.MeshBasicMaterial( {
+		// wireframe:true
+		color:0x111111,
+		// map:shdtexture, 
+		transparent:true,
+		opacity:0.1
+	} );
+	var plane = new THREE.Mesh( geometry, material );
+	plane.rotation.x = -Math.PI*0.5;
+	plane.position.y = -4;
+	scene.add( plane );
+
+
+// load 3D objects
+var loader = new THREE.BufferGeometryLoader();
+
+//
+// // mic
+// loader.load(
+// 	'mic.json',
+// 	function ( geometry ) {
+// 		var material = new THREE.MeshStandardMaterial( { 
+// 			color: 0x000000, 
+// 			transparent:true,
+// 			opacity:0.3
+// 			 } );
+// 		var object = new THREE.Mesh( geometry, material );
+// 		object.scale.set(2,2,2)
+// 		object.position.set(0,-4.2,4)
+// 		object.rotation.set(0,Math.PI/2,0)
+// 		maingroup.add( object );
+// 	},
+// 	function ( xhr ) {
+// 		console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+// 	},
+// 	function ( err ) {
+// 		console.log( 'An error happened' );
+// 	}
+// );
+
+
+// textures [colour/bump]
+var oocol = new THREE.TextureLoader().load( 'images/oo-facecol.png' );
+var oobmp = new THREE.TextureLoader().load( 'images/oo-facebmp.png' );
+var grincol = new THREE.TextureLoader().load( 'images/fcol.png' );
+var grinbmp = new THREE.TextureLoader().load( 'images/fbmp.png' );
+
+// head
+loader.load(
+	'face2.json',
+	function ( geometry ) {
+		var material = new THREE.MeshStandardMaterial( { 
+			color: 0xF5F5F5,
+			map: grincol,
+			displacementMap: grinbmp,
+			  displacementScale: -0.02
+
+			 } );
+		bighead = new THREE.Mesh( geometry, material );
+		bighead.scale.set(10,10,10)
+		bighead.position.set(0,-2,0)
+		maingroup.add( bighead );
+		
+		bighead.material.map.magFilter = THREE.NearestFilter;
+		bighead.material.map.minFilter = THREE.NearestFilter;
+
+	},
+	function ( xhr ) {
+		console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+	},
+	function ( err ) {
+		console.log( 'An error happened' );
+	}
+);
+
+
+// hat
+loader.load(
+	'bowlerhat.json',
+	function ( geometry ) {
+		var material = new THREE.MeshStandardMaterial( { 
+			color: 0x000000, side: THREE.DoubleSide,
+			 } );
+		var object = new THREE.Mesh( geometry, material );
+		object.scale.set(3,3,3)
+		object.position.set(0,1.3,0)
+		object.rotation.set(0,Math.PI/2,0)
+		maingroup.add( object );
+	},
+	function ( xhr ) {
+		console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+	},
+	function ( err ) {
+		console.log( 'An error happened' );
+	}
+);
+//
+
+
+// leg textures
+var legtex = new THREE.TextureLoader().load( 'legs.png' );
+legtex.wrapT = THREE.RepeatWrapping;
+legtex.repeat.set( 0.2, 1 );
+legtex.offset.x = 0;
+//
+var legstill = new THREE.TextureLoader().load( 'leg-still.png' );
+legstill.wrapT = THREE.RepeatWrapping;
+legstill.repeat.set( 0.5, 1 );
+legstill.offset.x = 0;
+
+// leg planes
+var geometry = new THREE.PlaneGeometry( 2, 3 );
+var material = new THREE.MeshBasicMaterial( { 
+map: legstill, 
+transparent : true,
+// color:0x000000,
+side: THREE.DoubleSide,
+alphaTest:0.1
+} );
+var leg = new THREE.Mesh( geometry, material );
+leg.renderOrder = 4;
+leg.rotation.y = Math.PI;
+leg.position.y = -3;
+maingroup.add( leg );
+
+
+// eyes
+var geometry = new THREE.SphereBufferGeometry( 0.24, 60, 60 );
+var eyematerial = new THREE.MeshStandardMaterial({
+	color: 0x000000, roughness: 0.1
+});
+var eyelidmaterial = new THREE.MeshLambertMaterial({
+	color: 0x008888 , roughness: 2
+});
+
+// eye LEFT
+eyel = new THREE.Mesh( geometry, eyematerial );
+eyel.position.set(1.65,0,1.8);
+eyel.rotation.set(0,-Math.PI/2,0);
+eyes.add( eyel );
+//eye RIGHT
+eyer = eyel.clone();
+eyer.position.set(-1.65,0,1.8);
+eyes.add(eyer);
+
+// eyelids
+var geometry = new THREE.SphereGeometry(.25, 60, 30, 0, 2*Math.PI, 0, Math.PI/2);
+var llid = new THREE.Mesh( geometry, eyelidmaterial );
+// llid.position.set(0,0,1);
+lids.add( llid );
+//
+var rlid = new THREE.Mesh( geometry, eyelidmaterial );
+rlid.position.set(-1.65*2,0,0);
+lids.add( rlid );
+
+// arms
+var armtex = new THREE.TextureLoader().load( 'arm2.png' );
+armtex.magFilter = THREE.NearestFilter;
+armtex.minFilter = THREE.NearestFilter;
+armtex.wrapT = THREE.RepeatWrapping;
+armtex.repeat.set( 0.2, 1 );
+armtex.offset.x = 0;
+
+//
+var geometry = new THREE.PlaneGeometry( 2, 2 );
+var material = new THREE.MeshBasicMaterial( { 
+	map: armtex, 
+	transparent : true,
+	side: THREE.DoubleSide,
+	alphaTest:0.1
+} );
+var arm = new THREE.Mesh( geometry, material );
+arm.renderOrder = 4;
+arm.rotation.y = Math.PI;
+arm.rotation.z = Math.PI/2;
+arm.position.x = -4.3;
+maingroup.add( arm );
+
+var armr = arm.clone();
+armr.position.set(4.3,0,0);
+armr.scale.y = -1;
+armr.scale.x = -1;
+maingroup.add(armr);
+
+// scale
+// eyel.scale.set(0.5,0.5,0.5)
+// eyer.scale.set(0.5,0.5,0.5)
+
+
+// handle window resize
+window.addEventListener('resize', function(){
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}, false)
+
+
+	var animate = function () {
+		requestAnimationFrame( animate );
+		renderer.render( scene, camera );
+
+		// walk
+		if (keyboard.isDown(keyboard.LEFT) )   {
+			leg.scale.x = 1;
+			walk();
+		}
+		if (keyboard.isDown(keyboard.RIGHT) )   {
+			leg.scale.x = -1;
+			walk();
+		}
+
+		//eye blink
+		// if ( Math.random() > 0.994 ) {
+		// 	eyel.scale.set(0.5,0.5,0.5)
+		// } else {
+		// 	eyel.scale.set(1,1,1)
+		// }
+
+		// lerp lids
+		// lids.rotation.x += (rgroup.rotation.x - lids.rotation.x)*0.1;
+
+	};
+
+
+function walk() {
+	t = clock.getElapsedTime();
+	legtex.offset.x = Math.floor( ( t * player.fps ) % player.count ) * player.size / player.width;
+	armtex.offset.x = legtex.offset.x;
+	lids.rotation.set(Math.PI*0.5,0,0);
+}
+
+
+
+
+// start
+animate();
+
+</script>
+</body>
+</html>
