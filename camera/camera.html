@@ -1,0 +1,485 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=0.8, user-scalable=no">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>gameboy camera</title>
+<style type="text/css">
+      @font-face {
+      font-family: 'uni0553-webfont';
+      src: url('../font/uni0553-webfont.eot');
+      src: url('../font/uni0553-webfont.eot?#iefix') format('embedded-opentype'), 
+      url('../font/uni0553-webfont.woff') format('woff'), 
+      url('../font/uni0553-webfont.ttf') format('truetype');
+      font-style: normal;
+    }
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  body {
+    margin:20px 0 0 0;
+    background: #131313;
+    background: #232323;
+    color:#CCCCCC; 
+    font-family: monospace;
+    text-align: center;
+    overflow-x: hidden;
+    user-select:none;
+    /*background: radial-gradient(ellipse at center, #111111 0%,#222222 100%);*/
+    width: 100vw;
+    font-size: 22px;
+  }
+
+  #xcontrols {
+    position: absolute;
+    top: 0;
+    right: 0;
+    /*position: relative;*/
+    /*width: 196px;*/
+    /*height: 60px;*/
+    /*margin: 2px auto 0 auto;*/
+    display: block;
+  }
+
+  #controls {
+    position: relative;
+    width: 196px;
+    height: 60px;
+    margin: 2px auto 0 auto;
+    display: block;
+    /*background: blue;*/
+  }
+
+  #controls.hidden, video {
+    display: none;
+  }
+
+  #xcontrols button {
+    cursor: pointer;
+    border: none;
+    outline: none;
+    margin: 5px;
+    /*width: 50px;*/
+    /*height: 50px;*/
+    background: transparent;
+    color: #fff;
+    float: left;
+    background: transparent;
+    color: #fff;
+    font-family: 'uni0553-webfont';
+    font-size: 18px;
+    }
+  
+
+    #xcontrols button:hover {
+      background: #000;
+      color: #fff;
+    }
+
+
+  
+  canvas, svg {
+    image-rendering: optimizeSpeed;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -o-crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: pixelated;
+    image-rendering: optimize-contrast;
+    -ms-interpolation-mode: nearest-neighbor;    
+  }
+  canvas#fin {
+    margin-top: 12px;
+    background: rgba(255,255,255,0);
+    padding: 4px;
+  }
+  canvas#fin:hover {
+    cursor: pointer;
+    background: rgba(255,255,255,1);
+  }
+
+  #camcontrols {
+    display: block;
+    width: 196px;
+    margin:20px auto;
+    padding: 2px 0 0 0;
+  }
+
+
+input[type=range] {
+    position: relative;
+    top: 0;
+    /*left: 30px;*/
+    display: block;
+    -webkit-appearance: none; 
+    background: transparent;
+    width:196px;
+    height:30px;
+    background: transparent;
+    margin: 2px 0;
+    /*padding: 1px 0;*/
+    background: rgba(0,0,0,0);
+}
+
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+}
+
+input[type=range]:focus {
+  outline: none;
+  opacity: 1;
+}
+
+input[type=range]::-ms-track {
+  cursor: pointer;
+  background: transparent; 
+  color: transparent;
+}
+
+
+/* WebKit/Blink */
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 26px;
+  width: 26px;
+  background:#fff;
+  cursor: pointer;
+  margin-top: -12px;
+  transform-origin: center;
+  transform: translateY(2px);
+}
+
+/* Firefox */
+input[type=range]::-moz-range-thumb {
+  height: 26px;
+  width: 26px;
+  background: #fff;
+  cursor: pointer;
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  height: 4px;
+  cursor: pointer;
+  background: rgba(255,255,255,1);
+}
+
+#strip {
+  clear: both;
+  display: block;
+  width: 196px;
+  margin: 0 auto;
+  /*max-height: 256px;*/
+
+}
+
+#strip img {transform: scale(0.95);}
+
+#reel {
+  display: block;  
+  width: 100%;
+  position: absolute;
+  bottom: 0;
+}
+
+#fin.selected {
+  border:#fff 2px solid;
+  transform: translateY(-2px) translateX(-2px);
+}
+</style>
+
+</head>
+<body>
+
+<video id="video" autoplay playsinline></video>  
+
+
+
+<div id="controls" class="hidden">
+      <button id="xbutton">camera</button>
+      <select id="select"></select>
+</div>
+
+
+
+
+
+<div id="camcontrols">
+  <label id="bcntrl" title="brightness">
+  
+    <input type="range" value="1.9" min="0" max="4" step="0.1" title="brightness" oninput="brightval = Number(value)" />
+  </label>
+
+  <label id="ccntrl" title="contrast">
+    <!-- <b>contrast</b> -->
+   
+    <input type="range" value="1.9" min="0" max="4" step="0.1" title="contrast" oninput="contrastval = Number(value)" />
+  </label>
+</div>
+
+
+<div id="xcontrols">
+  <button id="selbutton" title="select camera">select</button>
+
+  <span id="selnum" title="gallery"></span>
+
+<!--   
+  <button id="go64px">64px</button>
+  <button id="go128px">128px</button>
+  <button id="go256px">256px</button> 
+-->
+
+</div>
+<!-- end controls -->
+
+
+
+<div id="reel">
+  <div id="strip" title="gallery"></div>
+</div>
+
+<script>
+//  GBcam settings
+let contrastval = 1;
+let brightval = 2;
+let grayval = 100;
+let picsize = 64;
+
+//
+let count = 1;
+let num = 1;
+const strip = document.getElementById('strip');
+const video = document.getElementById('video');
+const xbutton = document.getElementById('xbutton');
+const select = document.getElementById('select');
+const selbutton = document.getElementById('selbutton');
+const selnum = document.getElementById('selnum');
+let currentStream;
+
+// safari fix
+video.setAttribute('autoplay', '');
+video.setAttribute('muted', '');
+video.setAttribute('playsinline', '')
+
+document.querySelector('#selbutton').addEventListener('click', changeSelected);
+
+function changeSelected() {
+  num++;
+  if (num>select.options.length-1) {num=1;}
+  select.value = select[num].value;
+  // xbutton.click();\
+  gogo();
+}
+
+function stopMediaTracks(stream) {
+  stream.getTracks().forEach(track => {
+    track.stop();
+  });
+}
+
+function gotDevices(mediaDevices) {
+  select.innerHTML = '';
+  select.appendChild(document.createElement('option'));
+  count = 1;
+  mediaDevices.forEach(mediaDevice => {
+    if (mediaDevice.kind === 'videoinput') {
+      const option = document.createElement('option');
+      option.value = mediaDevice.deviceId;
+      const label = mediaDevice.label || `Camera ${count++}`;
+      const textNode = document.createTextNode(label);
+      option.appendChild(textNode);
+      select.appendChild(option);
+    }
+  });
+  // console.log(count)
+}
+
+
+navigator.mediaDevices.enumerateDevices().then(gotDevices);
+
+//
+function gogo() {
+  if (typeof currentStream !== 'undefined') {
+    stopMediaTracks(currentStream);
+  }
+  const videoConstraints = {};
+  if (select.value === '') {
+    videoConstraints.facingMode = 'environment';
+  } else {
+    videoConstraints.deviceId = { exact: select.value };
+  }
+  const constraints = {
+    video: videoConstraints,
+    audio: false
+  };
+  navigator.mediaDevices
+    .getUserMedia(constraints)
+    .then(stream => {
+      currentStream = stream;
+      video.srcObject = stream;
+      return navigator.mediaDevices.enumerateDevices();
+    })
+    .then(gotDevices)
+    .catch(error => {
+      console.error(error);
+    });
+
+    // show info
+    if (select.options.length>2) {
+      console.log(select.options.length, select)
+      selnum.innerHTML = num +'/'+ (select.options.length-1);      
+    }
+
+}
+//
+
+
+// canvas
+const canvas = document.createElement('canvas');
+canvas.id = "gbscreen";
+canvas.width = picsize;
+canvas.height = picsize;
+const ctx = canvas.getContext("2d");
+// document.body.appendChild(canvas);
+
+// fx
+const fxcanvas = document.createElement('canvas');
+fxcanvas.id = "fxcanvas";
+fxcanvas.width = picsize;
+fxcanvas.height = picsize;
+const fxctx = fxcanvas.getContext("2d");
+
+// effected
+let multiplier = 3;
+const fincanvas = document.createElement('canvas');
+fincanvas.id = "fin";
+fincanvas.width = picsize*multiplier;
+fincanvas.height = picsize*multiplier;
+const finctx = fincanvas.getContext("2d");
+camcontrols.appendChild(fincanvas);
+
+
+
+
+video.addEventListener('play', () => {
+  function step() {
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.filter = 'brightness('+ brightval +') contrast('+ contrastval +') grayscale('+ grayval +')';
+    // sepia(100%) hue-rotate(90deg)  saturate(2.2) // GB colour
+    gbfx()
+    requestAnimationFrame(step)
+  }
+  step();
+})
+
+
+
+// set width/height of canvas to camera
+const getVideoSize = function() {
+    video.removeEventListener('playing', getVideoSize, false);
+};
+
+video.addEventListener('playing', getVideoSize, false);
+
+
+
+// dithering
+function gbfx() {
+    const imageData  = ctx.getImageData( 0, 0, canvas.width, canvas.height);
+    const depth      = 36;
+
+    // Matrix
+    const threshold_map_4x4 = [
+        [  1,  9,  3, 11 ],
+        [ 13,  5, 15,  7 ],
+        [  4, 12,  2, 10 ],
+        [ 16,  8, 14,  6 ]
+    ];
+
+    // imageData
+    const width  = imageData.width;
+    const height = imageData.height;
+    let pixel  = imageData.data;
+    let x, y, a, b;
+
+    // filter
+    for ( x=0; x<width; x++ )
+    {
+        for ( y=0; y<height; y++ )
+        {
+            a    = ( x * height + y ) * 4;
+            b    = threshold_map_4x4[ x%4 ][ y%4 ];
+            pixel[ a + 0 ] = ( (pixel[ a + 0 ]+ b) / depth | 0 ) * depth;
+            pixel[ a + 1 ] = ( (pixel[ a + 1 ]+ b) / depth | 0 ) * depth;
+            pixel[ a + 2 ] = ( (pixel[ a + 2 ]+ b) / depth | 0 ) * depth;
+        }
+    }
+
+    // effects
+    fxctx.putImageData( imageData, 0, 0);
+    // compose + scale
+    finctx.mozImageSmoothingEnabled = false;
+    finctx.imageSmoothingEnabled = false;
+    finctx.drawImage(fxcanvas,0,0, picsize*multiplier, picsize*multiplier);
+};
+
+
+// screen grab button
+fin.addEventListener('click', function() {
+    fin.classList = 'selected';
+    finctx.drawImage(fxcanvas,0,0, picsize*multiplier, picsize*multiplier);
+    setTimeout(function () {
+      fin.classList = '';
+    }, 50)
+
+  // meta data
+  const str = (new Date()).toISOString().slice(0, 19).replace("T", "-");
+  // console.log(str);
+
+
+// USE THIS IN PRODUCTION <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  // create png from fxcanvas
+  const data = fxcanvas.toDataURL('image/png');
+  const link = document.createElement('a');
+  link.href = data;
+  link.setAttribute('download', 'gbc_'+str);
+  link.innerHTML = `<img src="${data}" alt="GBcam" />`;
+  strip.insertBefore(link, strip.firstChild);
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+});
+
+
+
+// document.querySelector('#go64px').addEventListener('click', go64);
+// document.querySelector('#go128px').addEventListener('click', go128);
+// document.querySelector('#go256px').addEventListener('click', go256);
+
+
+// function go64() {
+//   picsize = 64;
+// }
+// function go128() {
+//   picsize = 128;
+// }
+// function go256() {
+//   picsize = 256;
+// }
+
+// 
+gogo();
+  </script>
+</body>
+
+</html>
