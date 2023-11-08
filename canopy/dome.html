@@ -173,7 +173,7 @@ function draw() {
 // end loop at this number of tries
 if(counter > 1000 || circles.length>254) {
   // createfinalcanvas(circles)
-  console.log(circles)
+  // console.log(circles)
   return;
 }
 }
@@ -309,11 +309,11 @@ scene.add( scenegroup );
 treegroup = new THREE.Group();
 scene.add( treegroup );
 
-// // clipping
-// var localPlane = new THREE.Plane( new THREE.Vector3( 0, 1, 0 ), 1 );
-// var globalPlane = new THREE.Plane( new THREE.Vector3( 0, 1, 0 ), 1 );
-// renderer.clippingPlanes = [ globalPlane ];
-// renderer.localClippingEnabled = true;
+// clipping
+var localPlane = new THREE.Plane( new THREE.Vector3( 0, 1, 0 ), 1 );
+var globalPlane = new THREE.Plane( new THREE.Vector3( 0, 1, 0 ), 1 );
+renderer.clippingPlanes = [ globalPlane ];
+renderer.localClippingEnabled = true;
 
 
 
@@ -331,42 +331,42 @@ scene.add( treegroup );
 
 
 
-// // dome [clipped hemisphere] 
-// var geometry = new THREE.IcosahedronBufferGeometry( 256, 2 );
-// var mesh = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { 
-// color: 0x156289, 
-// wireframe:true,
-//     clippingPlanes: [ localPlane ],
-//     clipShadows: true
-//  } ) );
-// // angle = (Math.PI/2)+(Math.PI/3);
-// mesh.rotation.set(Math.PI/3,0,0)
-// mesh.position.y = -39;
-// scene.add( mesh );   
+// dome [clipped hemisphere] 
+var geometry = new THREE.IcosahedronBufferGeometry( 256, 2 );
+var mesh = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { 
+color: 0x156289, 
+wireframe:true,
+    clippingPlanes: [ localPlane ],
+    clipShadows: true
+ } ) );
+// angle = (Math.PI/2)+(Math.PI/3);
+mesh.rotation.set(Math.PI/3,0,0)
+mesh.position.y = -50;
+scene.add( mesh );   
 
 
-// DOME
-var loader = new THREE.BufferGeometryLoader();
+// // DOME
+// var loader = new THREE.BufferGeometryLoader();
 
-loader.load(
-  'dome.json',
-  function ( geometry ) {
-    var material = new THREE.MeshBasicMaterial( {  
-      wireframe:true,
-       color: 0x333333,
-       transparent:true, 
-       opacity:0.1
-      } );
-    var object = new THREE.Mesh( geometry, material );
-    object.name = "dome"
-    object.geometry.center();
-    object.scale.set(427,600,427);
-    object.position.set(0,105,0);             
-    scene.add( object );
-  },
-function ( xhr ) {},
-function ( xhr ) {console.log( 'An error happened' );}
-);
+// loader.load(
+//   'models/dome.json',
+//   function ( geometry ) {
+//     var material = new THREE.MeshBasicMaterial( {  
+//       wireframe:true,
+//        color: 0x333333,
+//        transparent:true, 
+//        opacity:0.1
+//       } );
+//     var object = new THREE.Mesh( geometry, material );
+//     object.name = "dome"
+//     object.geometry.center();
+//     object.scale.set(427,600,427);
+//     object.position.set(0,105,0);             
+//     scene.add( object );
+//   },
+// function ( xhr ) {},
+// function ( xhr ) {console.log( 'An error happened' );}
+// );
 
 
 //
