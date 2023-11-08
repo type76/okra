@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>valley forge</title>
+  <style>
+body { margin: 0; overflow: hidden;
+background: #000 url(img/VF_Skybox_02.jpg) center center no-repeat;
+background-size: cover;
+background-attachment: fixed;
+width: 100%;
+height: 100%;
+}
+canvas { width: 100%; height: 100% 
+	image-rendering: optimizeSpeed;
+	image-rendering: -moz-crisp-edges;
+	image-rendering: -o-crisp-edges;
+	image-rendering: -webkit-optimize-contrast;
+	image-rendering: pixelated;
+	image-rendering: optimize-contrast;
+	-ms-interpolation-mode: nearest-neighbor;
+}
+#sldr {position: absolute; display: block; top: 0; z-index: 9;width: 100%; }
+#sldr input {display: block;  height: 1em; width: 200px; margin: 1em auto; }
+</style>
+</head>
+<body>
+  <script src="js/three.min.js"></script>
+  <script src="js/OrbitControls.min.js"></script>
+
+<script type="text/javascript">
+
+
+//
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.01, 1000 );
+
+var renderer = new THREE.WebGLRenderer({antialias: true, transparent:true, alpha:true});
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// soft white light
+var light = new THREE.AmbientLight( 0xcccccc );
+scene.add( light );
+
+// backlight
+var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.1 );
+directionalLight.position.set(0,2,0)
+scene.add( directionalLight );
+
+
+// camera
+// camera.position.z = 2;
+camera.position.x = 5.14;
+controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.maxDistance = 10;
+controls.minDistance = 0.15;
+controls.enableDamping = true;
+controls.dampingFactor = 0.9;
+controls.enablePan = false;
+
+
+// groups
+level = new THREE.Group();
+scene.add( level );
+
+ship = new THREE.Group();
+level.add( ship );
+
+domegrp1 = new THREE.Group();
+domegrp1.rotation.z = Math.PI;
+domegrp1.position.set( 0, 0, -1.1 );
+ship.add( domegrp1 );
+
+
+
+var corridor = new THREE.Group();
+corridor.scale.set(0.99,0.99,0.99)
+level.add( corridor );
+
+// var ship = new THREE.Group();
+// domegrp1.add( ship );
+
+
+// green cube hero
+var geometry = new THREE.BoxGeometry( 0.06, 0.06, 0.06 );
+var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+hero = new THREE.Mesh( geometry, material );
+scene.add( hero );
+
+
+// load object
+var loader = new THREE.ObjectLoader();
+
+loader.load(
+	"models/vf5.json",
+	function ( obj ) {
+		ship.add( obj );
+		// obj.scale.set(0.5,0.5,0.5);
+		// console.log(obj.children)
+		ship.getObjectByName( "body" ).material = new THREE.MeshLambertMaterial( { 
+			map : new THREE.TextureLoader().load( 'img/vfbody2.png' ),
+		 } );
+ 		ship.getObjectByName( "tanks" ).material = new THREE.MeshBasicMaterial( { 
+			map : new THREE.TextureLoader().load( 'img/structure1.png' ),
+		 } );
+		ship.getObjectByName( "redpoles" ).material = new THREE.MeshBasicMaterial( { 
+			map : new THREE.TextureLoader().load( 'img/structure1.png' ),
+		 } );
+		corridor = ship.getObjectByName( "corridor" );
+		corridor.material = new THREE.MeshBasicMaterial( { 
+			color:0x660000,
+			// map : new THREE.TextureLoader().load( 'img/structure1.png' ),
+		 } );
+		ship.getObjectByName( "silver" ).material = new THREE.MeshLambertMaterial( { 
+			color:0x666666,
+			// map : new THREE.TextureLoader().load( 'img/VF-domes.png' ),
+		 } );
+		ship.getObjectByName( "domebase" ).material = new THREE.MeshLambertMaterial( { 
+			color:0xcccccc,
+			map : new THREE.TextureLoader().load( 'img/dome1.png' ),
+		 } );
+		ship.getObjectByName( "glass" ).material = new THREE.MeshBasicMaterial( { 
+			wireframe:true,
+			transparent:true,
+			opacity:0.2
+			// map : new THREE.TextureLoader().load( 'img/structure1.png' ),
+		 } );
+		ship.getObjectByName( "details" ).material = new THREE.MeshBasicMaterial( { 
+			// color:0xcccccc,			
+			map : new THREE.TextureLoader().load( 'img/details.png' ),
+		 } );
+
+// 1st 3domes
+var domebase2 = ship.getObjectByName( "domebase" ).clone();
+domebase2.rotation.z = Math.PI/1.5;
+ship.add(domebase2);
+var domebase3 = ship.getObjectByName( "domebase" ).clone();
+domebase3.rotation.z = -Math.PI/1.5;
+ship.add(domebase3);
+//
+var dome2 = ship.getObjectByName( "glass" ).clone();
+dome2.rotation.z = Math.PI/1.5;
+ship.add(dome2);
+var dome3 = ship.getObjectByName( "glass" ).clone();
+dome3.rotation.z = -Math.PI/1.5;
+ship.add(dome3);
+
+
+//2nd 3domes
+var domebase4 = ship.getObjectByName( "domebase" ).clone();
+domegrp1.add(domebase4);
+var domebase5 = ship.getObjectByName( "domebase" ).clone();
+domebase5.rotation.z = -Math.PI/1.5;
+domegrp1.add(domebase5);
+var domebase6 = ship.getObjectByName( "domebase" ).clone();
+domebase6.rotation.z = Math.PI/1.5;
+domegrp1.add(domebase6);
+//
+//2nd 3domes
+var dome4 = ship.getObjectByName( "glass" ).clone();
+domegrp1.add(dome4);
+var dome5 = ship.getObjectByName( "glass" ).clone();
+dome5.rotation.z = -Math.PI/1.5;
+domegrp1.add(dome5);
+var dome6 = ship.getObjectByName( "glass" ).clone();
+dome6.rotation.z = Math.PI/1.5;
+domegrp1.add(dome6);
+	},
+	function ( xhr ) {
+		// console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+	},
+	function ( err ) {
+		console.error( 'An error happened' );
+	}
+);
+
+
+
+// load buffergeos 
+var loader = new THREE.BufferGeometryLoader();
+
+// load a resource
+loader.load(
+	// resource URL
+	'models/corridor.json',
+
+	// onLoad callback
+	function ( geometry ) {
+		var material = new THREE.MeshLambertMaterial( { 
+		  	map : new THREE.TextureLoader().load( 'img/corridor-inside3.png' ) 
+			 } );
+		var object = new THREE.Mesh( geometry, material );
+		// object.position.y = -1;
+		corridor.add( object );
+		object.material.map.depthWrite = false;
+		object.material.map.magFilter = THREE.NearestFilter;
+		object.material.minFilter = THREE.NearestFilter;
+
+	},
+
+	// onProgress callback
+	function ( xhr ) {
+		// console.log( (xhr.loaded / xhr.total * 100) + '% loaded' );
+	},
+
+	// onError callback
+	function ( err ) {
+		console.log( 'An error happened' );
+	}
+);
+
+// handle window resize
+window.addEventListener( 'resize', resize, false );
+function resize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+// loop
+var animate = function () {
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
+};
+
+// start <<<<<<<<<<<
+animate();
+
+
+</script>
+</body>
+</html>
