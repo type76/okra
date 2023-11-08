@@ -1,6 +1,15 @@
-- [![walk](img/walk.png)](https://type76.github.io/okra/canopy/walk.html)
-- [![ship](img/ship.png)](https://type76.github.io/okra/canopy/valleyforge.html)
-- [![lineup](img/lineup.png)](https://type76.github.io/okra/canopy/lineup.html)
+## walk (joystick control)
+[![walk](img/walk.png)](https://type76.github.io/okra/canopy/walk.html)
+
+## ship
+[![ship](img/ship.png)](https://type76.github.io/okra/canopy/valleyforge.html)
+
+## lineup
+[![lineup](img/lineup.png)](https://type76.github.io/okra/canopy/lineup.html)
+
+## bio dome (testing generated level)
+[![dome](img/dome.png)](https://type76.github.io/okra/canopy/dome.html)
+
 
 
 ## CREDITS
