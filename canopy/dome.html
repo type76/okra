@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>biome</title>
+  <style>
+  body {
+    background: #000;
+    color: #eee;
+    overflow: hidden;
+    margin:0;
+    user-select:none;
+  }
+  canvas {  
+  image-rendering: auto;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  }
+  #canvas {position: absolute;} 
+  #canvas, #hitcanvas {display: none;}
+  #newcanvas {position: absolute; top: 0; right: 0;
+    z-index: 99;}
+  #hud {position: absolute; top: 0; left: 0; z-index: 99;
+      font-family: monospace; color: #fff; padding: 8px; background-color: #333;}
+</style>
+</head>
+<body>
+
+<div id="hud"></div>
+
+  <canvas id="canvas" width="512" height="512" ></canvas>
+  <canvas id="hitcanvas" width="512" height="512" ></canvas>
+
+  <div class="joy" id="joy"></div>
+
+
+      <script src="js/three.min.js"></script>
+      <script src="js/OrbitControls.min.js"></script>
+      <script src="js/nipplejs.min.js"></script>
+      <script src="js/plants.js"></script>
+      <!-- <script src="keys.js"></script> -->
+
+<script>
+var moving = false;
+var hitplanewidth = 512;
+var oldplace = 0;
+
+// globals
+const HERO = {
+  moving:false,
+  maxSpeed:0.5,
+  posx:0,
+  posz:0,
+  x:0,
+  y:0,
+  vx:0,
+  vy:0,
+  rotation:0,
+};
+
+// speed limiter
+function speedLimit(vx, vy, speedLimit) {
+  const hyp = Math.hypot(vx, vy);
+  if (hyp === 0) return { vx: 0, vy: 0 };
+  const maxSpeed = Math.min(hyp, speedLimit);
+  const ratio = maxSpeed / hyp;
+  return {
+    vx: ratio * vx,
+    vy: ratio * vy
+  };
+}
+
+// nipple.js
+const nipple = nipplejs.create({
+  // mode: 'dynamic',dataOnly:true // hide joystick
+  // zone: document.body,
+  color: "white",
+  mode: 'static',
+  // restOpacity:0.5,
+  zone: document.getElementById('joy'),
+  position: {
+    left: '7%',
+    bottom: '20%'
+  }
+});
+
+// start
+nipple.on("move", (e, data) => {
+  const vx = data.force * Math.cos(data.angle.radian);
+  const vy = -data.force * Math.sin(data.angle.radian);
+  const v = speedLimit(vx, vy, HERO.maxSpeed);
+  HERO.vx = v.vx;
+  HERO.vy = v.vy;
+  HERO.rotation = Math.atan2(v.vy, v.vx) + Math.PI * 0.5;
+  selection.rotation.y = -HERO.rotation;
+  moving = true;
+});
+
+// end
+nipple.on("end", (e, data) => {
+  moving = false;
+  selection.rotation.y = -HERO.rotation;  
+});
+
+//
+var num = 10;
+
+// img
+var hitimg = new Image();
+hitimg.onload = ready;
+hitimg.src = "img/floorplan.png";
+
+// hit canvas
+var hitcanvas = document.getElementById("hitcanvas"),
+htx = hitcanvas.getContext("2d");
+hitcanvas.id = "hitcanvas";
+hitcanvas.width = 512;
+hitcanvas.height = hitcanvas.width;
+document.body.appendChild(hitcanvas);
+
+
+// trees
+var canvas = document.getElementById("canvas"),
+context = canvas.getContext("2d");
+canvas.width = canvas.height = hitcanvas.width;
+
+// // BG circle
+context.fillStyle = '#fff';
+context.fillRect(0, 0, canvas.width, canvas.width);
+context.fillStyle = 'black';
+context.beginPath();
+// context.arc(256, 256, 255, 0, Math.PI*2);
+aliasedCircle(context, 256, 256, 255);
+context.fill();
+
+
+// create aliased circle
+function aliasedCircle(ctx, xc, yc, r) {  // NOTE: for fill only!
+  var x = r, y = 0, cd = 0;
+
+  // middle line
+  ctx.rect(xc - x, yc, r<<1, 1);
+
+  while (x > y) {
+    cd -= (--x) - (++y);
+    if (cd < 0) cd += x++;
+    ctx.rect(xc - y, yc - x, y<<1, 1);    // upper 1/4
+    ctx.rect(xc - x, yc - y, x<<1, 1);    // upper 2/4
+    ctx.rect(xc - x, yc + y, x<<1, 1);    // lower 3/4
+    ctx.rect(xc - y, yc + x, y<<1, 1);    // lower 4/4
+  }
+}
+
+
+
+
+// array
+var circles = [],
+min = 5,
+max = 30;
+
+
+// draw circles
+function draw() {
+  var c = createCircle();
+  var counter = 0;
+  while(!isValid(c)) {
+    c.x = Math.floor(Math.random() * 512);
+    c.y = Math.floor(Math.random() * 512);
+    counter++;
+
+// end loop at this number of tries
+if(counter > 1000 || circles.length>254) {
+  // createfinalcanvas(circles)
+  console.log(circles)
+  return;
+}
+}
+
+// size of circles
+while(isValid(c)){
+  c.r++;  
+}
+
+c.r -= 2;
+
+context.fillStyle = "rgba("+(circles.length+1)+",0,0,1)";
+c.name = plants[circles.length+1];
+if (circles.length>plants.length-2) {
+  c.name = plants[circles.length-195];
+}
+
+// done x,y,c
+circles.push(c);
+drawCircle(c.x, c.y, c);
+requestAnimationFrame(draw); // loop
+renderer.render(scene, camera); // 3D
+}
+
+
+// check to place the next circle
+function isValid(c) {
+// over max size
+if (c.r > max) {
+  return false;
+}
+
+for (var i = 0; i < circles.length; i++) {
+  var c2 = circles[i],
+  dx = c2.x - c.x,
+  dy = c2.y - c.y,
+  dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < c2.r + c.r) {
+    return false;
+  } 
+}
+
+// get hitcanvas red value + don't place on white
+xdata = htx.getImageData(c.x, c.y, 1, 1);
+if (xdata.data[0] > 5) {
+  return false;
+}
+
+return true;
+}
+
+
+// make circle object
+function createCircle() {
+  return {
+    x: Math.floor(Math.random() * 512),
+    y: Math.floor(Math.random() * 512),
+    r: min
+  };   
+}
+
+
+// done x,y,c
+// draw it and colour it 
+function drawCircle(x, y, c) {
+  context.beginPath();
+  aliasedCircle(context, c.x, c.y, c.r);
+  context.fill();
+
+  // 3D
+  createobj(c.x-256,c.y-256,0,c.r/1.1)
+  plane.material.map.needsUpdate = true;
+}
+
+
+// img loaded > start   
+function ready() {
+  htx.drawImage(hitimg, 0, 0, 512, 512);
+  draw();
+}
+
+
+// create new canvas from tree data
+function createfinalcanvas(argument) {
+  var newcanvas = document.createElement('canvas');
+  newcanvas.id = 'newcanvas';
+  newcontext = newcanvas.getContext("2d");
+  newcanvas.width = newcanvas.height = canvas.width;
+  document.body.appendChild(newcanvas); 
+
+  for (var i = 0; i < argument.length; i++) {
+    newcontext.fillStyle = "rgba("+(i+1)+",0,0,1)";
+    newcontext.beginPath();
+    aliasedCircle(newcontext, argument[i].x, argument[i].y, argument[i].r);
+    newcontext.fill();
+  }
+
+}
+
+// check plant in hitarea
+function checkplant(argument) {
+  hud.innerHTML = plants[argument].common;
+}
+
+
+</script>
+
+<script type="text/javascript">
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 2000 );
+
+const renderer = new THREE.WebGLRenderer({antialias:true, transparent:true, alpha:true});
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+camera.position.z = 30;
+camera.position.y = 20;
+camera.lookAt(0,0,0)
+
+
+var controls = new THREE.OrbitControls( camera, renderer.domElement );
+controls.maxAzimuthAngle = 0;
+controls.minAzimuthAngle = 0;
+controls.maxPolarAngle = Math.PI * 0.49;
+controls.maxDistance = 360;
+controls.minDistance = 2;
+
+scenegroup = new THREE.Group();
+scene.add( scenegroup );
+// scenegroup.rotation.set(-Math.PI/2,0,0)
+
+treegroup = new THREE.Group();
+scene.add( treegroup );
+
+// // clipping
+// var localPlane = new THREE.Plane( new THREE.Vector3( 0, 1, 0 ), 1 );
+// var globalPlane = new THREE.Plane( new THREE.Vector3( 0, 1, 0 ), 1 );
+// renderer.clippingPlanes = [ globalPlane ];
+// renderer.localClippingEnabled = true;
+
+
+
+
+// // grid
+// const helper = new THREE.PolarGridHelper( 
+//   250, // radius
+//   4, // radials
+//   6, // circles
+//   64, // divisions
+//   0x999999, // color1
+//   0x999999, // color2
+//    );
+// scene.add( helper );
+
+
+
+// // dome [clipped hemisphere] 
+// var geometry = new THREE.IcosahedronBufferGeometry( 256, 2 );
+// var mesh = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { 
+// color: 0x156289, 
+// wireframe:true,
+//     clippingPlanes: [ localPlane ],
+//     clipShadows: true
+//  } ) );
+// // angle = (Math.PI/2)+(Math.PI/3);
+// mesh.rotation.set(Math.PI/3,0,0)
+// mesh.position.y = -39;
+// scene.add( mesh );   
+
+
+// DOME
+var loader = new THREE.BufferGeometryLoader();
+
+loader.load(
+  'dome.json',
+  function ( geometry ) {
+    var material = new THREE.MeshBasicMaterial( {  
+      wireframe:true,
+       color: 0x333333,
+       transparent:true, 
+       opacity:0.1
+      } );
+    var object = new THREE.Mesh( geometry, material );
+    object.name = "dome"
+    object.geometry.center();
+    object.scale.set(427,600,427);
+    object.position.set(0,105,0);             
+    scene.add( object );
+  },
+function ( xhr ) {},
+function ( xhr ) {console.log( 'An error happened' );}
+);
+
+
+//
+function createobj(x,y,z,s) {
+  material = new THREE.MeshBasicMaterial( { color: 0x00ff00, wireframe:true } );
+
+  if (s>=15) {
+    // console.log(s)
+    createtree(x,z,y,s)
+  } else {
+    createbush(x,z,y,s)
+  }
+}
+
+//
+function createbush(x,y,z,s) {
+  /* hemisphere */
+  var geometry = new THREE.SphereGeometry(s, 8, 6, 0, 2*Math.PI, 0, Math.PI/2);
+  var dome = new THREE.Mesh( geometry, material );
+  dome.position.set(x,y,z);
+  scenegroup.add( dome );
+}
+
+
+//
+function createtree(x,y,z,s) {
+  var treeclones = treegroup.clone();
+  treeclones.position.set(x,y+14,z);
+  treeclones.rotation.set(0,Math.random()*10,0);
+  treeclones.material = new THREE.MeshBasicMaterial({
+  color: 0xff0000, side: THREE.BackSide, overdraw: 1
+  });
+  
+  var distance = treeclones.position.distanceTo( {x:0,y:0,z:0} );
+  xvar = (s/4)-(distance/50);
+  if (xvar < 1.7){xvar = 1.7;}
+  treeclones.scale.set( xvar, xvar, xvar );
+
+  // treeclones.scale.set( s/8, s/8, s/8 );
+  treeclones.position.y = 5;
+  scene.add( treeclones );
+}
+
+// window resize
+window.addEventListener('resize', function(){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  renderer.render(scene, camera);
+}, false)
+
+
+
+// make base tree to copy
+function create3Dtree(argument) {
+  // tree
+  geometry = new THREE.CylinderGeometry( 1, 2, 50, 8, 1 );
+  material = new THREE.MeshBasicMaterial({
+    color: 0xa46d49,
+  });
+  treetrunk = new THREE.Mesh(geometry, material);
+  treetrunk.position.set( 0, 8, 0 );
+  treetrunk.scale.set( 0.3, 0.5, 0.3 );
+  treetrunk.radiusTop = 1;
+  treetrunk.openEnded = false;
+  treegroup.add( treetrunk );
+
+  // branches
+  var branch1 = treetrunk.clone();
+  branch1.position.set (0, 18, 1.3);
+  branch1.scale.set (0.2, 0.08, 0.2);
+  branch1.rotation.set (1, 0, 0);
+  treegroup.add( branch1 );
+  // 
+  var branch2 = treetrunk.clone();
+  branch2.position.set (0, 18, -1.3);
+  branch2.scale.set (0.2, 0.08, 0.2);
+  branch2.rotation.set (-0.73, 0, 0);
+  treegroup.add( branch2 );
+
+  // treetop
+  geometry = new THREE.SphereGeometry( 14, 14, 14 );
+  material = new THREE.MeshBasicMaterial({color: 0x88eb91, side: THREE.BackSide});
+  treegreen = new THREE.Mesh(geometry, material);
+  treegreen.scale.set(0.5,0.5,0.5);
+  treegreen.position.set (0, 23, 0);
+  treegreen.name = "treegrn";
+  scene.remove( treegroup );
+  treegroup.add( treegreen );
+}
+
+
+// ground circle
+function createground() {
+  // Base circle
+  var plgeometry = new THREE.CircleGeometry( 256, 100 );
+  // var plgeometry = new THREE.PlaneGeometry(512, 512);
+  var plmaterial = new THREE.MeshBasicMaterial({ 
+  map : new THREE.CanvasTexture(canvas),
+  // transparent:true,
+  // opacity:0.1
+  });
+  plane = new THREE.Mesh( plgeometry, plmaterial );
+  plane.rotation.set(-Math.PI/2,0,0);
+  scene.add( plane );
+  
+  plane.material.map.magFilter = THREE.NearestFilter;
+  plane.material.map.minFilter = THREE.NearestFilter;
+
+
+}
+
+
+function createplayer() {
+  // 3D cursor
+  cursor = new THREE.Group();
+  cursor.position.x = -24;
+  cursor.rotation.y = -Math.PI*0.5; 
+  scene.add( cursor );
+
+  // 3D player object
+  var geometry = new THREE.BoxGeometry( 5, 5, 5 );
+  var material = new THREE.MeshBasicMaterial( { color: 0xff0000, wireframe:true } );
+  selection = new THREE.Mesh( geometry, material );
+  selection.position.x = cursor.position.x;
+  selection.position.y = 2.5;
+  selection.rotation.y = cursor.rotation.y; 
+  scene.add( selection );
+
+  // triangle [direction arrow]
+  var trigeometry = new THREE.CircleBufferGeometry( 3, 3 );
+  var tmaterial = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+  tri = new THREE.Mesh( trigeometry, tmaterial );
+  tri.rotation.set(-Math.PI/2,0,Math.PI/2)
+  tri.position.y = 2.6;
+  selection.add( tri );
+
+}
+
+// controls.addEventListener('change', () => {
+//   renderer.render(scene, camera);
+// });
+
+function animate() {
+  requestAnimationFrame( animate );
+  renderer.render( scene, camera );
+
+  mapcheck();
+
+  // lerp 3D hero position
+  selection.position.x += (cursor.position.x - selection.position.x)*0.2;
+  selection.position.z += (cursor.position.z - selection.position.z)*0.2;
+
+};
+
+
+  // map check
+  function mapcheck () {
+
+    xu = (hitcanvas.width/2)+Math.floor( cursor.position.x);
+    xv = (hitcanvas.width/2)+Math.floor( cursor.position.z);
+    xdata = context.getImageData(xu, xv, 1, 1);
+
+    // // keys
+    // if (keyboard.isDown(keyboard.LEFT) ){
+    //   // cursor.position.x -= 0.5;
+    //   HERO.vx = -0.5;
+    // }
+    // if (keyboard.isDown(keyboard.RIGHT) ){
+    //   // cursor.position.x += 0.5;
+    //   HERO.vx = 0.5;
+    // }
+    // if (keyboard.isDown(keyboard.UP) ){
+    //   // cursor.position.z -= 0.5;
+    //   HERO.vy = -0.5;
+    // }
+    // if (keyboard.isDown(keyboard.DOWN) ){
+    //   // cursor.position.z += 0.5;
+    //   HERO.vy = 0.5;
+    // }
+
+
+    // move player
+    // xdata.data[0] is the red value that sets allowed
+    if (xdata.data[0]>254) {
+      cursor.position.x = HERO.posx;
+      cursor.position.z = HERO.posz;
+      allowmove = false;
+    } else {
+      HERO.posx = cursor.position.x; 
+      HERO.posz = cursor.position.z; 
+      allowmove = true;
+    }
+
+    // stop at white
+    if (xdata.data[0] > 254) {return}
+
+
+    // move scene with player
+    scene.position.x = -selection.position.x;
+    scene.position.z = -selection.position.z;
+
+    // moving allowed
+    if (moving) {
+      cursor.position.x += HERO.vx;
+      cursor.position.z += HERO.vy;
+      // draw cursor
+      // context.fillStyle = "blue";
+      // context.fillRect(xu, xv, 1, 1);   
+      // plane.material.map.needsUpdate = true;
+    } // if moving
+
+    //
+    if ( typeof xdata.data[0] != 'undefined' || xdata.data[0] != null) { 
+      // console.log(xdata.data[0])
+      checkplant(xdata.data[0]); 
+    }
+
+  } // end mapcheck
+
+
+
+  // START <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  create3Dtree();
+  createground();
+  createplayer();
+  animate();
+
+
+</script>
+</body>
+</html>
