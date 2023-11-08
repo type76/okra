@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>lineup</title>
+	<style type="text/css">
+	body {
+		overflow: hidden;
+		margin: 0;
+		user-select:none;
+		background-color: #000;
+	}
+	#hud {
+		position: absolute;
+		z-index: 99
+		top:0;
+		left: 0;
+		padding: 12px;
+		font-family: monospace;
+		color: #fff;
+		font-size: 2em;
+	}
+</style>
+</head>
+<body>
+	<p id="hud"> </p>
+	<script src="js/three.min.js"></script>
+	<script src="js/OrbitControls.min.js"></script>
+
+
+	<script type="text/javascript">
+	/* vars */
+	let selectedObject = null;
+	const raycaster = new THREE.Raycaster();
+	const pointer = new THREE.Vector2();
+
+	/* 3D */
+	const scene = new THREE.Scene();
+	const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+	const renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( renderer.domElement );
+
+	/* camera */
+	camera.position.y = 3;
+	camera.position.z = 20;
+
+	/* controls */
+	const controls = new THREE.OrbitControls(camera, renderer.domElement);
+	controls.maxPolarAngle = Math.PI*0.49;
+	controls.enablePan = false;
+	controls.maxDistance = 200;
+	controls.minDistance = 1;
+
+	/* floor grid */
+	var size = 100;
+	var divisions = 10;
+	var gridHelper = new THREE.GridHelper(size, divisions);
+	scene.add(gridHelper);
+
+	/* bots */
+	const hero = new THREE.Group();
+	hero.position.y = -2;
+	hero.name = 'herogroup';
+	scene.add(hero);
+
+	const bot1 = new THREE.Group();
+	bot1.name = 'bot1';
+	bot1.position.x = -15;
+	hero.add(bot1);
+
+	const bot2 = new THREE.Group();
+	bot2.name = 'bot2';
+	bot2.position.x = 0;
+	hero.add(bot2);
+
+	const bot3 = new THREE.Group();
+	bot3.name = 'bot3';
+	bot3.position.x = 15;
+	hero.add(bot3);
+
+
+	/* textures */
+	x1texture = new THREE.TextureLoader().load( 'img/bod1.png' );
+	x2texture = new THREE.TextureLoader().load( 'img/bod2.png' );
+	x3texture = new THREE.TextureLoader().load( 'img/bod3.png' );
+
+	/* bot1 */
+	createjson('models/body6.json', bot1, -1, 0, x1texture)
+	createjson('models/rleg2.json', bot1, 0, 9, x1texture)
+	createjson('models/rleg2.json', bot1, 0, 0, x1texture)
+
+	/* bot2 */
+	createjson('models/body6.json', bot2, 0, 0, x2texture)
+	createjson('models/base3.json', bot2, 0, 0, x2texture)
+	createjson('models/rleg2.json', bot2, 0, 9, x2texture)
+	createjson('models/rleg2.json', bot2, 0, 0, x2texture)
+
+	/* bot3 */
+	createjson('models/body6.json', bot3, -1, 0, x3texture)
+	createjson('models/base2.json', bot3, -1, 0, x3texture)
+	createjson('models/rleg2.json', bot3, 0, 9, x3texture)
+	createjson('models/rleg2.json', bot3, 0, 0, x3texture)
+
+
+	/* lights */
+	createLights();
+
+
+	function createLights() {
+		globalLight = new THREE.AmbientLight(0xffffff, 1);
+		shadowLight = new THREE.DirectionalLight(0xffffff, 1);
+		shadowLight.position.set(10, 8, 8);
+		shadowLight.castShadow = true;
+		shadowLight.shadow.camera.left = -40;
+		shadowLight.shadow.camera.right = 40;
+		shadowLight.shadow.camera.top = 40;
+		shadowLight.shadow.camera.bottom = -40;
+		shadowLight.shadow.camera.near = 1;
+		shadowLight.shadow.camera.far = 1000;
+		shadowLight.shadow.mapSize.width = shadowLight.shadow.mapSize.height = 1024;
+		scene.add(globalLight);
+		scene.add(shadowLight);
+	}
+
+
+	function createjson(model, place, posy, posx, img) {
+		var loader = new THREE.BufferGeometryLoader();
+
+		loader.load(
+			model,
+			function ( geometry ) {
+				var material = new THREE.MeshLambertMaterial( { map: img } );
+				var object = new THREE.Mesh( geometry, material );
+				object.material.map.magFilter = THREE.NearestFilter;
+				object.material.map.minFilter = THREE.NearestFilter;
+				object.scale.set(0.2,0.2,0.2)
+				object.position.set(posx,posy,0)
+				object.castShadow = true;
+				object.receiveShadow = true;
+				place.add(object);
+				object.name = name;
+
+			},
+			function ( xhr ) {
+			},
+			function ( xhr ) {
+				console.log( 'An error happened' );
+			}
+			);
+	}
+
+
+
+	/* events */
+	window.addEventListener( 'pointerdown', onPointerDown );
+	window.addEventListener( 'resize', onWindowResize );
+
+	function onWindowResize() {
+		width = window.innerWidth;
+		height = window.innerHeight;
+		camera.aspect = width / height;
+		camera.updateProjectionMatrix();
+		renderer.setSize( width, height );
+	}
+
+
+	/* pointer events */
+	function onPointerDown( event ) {
+	// console.log('event')
+
+		pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+		pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+		raycaster.setFromCamera( pointer, camera );
+
+		const intersects = raycaster.intersectObject( scene, true );
+
+		if ( intersects.length > 0 ) {
+			// isMouseDown=true;
+			// console.log(intersects[0].object.parent.name)
+			hud.innerHTML = intersects[0].object.parent.name;
+		}
+	}
+
+	/* render loop */
+	function animate() {
+		requestAnimationFrame( animate );
+		renderer.render( scene, camera );
+	};
+
+	/* START */
+	animate();
+
+</script>	
+</script>
+</body>
+</html>
