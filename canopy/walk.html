@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>walk</title>
+</head>
+<style type="text/css">
+body {
+  overflow: hidden;
+  margin: 0;
+  user-select:none;
+  background-color: #000;
+}
+
+#div3D{
+	position: absolute;
+	width:100%;
+	height: 100%;
+  overflow:hidden;
+}
+
+
+  #shoot {
+    cursor: pointer;
+    position: absolute;
+    z-index: 111;
+    bottom: 30px;
+    right: 30px;
+    display: block;
+    width: 100px;
+    height: 100px;
+    border-radius: 100%;
+    border:none;
+    outline: none;
+    background-color: transparent;
+  }
+  
+  .back {
+    background-color: rgba(0,0,0,0) !important;
+  }
+
+  .front {
+    box-shadow: 0 0 14px rgba(0,0,0,0.1);
+    cursor: pointer;
+  }
+
+  #shoot {
+    position: absolute;
+    z-index: 999;
+    transition: 0.2s all ease-in-out;
+    opacity: 0.7;
+  }
+  #shoot:hover, #shoot:active {
+    opacity: 1;
+  }
+
+  #shoot:before {
+    position: absolute;
+    line-height: 0.5em;
+    text-align: center;
+    top: 25px;
+    left: 25px;
+    color: #000;
+    font-size: 2em;
+    content: '';
+    background-color: rgba(255,255,255,0.4);
+    border-radius: 100%;
+    width: 50px;
+    height: 50px;
+    display: block;
+    box-shadow: 0 0 14px rgba(0,0,0,0.2);
+  }
+  #shoot:before {
+    transform: scale(1);
+  }
+  #shoot:active:before {
+    transform: scale(0.9) !important;
+    box-shadow: 0 0 18px rgba(0,0,0,0.5); 
+    background-color: rgba(255,255,255,0.5);
+  }
+  #hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: #fff;
+    margin: 1em;
+  font-family: 'game_over-webfont';
+  z-index: 9999;
+  transform: translateY(-150px);
+  transition: all 0.1s ease-in-out;
+  background: transparent url(assets/screensq.png) 0 0 no-repeat;
+  width: 118px;
+  height: 118px;
+  display: block;
+  padding: 16px;
+  line-height: 12px;
+  }
+
+  #hud.on {transform: translateY(0);}
+
+</style>
+<body>
+
+  <div class="joy" id="joy"></div>
+  <button id="shoot" onclick="bounce()">&nbsp;</button>
+  <div id="div3D"></div>
+
+    <script src="js/three.min.js"></script>
+    <script src="js/OrbitControls.min.js"></script>
+    <script src="js/nipplejs.min.js"></script>
+
+    <script type="text/javascript">
+moving = false;
+
+const player = {
+  moving:false,
+  maxSpeed:0.2,
+  x:0,
+  y:0,
+  vx:0,
+  vy:0,
+  amp:0,
+  force:0,
+  speed : 0,
+  rotation:0,
+};
+
+// nipple.js
+const nipple = nipplejs.create({
+  // mode: 'dynamic',dataOnly:true 
+  zone: document.body,
+  color: "white",
+  mode: 'static',
+  // restOpacity:0.1,
+  zone: document.getElementById('joy'),
+  // lockY: true,
+  position: {
+    left: '80px',
+    bottom: '80px'
+  }
+});
+
+
+// speed limiter
+function speedLimit(vx, vy, speedLimit) {
+  const hyp = Math.hypot(vx, vy);
+  if (hyp === 0) return { vx: 0, vy: 0 };
+  const maxSpeed = Math.min(hyp, speedLimit);
+  const ratio = maxSpeed / hyp;
+  return {
+    vx: ratio * vx,
+    vy: ratio * vy
+  };
+}
+
+
+// // start
+nipple.on("move", (e, data) => {
+  // console.log(data)
+  const vx = data.force * Math.cos(data.angle.radian);
+  const vy = -data.force * Math.sin(data.angle.radian);
+  const v = speedLimit(vx, vy, player.maxSpeed);
+  player.vx = v.vx;
+  player.vy = v.vy;
+  player.rotation = -Math.atan2(v.vy, v.vx);
+  hero.body.rotation.y = player.rotation;
+  //
+  player.force = data.distance/25;
+  player.amp = (data.distance/15); 
+  player.speed = data.distance/300;
+  //
+  moving = true;
+});
+
+// end
+nipple.on("end", (e, data) => {
+  moving = false;
+  player.vx = 0;
+  player.vy = 0;
+  player.amp = 0;
+});
+
+
+
+// VARIABLES 
+var scene,
+  camera, fieldOfView, aspectRatio, nearPlane, farPlane,
+  gobalLight, shadowLight, backLight,
+  renderer,
+  container,
+  controls;
+
+var PI = Math.PI;
+var hero;
+var container;
+
+// MATERIALS
+var brownMat = new THREE.MeshStandardMaterial({
+    color: 0x401A07,
+    side:THREE.DoubleSide,
+    roughness:1,
+  });
+  
+var blueMat = new THREE.MeshPhongMaterial({
+    color: 0x5b9696,
+  });
+
+
+// robot body pieces
+var robot = [];
+  
+
+//INIT THREE JS, SCREEN AND MOUSE EVENTS
+function initScreenAnd3D() {
+  container = document.getElementById('div3D');
+  HEIGHT = container.offsetHeight;
+  WIDTH = container.width;
+  windowHalfX = WIDTH / 2;
+  windowHalfY = HEIGHT / 2;
+
+  scene = new THREE.Scene();
+    
+  aspectRatio = WIDTH / HEIGHT;
+  fieldOfView = 50;
+  nearPlane = 1;
+  farPlane = 2000;
+  camera = new THREE.PerspectiveCamera(
+    fieldOfView,
+    aspectRatio,
+    nearPlane,
+    farPlane
+  );
+  camera.position.x = 0;
+  camera.position.z = 50;
+  camera.position.y = 20;
+
+  renderer = new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: true
+  });
+  renderer.setSize(WIDTH, HEIGHT);
+  renderer.setPixelRatio(window.devicePixelRatio ? window.devicePixelRatio : 1)
+  renderer.shadowMap.enabled = true;
+
+  container.appendChild(renderer.domElement);
+
+  window.addEventListener('resize', handleWindowResize, false);
+
+  handleWindowResize();
+
+
+  //
+  var controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.maxAzimuthAngle = 0; 
+  controls.minAzimuthAngle = -0; 
+  controls.maxPolarAngle = Math.PI*0.49;
+  controls.enablePan = false;
+  controls.maxDistance = 200;
+  controls.minDistance = 1;
+}
+
+function handleWindowResize() {
+  HEIGHT = container.offsetHeight;
+  WIDTH = container.offsetWidth;
+  windowHalfX = WIDTH / 2;
+  windowHalfY = HEIGHT / 2;
+  renderer.setSize(WIDTH, HEIGHT);
+  camera.aspect = WIDTH / HEIGHT;
+  camera.updateProjectionMatrix();
+}
+
+function createLights() {
+  globalLight = new THREE.AmbientLight(0xffffff, 1);
+  shadowLight = new THREE.DirectionalLight(0xffffff, 1);
+  shadowLight.position.set(10, 8, 8);
+  shadowLight.castShadow = true;
+  shadowLight.shadow.camera.left = -40;
+  shadowLight.shadow.camera.right = 40;
+  shadowLight.shadow.camera.top = 40;
+  shadowLight.shadow.camera.bottom = -40;
+  shadowLight.shadow.camera.near = 1;
+  shadowLight.shadow.camera.far = 1000;
+  shadowLight.shadow.mapSize.width = shadowLight.shadow.mapSize.height = 2048;
+  scene.add(globalLight);
+  scene.add(shadowLight);
+}
+
+Hero = function() {
+  this.walkCycle = 0;
+  this.mesh = new THREE.Group();
+  this.body = new THREE.Group();
+  this.mesh.add(this.body);
+  
+  this.head = new THREE.Group();
+  this.body.add(this.head);
+  
+  this.legR = new THREE.Group();
+  this.body.add(this.legR);
+  
+  this.legL = this.legR.clone();
+  this.legL.position.z = - this.legR.position.z;
+  this.body.add(this.legL);
+
+  this.body.traverse(function(object) {
+    if (object instanceof THREE.Mesh) {
+      object.castShadow = true;
+      object.receiveShadow = true;
+    }
+  });
+}
+
+Hero.prototype.walk = function(){
+  this.walkCycle += player.speed;
+  var t = this.walkCycle;
+  t = t % (2*PI);
+
+  this.legR.position.x = Math.cos(t) * player.amp;
+  this.legR.position.y = Math.max (0, - Math.sin(t) * player.amp/2);  
+  
+  this.legL.position.x =  Math.cos(t + PI) * player.amp;
+  this.legL.position.y = Math.max (0, - Math.sin(t + PI) * player.amp/2);
+  
+  if (t>PI){
+    this.legR.rotation.z = Math.cos(t * 2 + PI/2) * PI/4; 
+    this.legL.rotation.z = 0; 
+  } else{
+    this.legR.rotation.z = 0; 
+    this.legL.rotation.z = Math.cos(t * 2 + PI/2) *  PI/4;  
+  }
+  
+  this.head.position.y = 6.6 - Math.cos(  t * 2 ) * player.amp * .3;
+  this.head.rotation.x = Math.cos( t ) * player.amp * .05;
+  this.head.rotation.y =  Math.cos( t ) * player.amp * .2;
+}
+
+
+Hero.prototype.idle = function(){  
+  this.legR.position.x += (0 - this.legR.position.x)*0.2;
+  this.legR.position.y += (0 - this.legR.position.y)*0.2;  
+  
+  this.legL.position.x += (0 - this.legL.position.x)*0.2;
+  this.legL.position.y += (0 - this.legL.position.y)*0.2;
+  
+  this.legR.rotation.z += (0 - this.legR.rotation.z)*0.2; 
+  this.legL.rotation.z += (0 - this.legL.rotation.z)*0.2;
+
+  this.head.position.y += (6 - this.head.position.y)*0.2;
+  this.head.rotation.x += (0 - this.head.rotation.x)*0.2;
+  this.head.rotation.y += (0 - this.head.rotation.y)*0.2;
+
+  this.body.position.y += (0 - this.body.position.y)*0.2;
+}
+
+Hero.prototype.shuffle = function(){ 
+  this.walkCycle += 0.4;
+  var t = this.walkCycle;
+  t = t % (2*PI);
+  player.amp = 0.5;
+  
+  this.legR.position.y = Math.max (0, - Math.sin(t) * player.amp);  
+  this.legL.position.y = Math.max (0, - Math.sin(t + PI) * player.amp);
+  
+    this.legR.rotation.z = 0; 
+    this.legL.rotation.z = 0;  
+
+  this.head.position.y = 6.6;
+  this.head.rotation.x = Math.cos( t ) * player.amp * .05;
+}
+
+
+function createjson(model, place, posy, posx) {
+  var loader = new THREE.BufferGeometryLoader();
+
+  loader.load(
+   model,
+   function ( geometry ) {
+     var material = new THREE.MeshLambertMaterial( { map: texture } );
+     var object = new THREE.Mesh( geometry, material );
+     object.scale.set(0.2,0.2,0.2)
+     object.rotation.set(0,Math.PI*0.5,0)
+     object.position.set(0,posy,posx)
+     object.castShadow = true;
+     object.receiveShadow = true;
+     place.add(object);
+
+   },
+   function ( xhr ) {
+   },
+   function ( xhr ) {
+     console.log( 'An error happened' );
+   }
+   );
+}
+
+function createHero() {
+  // skeleton
+  hero = new Hero();
+  scene.add(hero.mesh);
+  // texture
+  texture = new THREE.TextureLoader().load( 'img/bod3.png' );
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  // body parts
+  createjson('models/body6.json', hero.head, -7, 0)
+  createjson('models/rleg2.json', hero.legL, 0, -9)
+  createjson('models/rleg2.json', hero.legR, 0, 0)
+}
+
+
+// bounce robot / show HUD
+function bounce() {
+  hero.head.position.y = hero.head.position.y-1;
+}
+
+
+
+
+// render loop
+function loop(){
+  if (moving) {
+    if(player.speed>0.1) {
+      hero.walk();
+      hero.body.position.x += player.vx*player.force;
+      hero.body.position.z += player.vy*player.force;   
+
+    }
+    if(player.speed<0.1) {
+      hero.shuffle();    
+    }
+  } else {
+    hero.idle();
+  }
+
+  render();  
+  requestAnimationFrame(loop);
+}
+
+function render(){
+  renderer.render(scene, camera);
+}
+
+window.addEventListener('load', init, false);
+
+function init(event){
+  initScreenAnd3D();
+  createLights();
+
+  // grid
+  var size = 100;
+  var divisions = 10;
+  var gridHelper = new THREE.GridHelper(size, divisions);
+  scene.add(gridHelper);
+  createHero();
+  loop();
+}
+
+
+</script>
+</body>
+</html>
