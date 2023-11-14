@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>subs</title>
+	
+	<link rel="preload" as="font" href="font/din-condensed-bold.ttf" crossorigin>
+	<link rel="preload" as="font" href="font/din-condensed-bold-webfont.woff" crossorigin>
+
+	<style type="text/css">
+	@font-face {
+		font-family: 'din';
+		src: url('font/din-condensed-bold-webfont.woff') format('woff'),
+		url('font/din-condensed-bold.ttf') format('truetype');
+	} 
+
+	body {font-family: 'din', monospace; color: #fff;
+	font-size: 2em; overflow: hidden; background-color: maroon;}
+	a {display: block; line-height: 1.4em;}
+	audio {width: 90%; position: relative; z-index: 9999;}
+	canvas {width: 100%; height: 100%;}
+	#cnt {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		display: block;
+		margin: 12px;
+		color:#fff;
+		display: none;
+	}
+	#canvas {
+		position: absolute; 
+		z-index: 100; 
+		top: 0; right: 0; 
+		width: 512px; height: 512px;
+		display: none;
+	}
+	.font_preload {visibility: hidden;}
+	#hud button {
+		background: transparent;
+		color: #fff; border:none; outline: none;
+		cursor: pointer; display: block;
+		width: 50px; height: 50px;
+		opacity: 0.5;
+		transition: all 0.3s ease-in-out;
+		float: right;
+		z-index: 2; position: relative;
+	}
+
+	.playing #hud button#playBtn,
+	.paused #hud button#pauseBtn {
+		display: none;
+	}
+
+	#hud button:hover {
+		opacity: 1;
+	}
+
+	#hud {
+		display: block;
+		margin: 0;
+		padding: 12px;
+		position: absolute;
+		z-index: 2;
+		bottom: 0;
+		left: 0;
+	}
+	#time {
+		position: absolute;
+		left: 70px;
+		bottom: 20px;
+		width: 200px;
+		display: block;
+	}
+</style>
+</head>
+<body class="paused">
+	<div id="hud">
+		<button id="playBtn" type="button" onclick="playme()">
+			<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none" viewBox="0 0 100 100">
+				<defs>
+					<path id="a" fill="#fff" d="M19.55 14.85v70.3L80.5 50 19.55 14.85Z"/></path>
+				</defs>
+				<use xlink:href="#a"/>
+			</svg>
+		</button>
+
+		<button id="pauseBtn" type="button" onclick="pauseme()" >
+			<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 100 100">
+				<path fill="#fff" d="M39.4778 17.0371H21.0593v66h18.4185zm34.5349 0H55.594v66h18.4186z"/></path>
+			</svg>
+		</button>
+
+		<span id="time"></span>
+	</div>
+
+
+	<div id="cnt">
+		<audio id="audioPlayer" src="dawn-of-the-migrants.mp3" controls></audio>
+	</div>
+
+	<canvas id="canvas"></canvas>
+
+	<div class="font_preload">
+		<span style="font-family: 'din';"></span>
+	</div>
+
+	<script src="js/three.min.js"></script>
+	<script src="js/OrbitControls.js"></script>
+	<script src="subs.js"></script>
+	<script>
+	var playing = false;
+	var bgAudio = document.getElementById("audioPlayer");
+
+	function playme() {
+		if (document.body.classList == 'playing') {return}
+
+			bgAudio.play();
+		document.body.classList = 'playing';
+
+		playing = true;
+
+	}
+
+	function pauseme() {
+		playing = false;
+		document.body.classList = 'paused'; 
+		bgAudio.pause();
+	}
+
+
+	var thisscene = 0;
+
+	let canvas = document.getElementById('canvas');
+	let ctx = canvas.getContext('2d');
+
+	canvas.width = 512 ;
+	canvas.height = 512;
+
+	// wrap to canvas size
+	const wrapText = function(ctx, text, x, y, maxWidth, lineHeight) {
+
+		let words = text.split(' ');
+		let line = '';
+		let testLine = '';
+		let lineArray = [];
+
+
+		for(var n = 0; n < words.length; n++) {
+			testLine += `${words[n]} `;
+			let metrics = ctx.measureText(testLine);
+			let testWidth = metrics.width;
+			if (testWidth > maxWidth && n > 0) {
+				lineArray.push([line, x, y]);
+				y += lineHeight;
+				line = `${words[n]} `;
+				testLine = `${words[n]} `;
+			}
+			else {
+				line += `${words[n]} `;
+			}
+			if(n === words.length - 1) {
+				lineArray.push([line, x, y]);
+			}
+		}
+
+		return lineArray;
+	}
+
+
+// render text
+function create2Dtext(thetext, cap, fnt){
+	ctx.clearRect(0, 0, 512, 512);
+	ctx.letterSpacing = "1px";
+	ctx.fillStyle = 'white';
+	ctx.font = '700 75px din';
+
+	if (cap == true) {thetext = thetext.toUpperCase();}
+
+	let wrappedText = wrapText(ctx, thetext, 30, 80, 470, 64);
+
+	wrappedText.forEach(function(item) {
+		ctx.fillText(item[0], item[1], item[2]); 
+	})
+}
+
+
+
+
+// 3D
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// camera
+camera.position.z = 4;
+
+var controls = new THREE.OrbitControls( camera, renderer.domElement);
+controls.maxDistance = 20;
+controls.minDistance = 1;
+
+// lights
+globalLight = new THREE.AmbientLight(0xffffff, 1);
+scene.add(globalLight);
+
+//
+const geometry = new THREE.PlaneGeometry( 3, 3);
+const material = new THREE.MeshBasicMaterial( { 
+	map : new THREE.CanvasTexture(canvas),
+	transparent:true,
+} );
+plane = new THREE.Mesh( geometry, material );
+scene.add( plane );
+plane.material.map.magFilter = THREE.NearestFilter;
+plane.material.map.minFilter = THREE.NearestFilter;
+
+// square line
+const size = 3.3;
+const divisions = 1;
+
+// const gridHelper = new THREE.GridHelper( size, divisions );
+// gridHelper.rotation.x = -Math.PI/2;
+// scene.add( gridHelper );
+
+// events
+window.addEventListener( 'resize', onWindowResize, false );
+// resize event
+function onWindowResize() {
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+// loop
+function animate() {
+	ths = (audioPlayer.currentTime/100).toFixed(2)
+
+	// create text
+	subs.forEach(function(element, index){
+		if( ths == element.start){
+			text = element.text;
+			rndrtxt(text, element.cap, element.font);
+			if (index != thisscene) {
+				xswitch = false;
+			}
+			thisscene = index;
+		}		
+	});// subs
+
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
+};
+
+
+controls.addEventListener('end', () => {
+	console. clear();
+	console.log(camera.position.x, camera.position.z);
+
+});
+
+
+// do rndrtxt
+var xswitch = false;
+
+var rndrtxt = (function(a, b, c) {
+	return function( a, b, c) {
+		if (!xswitch) {
+			xswitch = true;
+		    // 
+		    create2Dtext(a, b, c)
+		    plane.material.map.needsUpdate = true;
+		    text = '';			
+		    time.innerHTML = 'sc'+thisscene +' '+ths;
+			// document.body.style.backgroundColor = 'rgb('+ (thisscene*6) +', 0, 0)';
+			camera.position.x = generateRandom(-2, 2);
+			camera.position.y = generateRandom(0, 2);
+			camera.position.z = generateRandom(4, 3);
+			camera.lookAt(0,0,0)
+		}
+	};
+})();
+
+
+// 
+function generateRandom(min, max) {
+    let difference = max - min;
+    let rand = Math.random();
+    rand = ( rand * difference);
+    rand = rand + min;
+
+    return rand;
+}
+
+console.log(generateRandom(-1, 1));
+
+
+// spacebar
+document.body.onkeyup = function(e){
+	if(e.keyCode == 32){
+    	if (playing) {
+    		pauseme()
+    	} else {
+    		playme()
+    	}
+    }
+}
+
+
+
+//  START		<<<<<<<<<<<<<<<<  
+animate();
+
+
+</script>
+</body>
+</html>
