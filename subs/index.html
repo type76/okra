@@ -1,0 +1,466 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>subs</title>
+	<link rel="preload" as="font" href="font/indigo.otf" crossorigin>
+
+	<style type="text/css">
+	@font-face {
+		font-family: 'indigo';
+		font-weight: bold;
+		src: url("font/indigo.otf") format("opentype");
+	}
+	body {font-family: 'din', monospace; 
+	color: #fff;
+	font-size: 2em; overflow: hidden; 
+	background-color: #000;
+	margin: 0; padding: 0;}
+	a {display: block; line-height: 1.4em;}
+	audio {width: 90%; position: relative; z-index: 9999;
+		display: none;
+	}
+	canvas {width: 100%; height: 100%;}
+	#cnt {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		display: block;
+		margin: 12px;
+		color:#fff;
+	}
+	#canvas {
+		position: absolute; 
+		z-index: 100; 
+		top: 0; right: 0; 
+		width: 512px; height: 512px;
+		display: none;
+	}
+	.font_preload {visibility: hidden;}
+	#hud button {
+		background: transparent;
+		color: #fff; border:none; outline: none;
+		cursor: pointer; display: block;
+		width: 50px; height: 50px;
+		opacity: 0.5;
+		transition: all 0.3s ease-in-out;
+		float: right;
+		z-index: 2; position: relative;
+	}
+
+	.playing #hud button#playBtn,
+	.paused #hud button#pauseBtn {
+		display: none;
+	}
+
+	#hud button:hover {
+		opacity: 1;
+	}
+
+	#hud {
+		display: block;
+		margin: 0;
+		padding: 12px;
+		position: absolute;
+		z-index: 2;
+		bottom: 0;
+		left: 0;
+	}
+	#time {
+		position: absolute;
+		left: 70px;
+		bottom: 20px;
+		width: 200px;
+		display: block;
+		float: left;
+	}
+	#time p {display: inline; float: right;}
+
+	video {
+		position: fixed;
+		z-index: -1 !important;
+		right: 0;
+		bottom: 0;
+		min-width: 100%; 
+		min-height: 100%;
+		image-rendering: pixelated; 
+		image-rendering: crisp-edges;
+		image-rendering: optimizeSpeed;
+		image-rendering: -moz-crisp-edges;
+		image-rendering: -o-crisp-edges;
+		image-rendering: -webkit-optimize-contrast;
+		image-rendering: pixelated;
+		image-rendering: optimize-contrast;
+		-ms-interpolation-mode: nearest-neighbor;
+		opacity: 0.9;
+		display: none;
+	}
+
+
+</style>
+</head>
+<body class="paused">
+	<div id="hud">
+		<button id="playBtn" type="button" onclick="playme()">
+			<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" preserveAspectRatio="none" viewBox="0 0 100 100">
+				<defs>
+					<path id="a" fill="#fff" d="M19.55 14.85v70.3L80.5 50 19.55 14.85Z"/></path>				</defs>
+				<use xlink:href="#a"/>
+			</svg>
+		</button>
+
+		<button id="pauseBtn" type="button" onclick="pauseme()" >
+			<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 100 100">
+				<path fill="#fff" d="M39.4778 17.0371H21.0593v66h18.4185zm34.5349 0H55.594v66h18.4186z"/></path>
+			</svg>
+		</button>
+
+		<span id="time"></span>
+	</div>
+
+
+	<div id="cnt" >
+		<audio id="audioPlayer" src="chomsky.mp3" controls></audio>
+	</div>
+
+	<canvas id="canvas"></canvas>
+
+	<video muted loop id="bgvideo" class="on" loop="">
+  		<source src="video/n1.mp4" type="video/mp4" id="bgsource">
+	</video>
+	
+
+	<div class="font_preload">
+		<span style="font-family: 'indigo';"></span>
+	</div>
+
+
+	<script src="js/three.min.js"></script>
+	<!-- <script src="js/OrbitControls.js"></script> -->
+	<!-- <script src="js/smpte-timecode.js"></script> -->
+	<!-- <script src="js/sub.js"></script> -->
+
+	<script>
+	//
+	var num = 0;
+	var ths = 0;
+	var thissmpte = 0;
+	var lerp = 0;
+	var bgvideo = document.getElementById('bgvideo');
+
+
+	//
+	var seconds = 0;
+		var subs = [
+	{"start":0.01 , "text":"Why does the United States support Israel?" },
+	{"start":0.02 , "text":"Well, there's a history." },
+	{"start":0.04 , "text":"and a very interesting one" },
+	{"start":0.06 , "text":"that actually goes back to" },
+	{"start":0.08 , "text":"- goes back a long time." },
+	{"start":0.10 , "text":"one thing to remember is that" },
+	{"start":0.12 , "text":"Christian Zionism is a very powerful force" },
+	{"start":0.16 , "text":"which goes back long before Jewish Zionism." },
+	{"start":0.19 , "text":"In England particularly Christian Zionism was" },
+	{"start":0.22 , "text":"A powerful Force Among British Elites." },
+	{"start":0.26 , "text":"It's part of the motivation for the Balfour declaration" },
+	{"start":0.29 , "text":"and for Britain's support for" },
+	{"start":0.32 , "text":"Jewish Colonization of Israel." },
+	{"start":0.35 , "text":"Remember... 'the bilble said'" },
+	{"start":0.37 , "text":"and that's a big part of British Elite Culture." },
+	{"start":0.41 , "text":"Same in the United States." },
+	{"start":0.43 , "text":"Woodrow Wilson was a devout Christian" },
+	{"start":0.48 , "text":"who read the Bible every day." },
+	{"start":0.50 , "text":"So did harry Truman." },
+	{"start":0.52 , "text":"In the Roosevelt administration" },
+	{"start":0.54 , "text":"one of the leading officials, Harold Ickes, once described" },
+	{"start":0.58 , "text":"the return of the jews to Palestine as" },
+	{"start":0.60 , "text":"the greatest event in history." },
+	{"start":0.62 , "text":"It's realizing the lesson of the bible." },
+	{"start":0.66 , "text":"These are deeply religious countries in which the" },
+	{"start":0.70 , "text":"Biblical command, so-called, are taken quite literally." },
+	{"start":0.75 , "text":"Also, this is just part of colonization." },
+	{"start":0.77 , "text":"This is the last phase of European Colonization" },
+	{"start":0.82 , "text":"*" }
+	];
+
+	
+	var playing = false;
+	var bgAudio = document.getElementById("audioPlayer");
+
+	function playme() {
+		if (document.body.classList == 'playing') {return}
+
+		bgAudio.play();
+		bgvideo.play();
+		document.body.classList = 'playing';
+		playing = true;
+
+	}
+
+	function pauseme() {
+		playing = false;
+		document.body.classList = 'paused'; 
+		bgAudio.pause();
+		bgvideo.pause();
+	}
+
+
+	var thisscene = 0;
+
+	let canvas = document.getElementById('canvas');
+	let ctx = canvas.getContext('2d');
+
+	canvas.width = 512 ;
+	canvas.height = 512;
+
+	// wrap to canvas size
+	const wrapText = function(ctx, text, x, y, maxWidth, lineHeight) {
+
+		let words = text.split(' ');
+		let line = '';
+		let testLine = '';
+		let lineArray = [];
+
+
+		for(var n = 0; n < words.length; n++) {
+			testLine += `${words[n]} `;
+			let metrics = ctx.measureText(testLine);
+			let testWidth = metrics.width;
+			if (testWidth > maxWidth && n > 0) {
+				lineArray.push([line, x, y]);
+				y += lineHeight;
+				line = `${words[n]} `;
+				testLine = `${words[n]} `;
+			}
+			else {
+				line += `${words[n]} `;
+			}
+			if(n === words.length - 1) {
+				lineArray.push([line, x, y]);
+			}
+		}
+
+		return lineArray;
+	}
+
+
+// render text
+function create2Dtext(thetext){
+	ctx.clearRect(0, 0, 512, 512);
+	ctx.font = '600 48px indigo';
+	ctx.letterSpacing = "4px";
+	ctx.fillStyle = 'white';
+	thetext = thetext.toUpperCase();
+	let wrappedText = wrapText(ctx, thetext, 30, 70, 470, 50);
+
+	wrappedText.forEach(function(item) {
+		ctx.fillText(item[0], item[1], item[2]); 
+	})
+}
+
+
+
+
+// 3D
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// camera
+camera.position.z = 3;
+
+// var controls = new THREE.OrbitControls( camera, renderer.domElement);
+// controls.maxDistance = 20;
+// controls.minDistance = 1;
+
+// lights
+globalLight = new THREE.AmbientLight(0xffffff, 1);
+scene.add(globalLight);
+
+//
+var group = new THREE.Group();
+scene.add(group);
+
+//
+const geometry = new THREE.PlaneGeometry( 3, 3);
+const material = new THREE.MeshBasicMaterial( { 
+	map : new THREE.CanvasTexture(canvas),
+	transparent:true,
+} );
+plane = new THREE.Mesh( geometry, material );
+plane.position.y = -0.5;
+group.add( plane );
+plane.material.map.magFilter = THREE.NearestFilter;
+plane.material.map.minFilter = THREE.NearestFilter;
+
+
+//
+var vtexture = new THREE.VideoTexture( bgvideo );
+const screengeometry = new THREE.PlaneGeometry( 2.4*2, 1.6*2);
+const vmaterial = new THREE.MeshBasicMaterial( { 
+	map : vtexture
+} );
+vplane = new THREE.Mesh( screengeometry, vmaterial );
+vplane.position.z = -0.3;
+group.add( vplane );
+vplane.material.map.magFilter = THREE.NearestFilter;
+vplane.material.map.minFilter = THREE.NearestFilter;
+vplane.material.depthWrite = false;
+vplane.material.map.needsUpdate = true;
+
+// // square line
+const size = 3;
+const divisions = 1;
+
+const gridHelper = new THREE.GridHelper( size, divisions );
+gridHelper.rotation.x = -Math.PI/2;
+gridHelper.scale.x = 1.6;
+group.add( gridHelper );
+
+
+// events
+window.addEventListener( 'resize', onWindowResize, false );
+// resize event
+function onWindowResize() {
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+// random number
+function randomIntFromInterval(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) + min)
+}
+
+// Convert seconds to SMPTE timecode JSON object 
+function secondsToSMPTE(seconds, framerate) {
+    var f = Math.floor((seconds % 1) * framerate);
+    var s = Math.floor(seconds);
+    var m = Math.floor(s / 60);
+    var h = Math.floor(m / 60);
+    m = m % 60;
+    s = s % 60;
+
+    return {h: h, m: m, s: s, f: f};
+}
+
+// Pretty print SMPTE timecode JSON object 
+function SMPTEToString(timecode) {
+    if (timecode.h < 10) { timecode.h = "0" + timecode.h; }
+    if (timecode.m < 10) { timecode.m = "0" + timecode.m; }
+    if (timecode.s < 10) { timecode.s = "0" + timecode.s; }
+    if (timecode.f < 10) { timecode.f = "0" + timecode.f; }
+
+    return timecode.h + ":" + timecode.m + ":" + timecode.s + ":" + timecode.f;
+}
+
+
+// set timecode
+function settimecode() {
+	ths = (audioPlayer.currentTime/100).toFixed(2);
+	thissmpte = secondsToSMPTE(audioPlayer.currentTime, 30 );
+	time.innerHTML = SMPTEToString(thissmpte);
+}
+
+// loop
+function animate() {
+	// create text
+	subs.forEach(function(element, index){
+		if( ths == element.start){
+			text = element.text;
+			// console.log(a)
+			// if asterix
+			if (element.text.charAt(0) === '*') { 
+				lerp = 0;
+				text = '';
+			}
+
+			rendertxt(text, element.cap, element.font);
+			if (index != thisscene) {
+				xswitch = false;
+			}
+			thisscene = index;
+		}		
+	});// subs
+
+	// audio playing
+	if (playing) {		
+		vplane.visibile = true;
+		// settimecode();
+		ths = (audioPlayer.currentTime/100).toFixed(2);
+		// group.rotation.y += (lerp - group.rotation.y)*0.3;
+		plane.rotation.y += (lerp - plane.rotation.y)*0.2;
+		vplane.rotation.y += (lerp - vplane.rotation.y)*0.4;
+		gridHelper.rotation.z += (lerp - gridHelper.rotation.z)*0.6;
+		group.position.z = lerp;	
+		vplane.material.map.needsUpdate = true;
+	} else {
+		vplane.visibile = false;
+	}
+
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
+};
+
+
+
+// make text from array value at this timeslot
+var xswitch = false;
+
+var rendertxt = (function(a, b, c) {
+	return function( a, b, c) {
+		if (!xswitch) {
+			xswitch = true;
+		    // text
+		    create2Dtext(a, b, c)
+		    text = '';
+		    plane.material.map.needsUpdate = true;
+		    
+		    // remove retuen to..
+		    // change background / rotation	
+		    lerp = Math.random()-0.5;
+		    return
+		    num++;
+		    if (num>6) {num=1}
+		    vplane.visibile = true;
+		    bgsource.src = 'video/n'+num+'.mp4';	
+		    vplane.material.map.needsUpdate = true;
+		    
+		}
+	};
+})();
+
+// spacebar
+document.body.onkeyup = function(e){
+	if(e.keyCode == 32){
+    	if (playing) {
+    		pauseme()
+    	} else {
+    		playme()
+    	}
+    }
+}
+
+
+bgAudio.addEventListener("playing", (event) => {
+ playing = true;
+});
+
+bgAudio.addEventListener("ended", (event) => {
+  playing = false;
+  pauseme()
+});
+
+
+//  START		<<<<<<<<<<<<<<<< 
+// settimecode() 
+animate();
+
+
+</script>
+</body>
+</html>
