@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+	<title>olive</title>
+	<style>
+	* {margin: 0; padding: 0;}
+	html {background: #000;}
+	body { margin: 0; overflow: hidden; user-select:none; font-family: monospace; cursor: default; color: #fff; width: 100%; height: 100%; }
+	canvas#bmpcanvas {position: absolute; z-index: 99; top:0; left: 0;}
+	#target1 {
+			cursor: pointer;
+			position: absolute;
+			z-index: 111;
+			bottom: 55px;
+			right: 55px;
+			display: block;
+			width: 50px;
+			height: 50px;
+			border-radius: 100%;
+			border:none;
+			outline: none;
+			background: rgba(255,255,255,0.5);
+			cursor: pointer;
+		}
+	button {background: none;}
+	#target1:active {background: rgba(255,255,255,0.9);}
+</style>
+</head>
+<body>
+
+	<button id="target1" class="on">&nbsp;</button>
+
+
+<script src="js/nipplejs.min.js"></script>   
+
+<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+ 
+<script type="importmap">
+	{
+		"imports": {
+			"three": "https://unpkg.com/three@0.145/build/three.module.js"
+		}
+	}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+
+	// HUD
+	var temp = 0;
+	document.querySelector('#target1').addEventListener('click', target1)
+
+    function target1() {
+	  	document.getElementById('target1').classList.toggle("on");
+	  	if (document.getElementById('target1').classList == 'on') {
+	  		camera.position.z = 25;
+	  		camera.position.y = 5;
+	  		camera.lookAt(0,5,0)
+	  	} else {
+	  		camera.position.y = 25;
+	  		camera.position.z = 45;
+	  		camera.lookAt(0,0,0)
+	  	}
+		temp = sphere.scale.z;
+		sphere.scale.z = (sphere.scale.z-0.2);
+		setTimeout(function () {
+		 sphere.scale.z = temp;
+		}, 30)	
+	}
+
+
+// globals
+const HERO = {
+	moving:false,
+	maxSpeed:2,
+	speed:0,
+	x:0,
+	y:0,
+	vx:0,
+	vy:0,
+	rotation:0,
+	force:0,
+	xnum:0,
+	ynum:0,
+	ixnum:0,
+	iynum:0
+};
+
+
+// speed limiter
+function speedLimit(vx, vy, speedLimit) {
+  const hyp = Math.hypot(vx, vy);
+  if (hyp === 0) return { vx: 0, vy: 0 };
+  const maxSpeed = Math.min(hyp, speedLimit);
+  const ratio = maxSpeed / hyp;
+  HERO.speed = maxSpeed;
+  return {
+    vx: ratio * vx,
+    vy: ratio * vy
+  };
+}
+
+
+
+
+// player movement loop
+function moveplayer() {
+	// stick / BG move
+	if (HERO.moving) {
+		pmaterial.map.offset.x = (HERO.x += HERO.vx)/200; 
+		pmaterial.map.offset.y = ((HERO.y -= HERO.vy)/200); 
+		grid.position.x = -pmaterial.map.offset.x*200;
+		grid.position.z = pmaterial.map.offset.y*200;
+		pivot.rotation.z = -HERO.rotation;
+
+		// dust
+		for ( var i = 0; i < dust.length; i ++ ) {
+			dust[i].position.y -= 1; // move with BG
+			// dust[i].position.z -= 0.1;
+			if (dust[i].position.y<-40) {
+				if (HERO.speed>1) {dust[i].position.z = 0;}
+				dustscale = Math.random();
+				dust[i].scale.set(dustscale, dustscale, dustscale)
+				dust[i].position.y=-5*(Math.random()*2);
+				dust[i].position.x=(Math.random()-0.5)*5;
+			} // if
+		}// for
+	}// if
+
+	// move dust particles down all the time
+	for ( var i = 0; i < dust.length; i ++ ) {
+		dust[i].position.z -= 0.1;
+		if (dust[i].position.z < -5) {dust[i].position.z = -5;}
+	}
+
+	// animation
+	if (running) {
+		runcycle();
+		// setframe(1)
+	} 
+	if (idle) {
+		xidle();
+		setframe(0)
+	}
+	// blink
+    if ( Math.random() > 0.98 ) { 
+      pupils[0].scale.y = 0.001; 
+      pupils[1].scale.y = 0.001; 
+    }  else {
+      pupils[0].scale.y += ( 1 - pupils[0].scale.y ) * 0.3;
+	  pupils[1].scale.y += ( 1 - pupils[1].scale.y ) * 0.3;
+    }
+}// move
+
+
+// three js scene
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+
+var renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});
+renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.domElement.id = 'cnv';
+document.body.appendChild( renderer.domElement );
+
+// groups
+var maingroup = new THREE.Group();
+scene.add( maingroup );
+
+// camera
+camera.position.set(0,5,25);
+maingroup.add(camera)
+
+// lights
+var light3 = new THREE.PointLight( 0xffefef, 0.5 );
+light3.position.set( 20, 1, 30 );
+// scene.add( light3 );
+//
+var light = new THREE.AmbientLight( 0x666666 );
+scene.add( light );
+
+// backlight
+var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.2 );
+directionalLight.position.set(0,200,100)
+directionalLight.rotation.set(-Math.PI/2,0,0)
+scene.add( directionalLight );
+
+// fog
+scene.fog = new THREE.FogExp2(0x000000, 0.011);
+
+// // lookat box
+var geometry = new THREE.PlaneGeometry( 4, 4 );
+var material = new THREE.MeshBasicMaterial( { wireframe:true } );
+
+var pivot = new THREE.Group();
+pivot.rotation.x = -Math.PI*0.5;
+pivot.rotation.z = Math.PI;
+pivot.position.z = -1;
+pivot.position.y = 0.2;
+scene.add(pivot)
+
+// triangle [direction arrow]
+var trigeometry = new THREE.CircleGeometry( 1, 3 );
+var tmaterial = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+var triangle = new THREE.Mesh( trigeometry, tmaterial );
+triangle.rotation.set(0,0,Math.PI/2)
+triangle.position.y = 9;
+triangle.position.z = 0.2;
+pivot.add( triangle );
+
+
+// home grid
+var size = 50;
+var divisions = 1;
+var grid = new THREE.GridHelper( size, divisions );
+grid.position.y = 0.1;
+grid.position.z = -5.3;
+scene.add( grid );
+
+// ground
+var pgeometry = new THREE.PlaneGeometry( 200, 200 );
+var pmaterial = new THREE.MeshBasicMaterial( { map:new THREE.TextureLoader().load( 'img/bg.png' ) } );
+var ground = new THREE.Mesh( pgeometry, pmaterial );
+ground.rotation.x = -Math.PI*0.5;
+// ground.position.y = -0.1;
+scene.add( ground );
+
+pmaterial.map.magFilter = THREE.NearestFilter;
+pmaterial.map.minFilter = THREE.NearestFilter;
+pmaterial.map.wrapS = pmaterial.map.wrapT = THREE.RepeatWrapping;
+
+// window resize
+window.addEventListener('resize', function(){
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}, false)
+
+
+
+// nipple
+const nipple = nipplejs.create({
+	dataOnly:true,
+});
+
+
+// start
+nipple.on("move", (e, data) => {
+	const vx = data.force * Math.cos(data.angle.radian);
+	const vy = -data.force * Math.sin(data.angle.radian);
+	const v = speedLimit(vx, vy, HERO.maxSpeed);
+	HERO.vx = v.vx;
+	HERO.vy = v.vy;
+	HERO.rotation = Math.atan2(v.vy, v.vx) + Math.PI * 0.5;
+	// pivot.rotation.z = -HERO.rotation;
+	
+
+if (data.force>0) {
+	HERO.moving = true;
+	HERO.force = data.force;
+	running = true;
+	idle = false;
+} else {running = false; idle = true;}
+
+  HERO.force = data.distance/25;
+});
+
+// end
+nipple.on("end", (e, data) => {
+	HERO.vx = 0;
+	HERO.vy = 0;
+	HERO.moving = false;
+	running = false;
+	idle = true;
+});
+
+
+
+// vars
+var legpos = 120;
+var multiplier = 0.3;
+var num = 0;
+var inputspeed = 2;
+var dustscale = 0.1;
+// states
+var running = false;
+var idle = true;
+
+
+// face bump layer
+var bmpcanvas = document.createElement('canvas');
+var bmpctx = bmpcanvas.getContext('2d');
+bmpcanvas.id = "bmpcanvas";
+bmpcanvas.width = 512;
+bmpcanvas.height = 256;
+// document.body.appendChild( bmpcanvas );
+
+var aimg = new Image();
+var bimg = new Image();
+var cimg = new Image();
+var dimg = new Image();
+var eimg = new Image();
+
+aimg.src = "img/body3.png";
+bimg.src = "img/leg.png";
+cimg.src = "img/body.png";
+dimg.src = "img/mouth.png";
+eimg.src = "img/fat.png";
+
+
+// groups
+// main character group
+var maincharacter = new THREE.Group();
+maincharacter.rotation.x = Math.PI/2;
+maincharacter.rotation.z = -Math.PI;
+maincharacter.position.y = 7;
+maincharacter.scale.set(0.25,0.25,0.25)
+maingroup.add( maincharacter );
+
+// sphere bump tex
+var bumpcnv = new THREE.CanvasTexture(bmpcanvas);
+bumpcnv.wrapS = THREE.RepeatWrapping;
+bumpcnv.wrapT = THREE.RepeatWrapping;
+
+// sphere face 
+var geometry = new THREE.SphereGeometry( 20, 200, 200 );
+var material = new THREE.MeshStandardMaterial( { 
+	metalness: 0.1,
+	roughness: 0.8,
+	map : new THREE.TextureLoader().load( aimg.src ),
+	displacementMap: bumpcnv,
+	displacementScale: 10
+} );
+
+var sphere = new THREE.Mesh( geometry, material );
+sphere.rotation.x = Math.PI/2;
+maincharacter.add( sphere );
+
+// outline
+var omaterial = new THREE.MeshStandardMaterial( { 
+	color:0x000000,
+	roughness: 100,
+	displacementMap: bumpcnv,
+	displacementScale: 10,
+    side:THREE.BackSide
+} );
+var oface = new THREE.Mesh( geometry, omaterial );
+oface.scale.set(1.02,1.02,1.02);
+sphere.add( oface );
+
+
+// eyes
+var pupils = [];
+var face = new THREE.Group();
+
+sphere.add( face );
+
+// eye balls
+for ( var i = 0; i < 2; i ++ ) {
+// white
+var geometry = new THREE.SphereGeometry( 3, 32, 32 );
+var material = new THREE.MeshBasicMaterial( {color: 0x000000} );
+var ball = new THREE.Mesh( geometry, material );
+face.add( ball );
+ball.position.y = -21;
+ball.scale.z = 0.3;
+ball.position.z = 1;// up
+ball.rotation.x = -Math.PI/2;  // or do a lerp
+
+// black
+var geometry = new THREE.SphereGeometry( 2.2, 32, 32 );
+var material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
+var black = new THREE.Mesh( geometry, material );
+black.position.z = -1;
+// black.scale.z = 0.5;
+ball.add( black );
+//
+pupils.push(ball);
+
+} //for
+
+pupils[0].position.x = -8;
+pupils[1].position.x = 8;
+pupils[0].rotation.y = Math.PI/10;
+pupils[1].rotation.y = -Math.PI/10;
+
+// load mouth shapes
+var gp1 = new THREE.Group();            
+gp1.name = "gp1"
+sphere.add( gp1 );
+//
+var leaves = new THREE.Group();            
+leaves.name = "leaves"
+sphere.add( leaves );
+
+var xloader = new THREE.ObjectLoader();  
+xloader.load("models/mouth2.json", function (objx) {	
+
+for( var i = 0; i < objx.children.length; i ++) {
+  	objx.children[i].geometry.center();
+	objx.children[i].scale.set(180,180,180);
+	objx.children[i].position.set(0,-22,4);
+	objx.children[i].material = new THREE.MeshLambertMaterial( { color:0x990000} );
+	objx.children[i].rotation.x = Math.PI/2;
+	objx.children[i].rotation.z = Math.PI;
+	gp1.add (objx.children[i]);
+}
+
+});
+
+
+// leaf
+xloader.load("models/leaf.json", function (objx) {	
+    var texture = new THREE.TextureLoader().load('img/leaf.png');
+
+    objx.traverse(function (child) {   // aka setTexture
+        if (child instanceof THREE.Mesh) {
+            child.material.map = texture;
+			child.scale.set(10,10,10)
+			child.position.set(0,0,-27)
+			child.rotation.set(-Math.PI/1.5,0,0)
+			leaves.add(child);
+
+			var leaf2 = child.clone();
+			leaf2.rotation.y = 65;
+			leaves.add(leaf2);
+
+			var leaf3 = child.clone();
+			leaf3.rotation.y = -65;
+			leaves.add(leaf3);
+
+        }
+    });
+});
+
+// set frame number for mouthshape
+function setframe(num){
+	// hide all
+	for ( var i = 0; i < gp1.children.length; i ++ ) {
+		gp1.children[i].visible = false;
+	}
+
+	// check if variable exists
+	if (typeof gp1.children[num] !== 'undefined') {
+			// show *num*
+			gp1.children[num].visible = true;	
+	}
+}
+
+
+// shadow
+var geometry = new THREE.CircleGeometry( 5, 32 );
+var material = new THREE.MeshLambertMaterial( {
+	color: 0x222222, 
+	side: THREE.DoubleSide,
+	map: new THREE.TextureLoader().load( 'img/shadow.png' ),
+	transparent:true,
+	opacity:0.9
+} );
+var shadow = new THREE.Mesh( geometry, material );
+shadow.rotation.x = -Math.PI/2;
+shadow.position.y = 0.5;
+scene.add( shadow );
+
+
+
+// idle
+function xidle(){
+	// lerps to zero
+	leaves.rotation.x += (0 - leaves.rotation.x)*0.3;
+	sphere.position.z += (8 - sphere.position.z)*0.3;
+	sphere.rotation.x += ((0.3) - sphere.rotation.x)*0.2;
+	sphere.rotation.y += (0 - sphere.rotation.y)*0.2;
+	
+	shadow.scale.x += (1.1-shadow.scale.x)*0.1;
+	shadow.scale.z = shadow.scale.x;
+
+	//
+	for ( var i = 0; i < leaves.children.length; i ++ ) { 
+		leaves.children[i].rotation.z += (0 - leaves
+		.children[i].rotation.z)*0.6;
+	}
+
+	HERO.ixnum += (110 - HERO.ixnum)*multiplier;
+	HERO.iynum += (110 - HERO.iynum)*multiplier;
+	//
+	bmpctx.drawImage(cimg, 0, 0, 512, 256);
+	bmpctx.drawImage(eimg, 0, 0, 512, 256);
+
+	bmpctx.drawImage(bimg, 20, HERO.ixnum);// Rleg
+	bmpctx.drawImage(bimg, 110, HERO.iynum);// Lleg
+
+	// breathe
+	num += 1;
+	sphere.scale.z += ((1+(Math.sin(num/20))/100) - sphere.scale.z)*0.3;
+
+	sphere.material.displacementMap.needsUpdate = true;
+}
+
+// run
+function runcycle(){
+	// move counter
+	num += (HERO.force)+2;
+	HERO.xnum = (Math.cos(num/10)*(20*HERO.force))+180;
+	HERO.ynum = (Math.sin((num)/10)*(20*HERO.force))+180;
+
+	// shadow scale
+	shadow.scale.x = shadow.scale.y  =  (Math.cos((num-50)/10)/10)+1;	
+	// body rotate
+	sphere.rotation.x += (((HERO.speed/3)+(Math.cos(num/10)/10)) - sphere.rotation.x)*0.2;
+	sphere.rotation.z = Math.sin(sphere.rotation.x-0.5)/2;
+
+	// body position
+	sphere.position.z += (((Math.sin(num/10)*(HERO.force*3)))- sphere.position.z)*0.2;
+	
+	// leaves lerp
+	for ( var i = 0; i < leaves.children.length; i ++ ) { 
+	leaves.children[i].rotation.z += (((Math.cos(num/10)/2)*HERO.speed) - leaves.children[i].rotation.z)*0.2;
+	}
+	leaves.rotation.x = (sphere.position.z/20);
+
+	// front legs
+	// bmp
+	bmpctx.drawImage(cimg, 0, 0, 512, 256);
+	bmpctx.drawImage(bimg, 20, HERO.xnum-legpos);// Rleg
+	bmpctx.drawImage(bimg, 110, HERO.ynum-legpos);// Lleg
+
+	HERO.ixnum = HERO.xnum-legpos;
+	HERO.iynum = HERO.ynum-legpos;
+
+
+	maincharacter.rotation.z = -pivot.rotation.z;
+	//
+	sphere.material.displacementMap.needsUpdate = true;
+} //run cycle
+
+
+var dust = [];
+function makedust() {
+for ( var i = 0; i < 10; i ++ ) {
+	var geometry = new THREE.SphereGeometry( 2, 32, 32, 0, Math.PI );
+	var material = new THREE.MeshBasicMaterial( {color: 0xffffff, transparent:true, opacity:0.1} );
+	var ball = new THREE.Mesh( geometry, material );
+	ball.position.x=(Math.random()-0.5)*5;
+	ball.position.y=-5*(Math.random()*10);
+	var xscale = Math.random();
+	ball.scale.set(xscale,xscale,xscale);
+	pivot.add( ball );
+	dust.push(ball)
+}	
+}
+
+	
+// loop
+var animate = function () {
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
+	moveplayer();
+};
+
+// start
+xidle();
+makedust();
+animate();
+
+</script>
+
+</body>
+</html>
