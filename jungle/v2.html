@@ -1,0 +1,364 @@
+
+<!DOCTYPE html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>jungle v2</title>
+<meta name="viewport" content="width=device-width, user-scalable=no" />
+
+<style>
+body { margin: 0; overflow: hidden; background: #000;}
+canvas { width: 100%; height: 100%; position:absolute;}
+</style>
+
+</head>
+<body>
+
+<video width="1280" height="720" loop  id="bg" style="display: none;" src="assets/stream1.mp4"></video>
+
+		<script src="js/three.min.js"></script>
+
+		<script>
+//
+var focused = true;
+
+window.onfocus = function() {
+    focused = true;
+};
+window.onblur = function() {
+    focused = false;
+};		
+// make hitcanvas
+var hitcanvas = document.createElement('canvas');
+htx = hitcanvas.getContext('2d');
+hitcanvas.id = "hitcanvas";
+hitcanvas.width = 1024;
+hitcanvas.height = 512;
+var hitimg = new Image();
+hitimg.onload = ready;
+hitimg.src = "assets/skyhit.gif";
+
+
+// make bmpcanvas
+var bmpcanvas = document.createElement('canvas');
+btx = bmpcanvas.getContext('2d');
+bmpcanvas.id = "bmpcanvas";
+bmpcanvas.width = 1024;
+bmpcanvas.height = 512;
+// document.body.appendChild(bmpcanvas);
+var bmpimg = new Image();
+bmpimg.onload = ready;
+bmpimg.src = "assets/bump1.jpg";
+function ready() {
+btx.drawImage(bmpimg, 0, 0, 1024, 512);
+htx.drawImage(hitimg, 0, 0, 1024, 512);
+}
+
+var xu = 0;
+var xv = 0;
+var mxu = 0;
+var mxv = 0;
+var count = 0;
+var xval = 0;
+
+var myspeed = 0.05;
+var direction = 'none';
+var bgvideo = document.getElementById('bg');
+bgvideo.preload = 'auto';
+bgvideo.autoload = true;
+//
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera(
+	36.5,
+	window.innerWidth / window.innerHeight,
+	0.1,
+	2000
+	);
+camera.position.z = 15;
+
+
+var renderer = new THREE.WebGLRenderer({ alpha: true, alpha: true, antialias: true });
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// groups
+var herogroup = new THREE.Group();
+scene.add( herogroup );
+herogroup.position.y = 2;
+herogroup.position.x = -5.2;
+// camera.lookAt(herogroup.position);
+
+leafgroup = new THREE.Group();
+leafgroup.name = "leafgroup"
+scene.add( leafgroup );
+leafgroup.visible = false;
+
+bggroup = new THREE.Group();
+bggroup.name = "bggroup"
+scene.add( bggroup );
+
+// light
+var light = new THREE.AmbientLight( 0xffffff );
+light.intensity = 2;
+scene.add( light );
+
+
+//
+THREE.SpriteSheetTexture = function(
+	imageURL,
+	framesX,
+	frameDelay,
+	_endFrame
+	) {
+	var timer,
+	frameWidth,
+	frameHeight,
+	x = (y = count = startFrame = 0),
+	endFrame = _endFrame || framesX,
+	canvas = document.createElement("canvas"),
+	ctx = canvas.getContext("2d"),
+	canvasTexture = new THREE.CanvasTexture(canvas),
+	img = new Image();
+
+	img.onload = function() {
+		canvas.width = frameWidth = img.width / framesX;
+		canvas.height = frameHeight = img.height;
+		timer = setInterval(nextFrame, frameDelay);
+	};
+	img.src = imageURL;
+
+	function nextFrame() {
+		count++;
+
+		if (count >= endFrame) {
+			count = 1;
+		}
+
+		x = (count % framesX) * frameWidth;
+		y = ((count / framesX) | 0) * frameHeight;
+
+		ctx.clearRect(0, 0, frameWidth, frameHeight);
+		ctx.drawImage(
+			img,
+			x,
+			y,
+			frameWidth,
+			frameHeight,
+			0,
+			0,
+			frameWidth,
+			frameHeight
+			);
+
+		canvasTexture.needsUpdate = true;
+	}
+
+	return canvasTexture;
+};
+
+// video1
+var video = document.getElementById( 'bg' );
+vtexture = new THREE.VideoTexture( video );
+vtexture.format = THREE.RGBFormat;
+var maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
+vtexture.anisotropy = maxAnisotropy;
+
+// video planes
+var bumptexture = new THREE.TextureLoader().load( 'assets/bump1.jpg' );
+var widebump = new THREE.TextureLoader().load( 'assets/bump2a.jpg' );
+
+// plane obj
+var geometry = new THREE.PlaneBufferGeometry( 12.8, 7.2, 60, 60 );
+Lmaterial = new THREE.MeshStandardMaterial( { 
+	map : vtexture,
+	displacementMap: bumptexture,
+	displacementScale: 3
+} );
+planeL = new THREE.Mesh( geometry, Lmaterial );
+bggroup.add( planeL );
+
+// planeL.visible =  false;
+planeL.material.depthTest = false;
+
+
+// hero
+idletexture = new THREE.TextureLoader().load( 'assets/kididle.png' );  
+runtexture = new THREE.SpriteSheetTexture(
+	"assets/kidrun.png",
+	8,
+	100,
+	8
+	);
+
+idletexture.magFilter = THREE.NearestFilter;
+idletexture.minFilter = THREE.LinearMipMapLinearFilter;
+runtexture.magFilter = THREE.NearestFilter;
+runtexture.minFilter = THREE.LinearMipMapLinearFilter;
+
+heromaterial = new THREE.MeshBasicMaterial({
+	map: idletexture
+	,side:THREE.DoubleSide
+	,transparent:true
+	,alphaTest:1
+});    
+geometry = new THREE.PlaneGeometry(2, 2, 1);
+xmesh = new THREE.Mesh(geometry, heromaterial);
+xmesh.position.z = 0.28;
+xmesh.position.y = 1.7;
+xmesh.renderOrder = 2;
+herogroup.add(xmesh);
+
+
+
+// keyboard
+keyboard = {
+	_pressed: {},
+
+	LEFT: 37,
+	UP: 38,
+	RIGHT: 39,
+	DOWN: 40,
+
+isDown: function(keyCode) {
+	return this._pressed[keyCode];
+},
+
+onKeydown: function(event) {
+if ( bgvideo.readyState === 4 ) {
+leafgroup.visible = true;
+planeL.visible =  true;
+bgvideo.play();
+}
+this._pressed[event.keyCode] = true;
+
+},
+
+onKeyup: function(event) {
+	heromaterial.map = idletexture;
+	xnum=0;
+	count = 0;
+	delete this._pressed[event.keyCode];
+}
+};
+
+window.addEventListener('keyup', function(event) { keyboard.onKeyup(event); }, false);
+window.addEventListener('keydown', function(event) { keyboard.onKeydown(event); }, false);
+
+
+// resize
+window.addEventListener('resize', function() {
+	resizeCanvas();			
+});
+
+function resizeCanvas() {
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+
+
+function swapbg() {
+document.body.classList.toggle('wide');
+if ( document.body.classList != "wide") {
+		bmpimg.src = "assets/bump1.jpg";
+		leafgroup.visible = true;
+		bgvideo.setAttribute('src', 'assets/stream1.mp4'); 
+		Lmaterial.displacementMap = bumptexture;
+		Lmaterial.map.needsUpdate = true;
+		Lmaterial.displacementMap.needsUpdate = true;
+		bgvideo.play();
+	} else {
+		bmpimg.src = "assets/bump2a.jpg";
+		bgvideo.setAttribute('src', 'assets/wide.mp4'); 
+		Lmaterial.displacementMap = widebump;
+		Lmaterial.map.needsUpdate = true;
+		Lmaterial.displacementMap.needsUpdate = true;
+		bgvideo.play();
+	}
+
+}
+
+
+
+function animate() {
+//
+if (focused == 'false') {return}
+
+requestAnimationFrame( animate );
+// controls.update();
+renderer.render( scene, camera );
+// move hero
+if (keyboard.isDown(keyboard.LEFT))   { 
+	herogroup.position.x -= 0.1; 
+	xmesh.rotation.y = Math.PI;
+    heromaterial.map = runtexture; 
+ }
+if (keyboard.isDown(keyboard.RIGHT))   { 
+	herogroup.position.x += 0.1; 
+	xmesh.rotation.y = 0; 
+    heromaterial.map = runtexture; 
+ }
+if (keyboard.isDown(keyboard.UP)  && herogroup.position.y < 2 && !still)   { 
+	herogroup.position.y += 0.1; 
+    heromaterial.map = runtexture; 
+ }
+if (keyboard.isDown(keyboard.DOWN) && herogroup.position.y > -4.1)   { 
+	herogroup.position.y -= 0.1; 
+    heromaterial.map = runtexture; 
+ }
+
+
+// crossover
+if (herogroup.position.x > 6.4) {
+	swapbg();
+ herogroup.position.x = -6.4;}
+if (herogroup.position.x < -6.4) {
+	swapbg(); 
+	herogroup.position.x = 6.4;
+}
+if (herogroup.position.y < -4) {
+	herogroup.position.y = -4;
+}
+
+// bump canvas
+		xv = 512+Math.floor( herogroup.position.x*80);
+		xu = 200+Math.floor( -herogroup.position.y*71);
+		thisdata = btx.getImageData(xv, xu, 1, 1);
+		if (thisdata.data[0]<255) {
+		xmesh.position.z = thisdata.data[0]/70;
+		}
+// hit canvas
+		hitdata = htx.getImageData(xv, xu, 1, 1);
+		if (hitdata.data[0] == 102 && document.body.classList != "wide") {
+		// waterfall
+		herogroup.position.y -= 0.2;
+		}
+		// if (hitdata.data[0] == 163) {
+		// // slippy surf
+		// herogroup.position.y -= 0.1;
+		// }
+// wrap
+		if (thisdata.data[0]>4 )  {
+			still = false;
+		} else {
+			herogroup.position.y -= 0.1;
+			still = true;
+		}
+// water fall
+		// if (herogroup.position.x > -1 && herogroup.position.x <2.5 && document.body.classList != "wide") {
+		// 	// console.log(herogroup.position.x); 
+		// 	herogroup.position.y -= 0.2;
+		// }
+
+// camera move
+// camera.position.x += (herogroup.position.x - camera.position.x)*0.1;
+// camera.position.y += (herogroup.position.y - camera.position.y)*0.1;
+// camera.lookAt(herogroup.position);
+
+} // render loop
+
+
+
+animate();
+
+</script>
+</body></html>
