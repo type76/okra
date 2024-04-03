@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>MF DOM</title>
+<meta name="viewport" content="width=device-width, user-scalable=no">
+</head>
+<style>
+body {overflow: hidden;
+width: 100%;
+}
+
+
+#botface {
+display: block;
+height: auto;
+width: 70px;
+height: 1em;
+text-align: center; 
+z-index: 999;
+user-select: none;
+font-family: monospace;
+transform-origin: bottom;
+margin: 20% auto;
+transform: scale(5);
+}
+
+#botface div {display: inline; }
+
+#botmouth {
+display: block;
+margin: 0 auto;
+width: 20px; height: 20px; 
+line-height: 20px;
+font-weight: lighter;
+transform-origin: center;
+transform: rotate(90deg); 
+text-align: center;
+position: absolute;
+top: 0px;
+left: 40%;
+}
+
+
+#botLeye, #botReye,
+#botLside, #botRside {
+position: absolute;
+}
+
+#botLeye {left: 12px;}
+#botReye {right: 12px;}
+
+#botLside {left: 0;}
+#botRside {right: 0;}
+
+#playbtn {background:red; }
+
+
+/* inform	*/
+#inform {display: block; position: absolute; left: 0; bottom: 0; z-index: 9999; }
+fieldset {outline: none; border: none;}
+#voices, #rate, #pitch {display: none;}
+/*#inform input#message {width: 100%;}*/
+#audiofile {position: absolute; z-index: 33;
+top: 0; left: 0; display: none;}
+</style>
+<body>
+<audio id="audiofile" src="mrclean.mp3" controls="" tabindex="1" onplay="playme()" onpause="stopme()"></audio>
+
+
+<div id="bothead">
+	<p id="output"></p>
+</div>
+
+<form onsubmit="sendMessage();return false" id="inform">
+  <fieldset>
+    <button id="playbtn" class="pause">play</button>
+
+	<select id="voices" selected="Fred" title="edit voices"></select>
+	<input type="range" min="0" max="2" value="1" step="0.1" id="pitch" title="edit pitch">
+	<input type="range" min="0.5" max="2" value="1" step="0.1" id="rate" title="edit rate">
+
+	<button type="submit" value="Send" id="spkbut" >></button title="send">
+
+	<input type="text" size="70" name="message" id="message"  autocomplete="off"  onkeyup="cleanbf()" onkeydown="cleanbf()" tabindex="1" >
+
+  </fieldset>
+</form>
+
+<script>
+// lyrics
+var lyrics = [
+{ "start": "1","text": " " },
+{ "start": "10","text": "Study your history" },
+{ "start": "12","text": "Whoever don't?" },
+{ "start": "13","text": "I pity the fool like Mr. T" },
+{ "start": "15","text": "Knowledge: this degree" },
+{ "start": "16","text": "it ain't no mystery" },
+{ "start": "17","text": "'What you gon' do'" },
+{ "start": "18","text": "'what you know'" },
+{ "start": "19","text": "is what is to see" },
+{ "start": "21","text": "And that's more" },
+{ "start": "22","text": "than meets the eyeball" },
+{ "start": "23","text": "Now who wants to buy a" },
+{ "start": "24","text": "brand new tsetse fly call?" },
+{ "start": "25","text": "Alright y'all" },
+{ "start": "26","text": "the speed was break-neck" },
+{ "start": "28","text": "Faster than the hi-speed" },
+{ "start": "29","text": "dual cassette tape deck" },
+{ "start": "31","text": "The distance was" },
+{ "start": "32","text": "light-speed" },
+{ "start": "33","text": "He went to see a buddy" },
+{ "start": "34","text": "who said he had some" },
+{ "start": "35","text": "white weed" },
+{ "start": "36","text": "In case it might need" },
+{ "start": "37","text": "it didn't mean much" },
+{ "start": "38","text": "For in his lean clutch was the" },
+{ "start": "39","text": "elusive green Dutch" },
+{ "start": "40","text": "Who that? Kinga" },
+{ "start": "41","text": "Vaughn's younger brother" },
+{ "start": "43","text": "A real live swinger" },
+{ "start": "44","text": "who rock Louis Vuitton pleather" },
+{ "start": "46","text": "And he walk around like he think he king" },
+{ "start": "48","text": "Even made the hood-rats" },
+{ "start": "49","text": "stop to kiss his pinky ring" },
+{ "start": "51","text": "Like a soup sandwich" },
+{ "start": "52","text": "on a hand dish" },
+{ "start": "53","text": "Some say his language" },
+{ "start": "54","text": "is way too outlandish" },
+{ "start": "55","text": "He did his thing" },
+{ "start": "56","text": "spoke in a jig-slang" },
+{ "start": "58","text": "And translate Einstein's" },
+{ "start": "59","text": "theory of The Big Bang" },
+{ "start": "61","text": "He told his boo:" },
+{ "start": "62","text": "Boo, I put a spell on you" },
+{ "start": "63","text": "Stay with me" },
+{ "start": "64","text": "whether we broke or we well-to-do" },
+{ "start": "66","text": "If it don't work" },
+{ "start": "67","text": "the hell with 'cha" },
+{ "start": "68","text": "May the doorknob hit 'cha" },
+{ "start": "69","text": "where the poor slob bit 'cha" },
+{ "start": "71","text": "What you thought ya' darn skeezer?" },
+{ "start": "73","text": "The G of a mack and" },
+{ "start": "74","text": "the steez of a geezer" },
+{ "start": "76","text": "True man of leisure" },
+{ "start": "77","text": "she must've caught amnesia" },
+{ "start": "78","text": "Paid off the 8th grade fade" },
+{ "start": "80","text": "or a Caesar" },
+{ "start": "82","text": "He was known for his thick skin" },
+{ "start": "83","text": "Part Zimbabwean" },
+{ "start": "84","text": "and part Trini mixed in" },
+{ "start": "86","text": "Big shot" },
+{ "start": "87","text": "sold a guy a pound of pig snot" },
+{ "start": "88","text": "Said it was proven to remove stains" },
+{ "start": "90","text": "and ink spots" },
+{ "start": "91","text": "Kinky flow" },
+{ "start": "92","text": "dripped down her leg to her pinky toe" },
+{ "start": "93","text": "Chinky ho" },
+{ "start": "94","text": "who don't know as much" },
+{ "start": "95","text": "as she think she know" },
+{ "start": "96","text": "One wink, she stepped to him" },
+{ "start": "97","text": "like a Slinky, yo" },
+{ "start": "98","text": "Wig like a mink skin" },
+{ "start": "99","text": "soft like Twinkie dough" },
+{ "start": "101","text": "Then he kissed the queen" },
+{ "start": "102","text": "and told her she need Listerine" },
+{ "start": "103","text": "Twist the green" },
+{ "start": "104","text": "it's laced with antihistamine" },
+{ "start": "106","text": "Enough to make you" },
+{ "start": "107","text": "make your face up like Mr. Bean" },
+{ "start": "109","text": "V hit the scene like: Fuck it" },
+{ "start": "110","text": "give me a Mr. Clean" },
+{ "start": "112","text": " " }
+];
+
+var audioPlayer = document.getElementById("audiofile");
+
+var playbtn = document.getElementById('playbtn');
+playbtn.addEventListener("click", playpause, false );
+var playing = false;
+var xswitch = false;
+const synth = window.speechSynthesis;
+const voiceSelect = document.getElementById('voices');
+const voices = [];
+// cleanup regex
+const txtregex = /[^a-z 0-9 ?@!.,+*]/gi;
+const textfield = document.getElementById('message');
+const tyspeed = 80;
+let mute = false;
+
+// create botface
+document.body.onload = addFace;
+
+function addFace () { 
+  const bothead = document.getElementById('bothead');
+  botface = document.createElement("div"); 
+  botface.id = 'botface';
+  botface.style.left = (window.innerWidth/2)-(botface.clientWidth/2)+'px';
+  botface.style.top = (window.innerHeight/2)-(botface.clientHeight/2)+'px';
+
+  const botLside = document.createElement("div");
+  botLside.id = 'botLside';
+  botLside.innerHTML = '(';
+  botface.appendChild(botLside);  
+
+  botLeye = document.createElement("div");
+  botLeye.id = 'botLeye';
+  botLeye.innerHTML = 'o';
+  botface.appendChild(botLeye);  
+
+  botmouth = document.createElement("div");
+  botmouth.id = 'botmouth';
+  botmouth.innerHTML = ')';
+  botface.appendChild(botmouth);  
+
+  botReye = document.createElement("div");
+  botReye.id = 'botReye';
+  botReye.innerHTML = 'o';
+  botface.appendChild(botReye);  
+
+  botRside = document.createElement("div");
+  botRside.id = 'botRside';
+  botRside.innerHTML = ')';
+  botface.appendChild(botRside);  
+
+  // add botface
+  document.body.insertBefore(botface, bothead); 
+
+  oldmouth = botmouth.innerHTML;
+  oldeye = botLeye.innerHTML;
+  //
+  // START <<<<<<<<<<<<<<<<<<<<<<<<<<<
+window.requestAnimationFrame(loop);
+
+
+}// end addFace
+
+
+//
+
+// bot input
+// field regex cleanup
+function cleanbf(){
+  if(textfield.value.search(txtregex) > -1) {
+    textfield.value = textfield.value.replace(txtregex, "");
+  }
+}
+
+
+
+
+// bot output
+function sendMessage() {
+  try {
+    const text  = textfield.value; 
+
+if (!mute) { spk(text); botoutput(text);}
+else {   botoutput(text);}
+} catch (e) {
+  alert("Something went horribly wrong:\n" + e);
+}
+};
+
+
+// bot text command / output
+function botoutput(text) {
+output = '';
+output = text;
+}
+
+// speak text
+function spk(text) {
+  mouthshape(text);
+  const utterThis = new SpeechSynthesisUtterance(text);
+  const selectedOption = voiceSelect.selectedOptions[0].getAttribute('data-name');
+  for(i = 0; i < voices.length ; i++) {
+    if(voices[i].name === selectedOption) {
+      utterThis.voice = voices[i];
+    }
+  }
+  utterThis.pitch = pitch.value*(text.length * 0.3);
+  utterThis.rate = rate.value;
+  synth.speak(utterThis);
+}
+
+// wait for voices to be loaded before fetching list
+window.speechSynthesis.onvoiceschanged = function() {
+  const xvoices = window.speechSynthesis.getVoices();
+};
+
+
+// get voices
+function populateVoiceList() {
+  let voices = synth.getVoices();
+
+  for(i = 0; i < voices.length ; i++) {
+    const option = document.createElement('option');
+    option.textContent = voices[i].name + ' (' + voices[i].lang + ')';
+
+    if(voices[i].default) {
+      option.textContent += ' -- DEFAULT';
+    }
+
+    option.setAttribute('data-lang', voices[i].lang);
+    option.setAttribute('data-name', voices[i].name);
+    voiceSelect.appendChild(option);
+  }
+}
+
+populateVoiceList();
+if (speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = populateVoiceList;
+}
+
+
+// botspeak
+// close console
+function consoleClose() {
+  console.log('close');
+  esctoggle();
+}
+
+
+// lip sync 
+function mouthshape(text) {
+  for (let i = 0, len = text.length; i < len; i++) {
+    setTimeout( (function( i ) {
+      return function() {
+        lipsync(text[i]);
+      };
+    }( i )), (80 * i) );
+} //for
+
+setTimeout(function() { 
+	document.getElementById('botmouth').innerHTML = oldmouth;
+	xswitch = false;
+}, text.length*90);
+} // end mouthshape
+
+
+
+
+function lipsync(arg) {
+  if (arg == ' ' || arg == '.') { botmouth.innerHTML = oldmouth;}
+  if (arg == 'a') { botmouth.innerHTML = 'D';}
+  if (arg == 'b') { botmouth.innerHTML = '|';}
+  if (arg == 'c') { botmouth.innerHTML = 'D';}
+  if (arg == 'd') { botmouth.innerHTML = '|';}
+  if (arg == 'e') { botmouth.innerHTML = 'D';}
+  if (arg == 'f') { botmouth.innerHTML = '|';}
+  if (arg == 'g') { botmouth.innerHTML = '|';}
+  if (arg == 'h') { botmouth.innerHTML = '|';}
+  if (arg == 'i') { botmouth.innerHTML = 'D';}
+  if (arg == 'j') { botmouth.innerHTML = 'I';}
+  if (arg == 'k') { botmouth.innerHTML = 'I';}
+  if (arg == 'l') { botmouth.innerHTML = 'P';}
+  if (arg == 'm') { botmouth.innerHTML = '(';}
+  if (arg == 'n') { botmouth.innerHTML = ')';}
+  if (arg == 'o') { botmouth.innerHTML = 'o';}
+  if (arg == 'p') { botmouth.innerHTML = '|';}
+  if (arg == 'q') { botmouth.innerHTML = 'D';}
+  if (arg == 'r') { botmouth.innerHTML = 'o';}
+  if (arg == 's') { botmouth.innerHTML = ')';}
+  if (arg == 't') { botmouth.innerHTML = '|';}
+  if (arg == 'u') { botmouth.innerHTML = 'o';}
+  if (arg == 'v') { botmouth.innerHTML = '/';}
+  if (arg == 'w') { botmouth.innerHTML = 'o';}
+  if (arg == 'x') { botmouth.innerHTML = 'x';}
+  if (arg == 'y') { botmouth.innerHTML = 'D';}
+  if (arg == 'z') { botmouth.innerHTML = '/';}
+
+}
+
+//
+function setframe(value) {
+audioPlayer.currentTime = value;
+}
+
+// play audio
+function playme() {
+  	playing = true;
+	audioPlayer.play();
+}
+
+
+// stop audio
+function stopme() {
+playing = false;
+audioPlayer.pause();
+}
+
+// play/pause toggle button function
+function playpause() {
+	if (!audioPlayer.paused) {
+		stopme();
+		playbtn.style.background = 'red';
+		playbtn.innerHTML = 'play';
+	} else {
+		playme();
+		playbtn.style.background = 'yellow';
+		playbtn.innerHTML = 'pause';
+	}
+}
+
+
+
+
+// render loop
+loop = function() {
+
+	//eye blink
+	if ( Math.random() > 0.995 ) { 
+		botReye.innerHTML = '-'; 
+  		botLeye.innerHTML = '-';
+	 } else {  
+	    botReye.innerHTML = oldeye; 
+	    botLeye.innerHTML = oldeye;
+	} // end blink
+
+	if (playing) {
+
+		// lips
+		nownow = Math.floor(audioPlayer.currentTime);
+		// document.getElementById("timecode").innerHTML = nownow;	
+		// document.getElementById('xslider').value = nownow;
+
+		// create text
+		lyrics.forEach(function(element, index){
+			if( nownow == element.start ){
+				text = element.text;			
+				once(text);
+				text = '';			
+			}
+		});	
+		//
+
+	}//ifplaying
+  window.requestAnimationFrame(loop);
+
+}
+
+
+//
+// do once
+var once = (function() {
+    return function(argument) {
+        if (!xswitch) {
+            xswitch = true;
+	// STUFF GOES HERE
+			spk(argument); 
+			botoutput(argument);
+        }
+    };
+})();
+
+</script>
+</body>
+</html>
