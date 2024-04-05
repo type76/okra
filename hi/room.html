@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>room</title>
+	<style type="text/css">
+		html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  font-family: Helvetica Neue, sans-serif;
+  font-size: 14px;
+  background: #000;
+}
+
+main canvas {
+display: none;
+}
+
+.maze {
+	display: block;
+	width: 256px;
+	height: 256px;
+	position: relative;
+	z-index: 2;
+	position: absolute;
+}
+canvas.no-border {
+  border: none;
+  position: relative;
+  z-index: 1;
+}
+
+button {
+  padding: 8px 20px;
+  margin: 30px 4px;
+  background: white;
+  border: 2px solid #2d84da;
+  border-radius: 8px;
+  color: #333;
+  font-size: 16px;
+  cursor: pointer;
+  outline: none;
+  transition: all 100ms ease-in;
+  position: relative;
+  z-index: 10;
+}
+button:hover {
+  background: rgba(45, 132, 218, 0.4);
+  transition: all 100ms ease-out;
+}
+button[disabled] {
+  border-color: #aaa;
+  background: white !important;
+  color: #666;
+  cursor: default;
+}
+#cnv3D { z-index: 9;
+	top: 0; left: 0;
+position: absolute;}
+#fin { z-index: 9;
+	top: 290px; left: 10px;
+position: absolute;}
+	</style>
+
+</head>
+<body>
+<main>
+  <div class="maze">
+    <canvas id="fin" class="fin"></canvas>
+    <canvas id="cnv" class="no-border"></canvas>
+  </div>
+  <div>
+    <button class="create">Create new maze</button>
+    <button class="solve">Solve the maze</button>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
+
+
+<script type="text/javascript">
+var plane;
+let inProgress = false;
+const mazeContainer = document.querySelector('.maze');
+mazeContainer.width = 256;
+const canvas = document.getElementById('cnv');
+// canvas.width = 256;
+// canvas.height = 256;
+const ctx = canvas.getContext('2d');
+
+const fincanvas = document.getElementById('fin');
+fincanvas.width = 280;
+fincanvas.height = 280;
+const ftx = fincanvas.getContext('2d');
+ftx.fillStyle = "black";
+ftx.fillRect(0, 0, 550, 550); 
+
+
+const pixelRatio = window.devicePixelRatio || 1;
+const lineWidth = 20;
+
+let size = 40;
+let width = 0;
+let rows = 0;
+
+let grid = [];
+let maxDistance = 0;
+
+const isLinked = (cellA, cellB) => {
+  const link = cellA.links.find(l => l.row === cellB.row && l.col === cellB.col);
+  return !!link;
+};
+
+const getNeighbors = cell => {
+  const list = [];
+
+  if (cell.cw) list.push(grid[cell.cw.row][cell.cw.col])
+  if (cell.ccw) list.push(grid[cell.ccw.row][cell.ccw.col])
+  if (cell.inward) list.push(grid[cell.inward.row][cell.inward.col])
+
+  cell.outward.forEach(out => {
+    list.push(grid[out.row][out.col]);
+  });
+
+  return list;
+};
+
+const huntAndKill = () => {
+  const randomRow = Math.floor(Math.random() * rows);
+  const randomCol = Math.floor(Math.random() * grid[randomRow].length);
+
+  let current = grid[randomRow][randomCol];
+
+  while (current) {
+    const unvisitedNeighbors = getNeighbors(current).filter(n => n.links.length === 0);
+    const { length } = unvisitedNeighbors;
+
+    if (length) {
+      const rand = Math.floor(Math.random() * length);
+      const { row, col } = unvisitedNeighbors[rand];
+
+      current.links.push({ row, col });
+      grid[row][col].links.push({ row: current.row, col: current.col });
+
+      current = unvisitedNeighbors[rand];
+    } else {
+      current = null;
+
+      loop:
+      for (let row of grid) {
+        for (let cell of row) {
+          const visitedNeighbors = getNeighbors(cell).filter(n => n.links.length !== 0);
+
+          if (cell.links.length === 0 && visitedNeighbors.length !== 0) {
+            current = cell;
+
+            const rand = Math.floor(Math.random() * visitedNeighbors.length);
+            const { row, col } = visitedNeighbors[rand];
+
+            current.links.push({ row, col });
+            grid[row][col].links.push({ row: current.row, col: current.col });
+
+            break loop;
+          }
+        }
+      }
+    }
+  }
+
+  renderMaze();
+};
+
+const renderMaze = () => {
+
+ctx.fillStyle = "black";
+ctx.fillRect(0, 0, 800, 800); 
+ftx.fillRect(0, 0, 800, 800); 
+
+  // ctx.clearRect(0, 0, width * pixelRatio, width * pixelRatio);
+
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = "round";
+  ftx.filter = "blur(6px) contrast(120%)";
+
+  for (let row of grid) {
+    for (let cell of row) {
+      if (cell.row) {
+        if (!cell.inward || !isLinked(cell, cell.inward)) {
+          ctx.beginPath();
+          ctx.moveTo(cell.innerCcwX, cell.innerCcwY);
+          ctx.lineTo(cell.innerCwX, cell.innerCwY);
+          ctx.stroke();
+        }
+
+        if (!cell.cw || !isLinked(cell, cell.cw)) {
+          ctx.beginPath();
+          ctx.moveTo(cell.innerCwX, cell.innerCwY);
+          ctx.lineTo(cell.outerCwX, cell.outerCwY);
+          ctx.stroke();
+        }
+
+        if (cell.row === grid.length - 1 && cell.col !== row.length * 0.75) {
+          ctx.beginPath();
+          ctx.moveTo(cell.outerCcwX, cell.outerCcwY);
+          ctx.lineTo(cell.outerCwX, cell.outerCwY);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+ftx.drawImage(canvas,15,15, 250, 250)
+
+};
+
+const renderPath = () => {
+  let row = grid.length - 1;
+  let cell = { ...grid[row][grid[row].length * 0.75] };
+  let nextCell = null;
+  let { distance } = cell;
+
+  ctx.strokeStyle = '#f00';
+
+
+  ctx.beginPath();
+  ctx.moveTo(cell.centerX, cell.centerY);
+
+  while (distance > 0) {
+    const link = cell.links.filter(l => grid[l.row][l.col].distance === distance - 1)[0];
+    nextCell = { ...grid[link.row][link.col] };
+
+    ctx.lineTo(cell.centerX, cell.centerY);
+   
+
+    distance -= 1;
+    cell = { ...nextCell };
+  }
+
+  ctx.lineTo(width * 0.5 * pixelRatio, width * 0.5 * pixelRatio)
+  ctx.stroke();
+  ftx.drawImage(canvas,15,15, 250, 250)
+};
+
+const calculateDistance = (row = 0, col = 0, value = 0) => {
+  maxDistance = Math.max(maxDistance, value);
+
+  grid[row][col].distance = value;
+  grid[row][col].links.forEach(l => {
+    const { distance } = grid[l.row][l.col];
+    if (!distance && distance !== 0) {
+      calculateDistance(l.row, l.col, value + 1);
+    }
+  });
+};
+
+const solveMaze = () => {
+  calculateDistance();
+  renderPath();
+   // plane.material.displacementMap.needsUpdate = true;
+  plane.material.map.needsUpdate = true;
+};
+
+const createGrid = () => {
+  const rowHeight = 1 / rows;
+
+  grid = [];
+  grid.push([{ row: 0, col: 0, links: [], outward: [] }]);
+
+  for (let i = 1; i < rows; i++) {
+    const radius = i / rows;
+    const circumference = 2 * Math.PI * radius;
+    const prevCount = grid[i - 1].length;
+    const cellWidth = circumference / prevCount;
+    const ratio = Math.round(cellWidth / rowHeight);
+    const count = prevCount * ratio;
+
+    const row = [];
+
+    for (let j = 0; j < count; j++) {
+      row.push({
+        row: i,
+        col: j,
+        links: [],
+        outward: [],
+      })
+    }
+
+    grid.push(row);
+  }
+
+  grid.forEach((row, i) => {
+    row.forEach((cell, j) => {
+      if (cell.row > 0) {
+        cell.cw = { row: i, col: (j === row.length - 1 ? 0 : j + 1) };
+        cell.ccw = { row: i, col: (j === 0 ? row.length - 1 : j - 1) };
+
+        const ratio = grid[i].length / grid[i - 1].length;
+        const parent = grid[i - 1][Math.floor(j / ratio)];
+
+        cell.inward = { row: parent.row, col: parent.col };
+        parent.outward.push({ row: cell.row, col: cell.col });
+      }
+    });
+  });
+
+  positionCells();
+};
+
+const positionCells = () => {
+  const center = width / 2;
+
+  grid.forEach(row => {
+    row.forEach(cell => {
+      const angle = 2 * Math.PI / row.length;
+      const innerRadius = cell.row * size
+      const outerRadius = (cell.row + 1) * size
+      const angleCcw = cell.col * angle;
+      const angleCw = (cell.col + 1) * angle;
+
+      cell.innerCcwX = Math.round(center + (innerRadius * Math.cos(angleCcw))) * pixelRatio + lineWidth / 2;
+      cell.innerCcwY = Math.round(center + (innerRadius * Math.sin(angleCcw))) * pixelRatio + lineWidth / 2;
+      cell.outerCcwX = Math.round(center + (outerRadius * Math.cos(angleCcw))) * pixelRatio + lineWidth / 2;
+      cell.outerCcwY = Math.round(center + (outerRadius * Math.sin(angleCcw))) * pixelRatio + lineWidth / 2;
+      cell.innerCwX = Math.round(center + (innerRadius * Math.cos(angleCw))) * pixelRatio + lineWidth / 2;
+      cell.innerCwY = Math.round(center + (innerRadius * Math.sin(angleCw))) * pixelRatio + lineWidth / 2;
+      cell.outerCwX = Math.round(center + (outerRadius * Math.cos(angleCw))) * pixelRatio + lineWidth / 2;
+      cell.outerCwY = Math.round(center + (outerRadius * Math.sin(angleCw))) * pixelRatio + lineWidth / 2;
+
+      const centerAngle = (angleCcw + angleCw) / 2;
+
+      cell.centerX = (Math.round(center + (innerRadius * Math.cos(centerAngle))) * pixelRatio + lineWidth / 2 +
+                      Math.round(center + (outerRadius * Math.cos(centerAngle))) * pixelRatio + lineWidth / 2) / 2;
+      cell.centerY = (Math.round(center + (innerRadius * Math.sin(centerAngle))) * pixelRatio + lineWidth / 2 +
+                      Math.round(center + (outerRadius * Math.sin(centerAngle))) * pixelRatio + lineWidth / 2) / 2;
+    });
+  });
+};
+
+const resize = change => {
+  width = Math.min(mazeContainer.clientWidth, mazeContainer.clientHeight);
+
+  if (change) {
+    size = Math.floor(width / 2 / rows);
+  } else {
+    rows = Math.floor(width / 2 / size);
+  }
+
+  width = 2 * rows * size;
+
+  canvas.width = width * pixelRatio + lineWidth;
+  canvas.height = width * pixelRatio + lineWidth;
+
+  canvas.style.width = `${width + lineWidth}px`;
+  canvas.style.height = `${width + lineWidth}px`;
+};
+
+const createMaze = () => {
+  resize();
+  createGrid();
+  huntAndKill();
+  plane.material.displacementMap.needsUpdate = true;
+  plane.material.map.needsUpdate = true;
+};
+
+
+
+const createButton = document.querySelector('button.create');
+const solveButton = document.querySelector('button.solve');
+
+createButton.addEventListener('click', () => {
+  createMaze();
+});
+solveButton.addEventListener('click', () => {
+  solveMaze();
+});
+
+window.addEventListener('resize', () => {
+  resize(true);
+  positionCells();
+  renderMaze();
+
+});
+
+
+
+function xdraw(x, y) {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = lineWidth;
+    ctx.strokeStyle = 'red';
+    if (!inProgress) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        inProgress = true;
+        skip1 = true;
+        skip2 = false;
+    } else {
+        if (skip1) {
+            cp1x = x;
+            cp1y = y;
+            skip1 = false;
+            skip2 = true;
+        }
+        if (skip2) {
+            cp2x = x;
+            cp2y = y;
+            skip1 = false;
+            skip2 = false;
+        } else {
+            //ctx.lineTo(x,y);
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y);
+            //ctx.quadraticCurveTo(cp1x, cp1y, x, y);
+            skip1 = true;
+            skip2 = false;
+        }
+    }
+
+    ctx.stroke();
+}
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+const renderer = new THREE.WebGLRenderer({
+			antialias:false, 
+			transparent:true, 
+			alpha:true});
+renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.domElement.id = 'cnv3D';
+document.body.appendChild( renderer.domElement );
+
+const controls = new THREE.OrbitControls( camera, renderer.domElement );
+
+
+// lights
+globalLight = new THREE.AmbientLight(0x333333, 1);
+shadowLight = new THREE.DirectionalLight(0xffffff, 1);
+shadowLight.position.y = 100;
+shadowLight.position.z = 100;
+scene.add(globalLight);
+scene.add(shadowLight);
+
+// camera
+camera.position.z = 3;
+camera.position.y = 3;
+camera.lookAt(0,0,0)
+
+// plane
+const geometry = new THREE.PlaneGeometry( 5, 5, 200, 200 );
+const material = new THREE.MeshStandardMaterial( { 
+	// color: 0x00ff00,
+	map: new THREE.CanvasTexture(fincanvas),
+	displacementMap: new THREE.CanvasTexture(fincanvas),
+	displacementScale: 0.8
+	 } );
+plane = new THREE.Mesh( geometry, material );
+plane.rotation.x = -Math.PI/2;
+plane.rotation.z = -Math.PI*0.92;
+scene.add( plane );
+
+
+function animate() {
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
+};
+	// window resize
+window.addEventListener('resize', function(){
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.render(scene, camera);
+}, false)
+
+
+// start
+createMaze();
+animate();
+
+
+
+
+</script>
+</body>
+</html>
