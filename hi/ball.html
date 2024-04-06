@@ -1,0 +1,237 @@
+<html>
+<head>
+</head>
+<body style="  padding: 0;
+  margin: 0;">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/96/three.min.js"></script>
+<script type="text/javascript">
+/*
+ *
+ * SET UP MOTION PARAMS
+ * 
+ */
+
+var degrees = 35;
+var power = 0.45;
+var angleRad = degrees * Math.PI / 180;
+
+var velocityX = Math.cos(angleRad) * power;
+var velocityY = Math.sin(angleRad) * power;
+var velocityZ = 1;
+
+var friction = 1;
+var gravity = 0.2;
+var bounciness = 0.9;
+
+var ballRadius = 5;
+var ballCircumference = Math.PI * ballRadius * 2;
+var ballVelocity = new THREE.Vector3();
+var ballRotationAxis = new THREE.Vector3(0, 1, 0);
+
+
+window.onload = function(params) {
+
+  /*
+   *
+   * SET UP THE WORLD
+   * 
+   */
+
+
+
+  //set up the ratio
+  var gWidth = window.innerWidth;
+  var gHeight = window.innerHeight;
+  var ratio = gWidth / gHeight;
+  var borders = [40, 24] //indicate where the ball needs to move in mirror position
+
+
+  //set the scene
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xeaeaea);
+
+  //set the camera
+  var camera = new THREE.PerspectiveCamera(35, ratio, 0.1, 1000);
+  camera.position.z = 120;
+
+  //set the light
+  var light = new THREE.SpotLight(0xffffff, 1);
+  light.position.set(100, 1, 0);
+  light.castShadow = true;
+  light.position.set(0, 0, 35);
+  scene.add(light);
+
+  //  set the renderer 
+  var renderer = new THREE.WebGLRenderer();
+
+  //properties for casting shadow
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  renderer.setSize(gWidth, gHeight);
+  document.body.appendChild(renderer.domElement);
+
+
+
+
+  /*
+   *
+   * ADD MESH TO SCENE
+   * 
+   */
+
+
+  // create and add the ball
+  var geometry = new THREE.SphereGeometry(ballRadius, 8, 8);
+
+  //make a checkerboard texture for the ball...
+  var canv = document.createElement('canvas')
+  canv.width = canv.height = 256;
+  var ctx = canv.getContext('2d')
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, 256, 256);
+  ctx.fillStyle = 'black';
+  
+  for (var y = 0; y < 16; y++)
+    for (var x = 0; x < 16; x++)
+      if ((x & 1) != (y & 1)) ctx.fillRect(x * 16, y * 16, 16, 16);
+  var ballTex = new THREE.Texture(canv);
+  ballTex.needsUpdate = true;
+
+
+  var material = new THREE.MeshLambertMaterial({
+    map: ballTex
+  });
+  var ball = new THREE.Mesh(geometry, material);
+
+  ball.castShadow = true;
+  ball.receiveShadow = false;
+  scene.add(ball);
+
+
+
+  // create and add the field
+  var margin = 20;
+  var fieldRatio = 105 / 68;
+
+  var width = 90;
+  var height = width / fieldRatio;
+
+  var material = new THREE.MeshLambertMaterial({
+    color: 'green'
+  });
+  var geometry = new THREE.BoxGeometry(width, height, 1);
+  var field = new THREE.Mesh(geometry, material);
+
+  field.receiveShadow = true;
+  field.position.z = -1;
+  scene.add(field);
+
+
+
+
+  /*
+   * setting up rotation axis 
+   */
+
+
+  var rotation_matrix = null;
+
+  var setQuaternions = function() {
+    setMatrix();
+    ball.rotation.set(Math.PI / 2, Math.PI / 4, Math.PI / 4); // Set initial rotation
+    ball.matrix.makeRotationFromEuler(ball.rotation); // Apply rotation to the object's matrix
+  }
+
+  var setMatrix = function() {
+    rotation_matrix = new THREE.Matrix4().makeRotationZ(angleRad); // Animated rotation will be in .01 radians along object's X axis
+  }
+
+  setQuaternions();
+
+
+  /*
+   *
+   * ANIMATION STEP
+   * 
+   */
+
+  var render = function(params) {
+
+    // add velocity to ball
+    ball.position.x += velocityX;
+    ball.position.z += velocityZ;
+    ball.position.y += velocityY;
+
+
+    //validate if ball is stop moving
+    if (Math.abs(velocityX) < 0.02 && Math.abs(velocityY) < 0.02) {
+      console.log("DONE!");
+      return;
+    }
+
+
+
+    // handle boucing effect
+    if (ball.position.z < 1) {
+      velocityZ *= -bounciness;
+      ball.position.z = 1
+    }
+
+
+    // Update the object's rotation & apply it
+    /*
+                    ball.matrix.multiply(rotation_matrix);   ball.rotation.setFromRotationMatrix(ball.matrix);
+    //set up the matrix 
+    setMatrix();
+*/
+
+    // Figure out the rotation based on the velocity and radius of the ball...
+    ballVelocity.set(velocityX, 0, velocityZ);
+    ballRotationAxis.set(0, 0, 1).cross(ballVelocity).normalize();
+    var velocityMag = ballVelocity.length();
+    var rotationAmount = velocityMag * (Math.PI * 2) / ballCircumference;
+    ball.rotateOnWorldAxis(ballRotationAxis, rotationAmount)
+
+
+    //reducing speed by friction
+    angleRad *= friction;
+    velocityX *= friction;
+    velocityY *= friction;
+    velocityZ *= friction;
+
+
+
+
+
+    //validate ball is withing its borders otherwise go in the mirror direction
+    if (Math.abs(ball.position.x) > borders[0]) {
+      velocityX *= -1;
+      ball.position.x = (ball.position.x < 0) ? borders[0] * -1 : borders[0];
+    }
+
+    if (Math.abs(ball.position.y) > borders[1]) {
+      velocityY *= -1;
+      ball.position.y = (ball.position.y < 0) ? borders[1] * -1 : borders[1];
+    }
+
+
+    // reduce ball height with gravity
+    velocityZ -= gravity;
+
+
+
+    //render the page
+    renderer.render(scene, camera);
+
+    requestAnimationFrame(render);
+  }
+
+  render();
+
+}
+</script>
+</body>
+
+</html>
