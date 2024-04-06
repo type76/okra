@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>test</title>
+<style type="text/css">
+#divScreen {
+	position: absolute;
+	left: 0%;
+	top: 0%;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	margin: 0px;
+	padding: 0px;
+	border: 0px;	
+	background-color: #AACCFF;
+	overflow: hidden;
+}
+</style>
+</head>
+<body>
+
+<div id="divScreen"></div>
+
+<script src="js/three.min.js"></script>
+
+
+<script type="text/javascript">
+var g_Game;
+var g_Player;
+
+window.onload = function () {
+	initGame();
+}
+
+function initGame() {
+	g_Game = new C_Game();
+
+	g_Game.container = document.getElementById("divScreen");
+	document.body.appendChild(g_Game.container);
+
+	g_Game.scene = new THREE.Scene();
+
+	g_Game.cameraPerspective = new THREE.PerspectiveCamera( 90, 1 * g_Game.aspect, 1, 10000 );
+	g_Game.cameraPerspective.position.set(0.0, 0.0, g_Game.cameraDistance);
+	
+	//textures
+	var earthTexture = new THREE.TextureLoader().load( 'https://i.ibb.co/vYh8tLY/land-ocean-ice-cloud-2048.jpg' );
+	
+	g_Game.earth = new THREE.Mesh(
+		new THREE.SphereBufferGeometry( 100, 128, 64 ),
+		new THREE.MeshBasicMaterial( { map: earthTexture } )
+	);
+	g_Game.earth.position.set(0.0, 0.0, 0.0);
+	g_Game.scene.add(g_Game.earth);
+	
+	g_Game.cubePlayer = new THREE.Mesh(
+		new THREE.BoxBufferGeometry( 10, 10, 10 ),
+		new THREE.MeshBasicMaterial( { wireframe: true } )
+	);
+	g_Game.cubePlayer.position.set(0.0, 0.0, 105.0);
+	g_Game.scene.add(g_Game.cubePlayer);
+
+	var matrix = new THREE.Matrix4();
+	matrix.extractRotation(g_Game.cubePlayer.matrix);
+	var direction = new THREE.Vector3( 0, 1, 0 );
+	direction.applyMatrix4(matrix);
+	var dir = direction.normalize();
+
+	var origin = g_Game.cubePlayer.position; //new THREE.Vector3( 0, 0, 105 );
+	var length = 10;
+	var color = 0xff0000;
+	
+  arrowHelper = new THREE.ArrowHelper( dir, new THREE.Vector3( 0, 0, 0 ), length, color );
+  g_Game.cubePlayer.add(arrowHelper);
+
+	g_Game.cubeaxis = dir;
+
+
+	g_Game.cameraPerspective.lookAt(g_Game.earth.position);
+
+	g_Game.renderer = new THREE.WebGLRenderer( { antialias: true } );
+	g_Game.renderer.setPixelRatio( window.devicePixelRatio );
+	g_Game.renderer.setSize( g_Game.SCREEN_WIDTH, g_Game.SCREEN_HEIGHT );
+	g_Game.container.appendChild( g_Game.renderer.domElement );
+	g_Game.renderer.autoClear = false;
+
+	//g_Game.stats = new Stats();
+	//g_Game.stats.showPanel(0);
+	//g_Game.container.appendChild(g_Game.stats.dom);
+
+	g_Player = new C_Player();
+	g_Player.setspeed(0.08, 0.8);
+
+	jsSetEventHandlers();
+	
+	animate();
+}
+
+function jsSetEventHandlers() {
+	window.addEventListener("resize", onWindowResize, false );
+
+	window.addEventListener("keydown", onKeyDown, false);
+	window.addEventListener("keyup", onKeyUp, false);
+};
+
+// Keyboard key down
+function onKeyDown(e) {
+	switch (e.keyCode) {
+		case 37: // Left
+		case 65: // A
+			g_Player.keyleft = true;
+			break;
+		case 38: // Up
+			g_Player.keyarrowup = true;
+			break;
+		case 87: // W
+			g_Player.keyup = true;
+			break;
+		case 39: // Right
+		case 68: // D
+			g_Player.keyright = true;
+			break;
+		case 40: // Down
+			g_Player.keyarrowdown = true;
+			break;
+		case 83: // S
+			g_Player.keydown = true;
+			break;	
+	}
+}
+
+// Keyboard key up
+function onKeyUp(e) {
+	switch (e.keyCode) {
+		case 37: // Left
+		case 65: // A
+			g_Player.keyleft = false;
+			break;
+		case 38: // Up
+			g_Player.keyarrowup = false;
+			break;
+		case 87: // W
+			g_Player.keyup = false;
+			break;
+		case 39: // Right
+		case 68: // D
+			g_Player.keyright = false;
+			break;
+		case 40: // Down
+			g_Player.keyarrowdown = false;
+			break;
+		case 83: // S
+			g_Player.keydown = false;
+			break;	
+	}
+}
+
+function onWindowResize() {
+	g_Game.SCREEN_WIDTH = window.innerWidth;
+	g_Game.SCREEN_HEIGHT = window.innerHeight;
+	g_Game.aspect = g_Game.SCREEN_WIDTH / g_Game.SCREEN_HEIGHT;
+	g_Game.renderer.setSize(g_Game.SCREEN_WIDTH, g_Game.SCREEN_HEIGHT);
+	g_Game.cameraPerspective.aspect = 1 * g_Game.aspect;
+	g_Game.cameraPerspective.updateProjectionMatrix();
+}
+
+function animate() {
+	requestAnimationFrame(animate);
+	//g_Game.stats.begin();
+
+	render();
+
+	//g_Game.stats.end();
+}
+
+function render() {
+	g_Player.update();
+	g_Game.renderer.render(g_Game.scene, g_Game.cameraPerspective);
+}
+
+//Classes
+var C_Player = function() {
+	this.ANGULAR_SPEED_MOVEMENT = 0.99;
+	this.ANGULAR_SPEED_ROTATION = 0.099;
+
+	this.keyleft = false;
+	this.keyright = false;
+	this.keyup = false;
+	this.keydown = false;
+	this.keyarrowup = false;
+	this.keyarrowdown = false;
+	this.QuatKeyU;
+	this.QuatKeyD;
+	this.QuatKeyL;
+	this.QuatKeyR;
+	
+	this.setspeed = function(speedM, speedR) {
+		this.ANGULAR_SPEED_MOVEMENT = speedM;
+		this.ANGULAR_SPEED_ROTATION = speedR;
+		this.QuatKeyU = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -(this.ANGULAR_SPEED_MOVEMENT*Math.PI) / 180);
+		this.QuatKeyD = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0),  (this.ANGULAR_SPEED_MOVEMENT*Math.PI) / 180);
+		this.QuatKeyL = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1),  (this.ANGULAR_SPEED_ROTATION*Math.PI) / 180);
+		this.QuatKeyR = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), -(this.ANGULAR_SPEED_ROTATION*Math.PI) / 180);
+	}
+
+	var qx;
+	var qy;
+	var qz;
+	var qw;
+	var rotWorldMatrix;
+
+	this.update = function(seconds) {
+		var rlud = false;
+
+		if (this.keyup) {
+			g_Game.cubePlayer.quaternion.multiply(this.QuatKeyU);
+			g_Game.cameraPerspective.quaternion.multiply(this.QuatKeyU);
+			rlud = true;
+		} else if (this.keydown) {
+			g_Game.cubePlayer.quaternion.multiply(this.QuatKeyD);
+			g_Game.cameraPerspective.quaternion.multiply(this.QuatKeyD);
+			rlud = true;
+		};
+		if (this.keyleft) {
+			g_Game.cubePlayer.quaternion.multiply(this.QuatKeyL);
+			g_Game.cameraPerspective.quaternion.multiply(this.QuatKeyL);
+			rlud = true;
+		} else if (this.keyright) {
+			g_Game.cubePlayer.quaternion.multiply(this.QuatKeyR);
+			g_Game.cameraPerspective.quaternion.multiply(this.QuatKeyR);
+			rlud = true;
+		};
+
+		if (rlud == true) {
+			qx = g_Game.cubePlayer.quaternion.x;
+			qy = g_Game.cubePlayer.quaternion.y;
+			qz = g_Game.cubePlayer.quaternion.z;
+			qw = g_Game.cubePlayer.quaternion.w;
+			g_Game.cubePlayer.position.x = 2 * (qy * qw + qz * qx) * 105;
+			g_Game.cubePlayer.position.y = 2 * (qz * qy - qw * qx) * 105;
+			g_Game.cubePlayer.position.z = ((qz * qz + qw * qw) - (qx * qx + qy * qy)) * 105;
+
+			qx = g_Game.cameraPerspective.quaternion.x;
+			qy = g_Game.cameraPerspective.quaternion.y;
+			qz = g_Game.cameraPerspective.quaternion.z;
+			qw = g_Game.cameraPerspective.quaternion.w;
+			g_Game.cameraPerspective.position.x = 2 * (qy * qw + qz * qx) * g_Game.cameraDistance;
+			g_Game.cameraPerspective.position.y = 2 * (qz * qy - qw * qx) * g_Game.cameraDistance;
+			g_Game.cameraPerspective.position.z = ((qz * qz + qw * qw) - (qx * qx + qy * qy)) * g_Game.cameraDistance;
+    }
+		
+		if (this.keyarrowup) {
+			var q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -(this.ANGULAR_SPEED_MOVEMENT*Math.PI*10) / 180);
+			arrowHelper.quaternion.multiply(q);
+		}
+		if (this.keyarrowdown) {
+			var q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), (this.ANGULAR_SPEED_MOVEMENT*Math.PI*10) / 180);
+			arrowHelper.quaternion.multiply(q);
+		}
+	}
+}
+
+function C_Game() {
+	this.SCREEN_WIDTH = window.innerWidth;
+	this.SCREEN_HEIGHT = window.innerHeight;
+	this.aspect = this.SCREEN_WIDTH / this.SCREEN_HEIGHT;
+	this.container;
+	this.stats;
+	this.scene;
+	this.renderer;
+	this.earth;
+	this.cubePlayer;
+	this.controls;
+	this.cameraPerspective;
+	this.cameraDistance = 125;
+	this.cubeaxis = new THREE.Vector3(1, 0, 0);
+}
+</script>
+</body>
+</html>
