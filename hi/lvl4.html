@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>gamejam</title>
+<style>
+@font-face {
+	font-family: 'prstartk';
+	src: url('fonts/prstartk-webfont.woff2') format('woff2'),
+	url('fonts/prstartk-webfont.woff') format('woff');
+	font-weight: normal;
+	font-style: normal;
+}
+body {
+	background: #333;
+	color: #eee;
+	overflow: hidden;
+	margin:0;
+	user-select:none;
+	font-family: 'prstartk';
+}
+canvas {  
+	image-rendering: auto;
+	image-rendering: crisp-edges;
+	image-rendering: pixelated;
+}
+#colcanvas {position: absolute;} 
+#hitcanvas {position: absolute; top: 0; right: 0;
+	z-index: 99;}
+/*#hitcanvas, #colcanvas  {display: none;}*/
+#hud {position: absolute; top: 0; left: 0; z-index: 99;
+	font-family: 'prstartk'; color: #fff; padding: 8px; 
+	background-color: rgba(0,0,0,0.5);}
+button {font-family: 'prstartk';
+background: transparent; border: none;
+outline: none; color: #fff; padding: 12px;
+cursor: pointer;}
+button:active {color:#ffff00;}
+button.on {background:#ff0000;}
+</style>
+
+</head>
+<body>
+
+<div id="hud">
+	<button id="btn" onclick="clicksnd()">x</button>
+</div>
+
+<!-- <canvas id="colcanvas" width="512" height="512" ></canvas> -->
+<canvas id="hitcanvas" width="512" height="512" ></canvas>
+
+<div class="joy" id="joy"></div>
+
+
+<script src="js/three.min.js"></script>
+<script src="js/nipple.min.js"></script>
+<!-- <script src="circle.js"></script> -->
+
+<script>
+	// keyboard
+	keyboard = {
+		_pressed: {},
+
+		LEFT: 37,
+		UP: 38,
+		RIGHT: 39,
+		DOWN: 40,
+
+		isDown: function(keyCode) {
+			return this._pressed[keyCode];
+		},
+
+		onKeydown: function(event) {
+			this._pressed[event.keyCode] = true;
+		},
+
+		onKeyup: function(event) {
+			delete this._pressed[event.keyCode];
+		}
+	};
+
+
+	// keyboard events
+	window.addEventListener('keyup', function(event) { keyboard.onKeyup(event); }, false);
+	window.addEventListener('keydown', function(event) { keyboard.onKeydown(event);
+	}, false);
+
+	// // button
+	// var btn = document.getElementById('btn');
+	// btn.addEventListener('onclick', function(event) { 
+	// 	btn.classList.toggle('on');
+	// }, false);
+
+
+function clicksnd() {
+	document.getElementById('btn').classList.toggle('on');	
+	if (document.getElementById('btn').classList == 'on') {
+		bgsphere.visible = false;
+	} else {
+		bgsphere.visible = true;
+	}
+}
+
+	// globals
+	const HERO = {
+		allowmove:true,
+		moving:false,
+		maxSpeed:0.5,
+		posx:0,
+		posz:0,
+		x:0,
+		y:0,
+		vx:0,
+		vy:0,
+	};
+
+	// speed limiter
+	function speedLimit(vx, vy, speedLimit) {
+		const hyp = Math.hypot(vx, vy);
+		if (hyp === 0) return { vx: 0, vy: 0 };
+		const maxSpeed = Math.min(hyp, speedLimit);
+		const ratio = maxSpeed / hyp;
+		return {
+			vx: ratio * vx,
+			vy: ratio * vy
+		};
+	}
+
+
+	// hit canvas
+	var hitcanvas = document.getElementById("hitcanvas"),
+	htx = hitcanvas.getContext("2d", { willReadFrequently: true });
+	hitcanvas.id = "hitcanvas";
+	hitcanvas.width = 512;
+	hitcanvas.height = 256;
+	// hit circle
+	htx.fillStyle = '#fff';
+	htx.fillRect(0, 0, hitcanvas.width, hitcanvas.width);
+	htx.fillStyle = 'black';
+	htx.beginPath();
+	aliasedCircle(htx, 255, 128, 180);
+	htx.fill();
+	document.body.appendChild(hitcanvas);
+
+
+
+	// create pixellated circle
+	function aliasedCircle(ctx, xc, yc, r) {  
+		var x = r, y = 0, cd = 0;
+
+		// middle line
+		ctx.rect(xc - x, yc, r<<1, 1);
+
+		while (x > y) {
+			cd -= (--x) - (++y);
+			if (cd < 0) cd += x++;
+				ctx.rect(xc - y, yc - x, y<<1, 1);    // upper 1/4
+				ctx.rect(xc - x, yc - y, x<<1, 1);    // upper 2/4
+				ctx.rect(xc - x, yc + y, x<<1, 1);    // lower 3/4
+				ctx.rect(xc - y, yc + x, y<<1, 1);    // lower 4/4
+			}
+	}
+
+
+	// window resize
+	window.addEventListener('resize', function(){
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+		renderer.setSize( window.innerWidth, window.innerHeight );
+		renderer.render(scene, camera);
+	}, false)
+
+
+
+	// initialise 3D scene
+	function init3D() {
+		window.scene = new THREE.Scene();
+		window.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 2000 );
+
+		window.renderer = new THREE.WebGLRenderer({antialias:true, transparent:true, alpha:true});
+		renderer.setSize( window.innerWidth, window.innerHeight );
+		renderer.domElement.id = 'threecnv';
+		document.body.appendChild( renderer.domElement );
+
+		camera.position.z = 30;
+		camera.position.y = -20;
+		camera.lookAt(0,0,0)
+
+		trees = [];
+
+		scenegroup = new THREE.Group();
+		scene.add( scenegroup );
+
+		// lights
+		globalLight = new THREE.AmbientLight(0x333333, 1);
+		shadowLight = new THREE.DirectionalLight(0xffffff, 1);
+		shadowLight.position.y = 100;
+		scenegroup.add(globalLight);
+		scenegroup.add(shadowLight);
+	}
+
+
+
+
+	// ground circle
+	function createground() {
+		var plgeometry = new THREE.SphereGeometry( 999.8, 600, 300 );
+		var plmaterial = new THREE.MeshBasicMaterial({  
+			map : new THREE.CanvasTexture(hitcanvas)
+			 });
+		bgplane = new THREE.Mesh( plgeometry, plmaterial );
+		bgplane.material.map.magFilter = THREE.NearestFilter;
+		bgplane.material.map.minFilter = THREE.NearestFilter;
+		bgplane.material.map.wrapS = bgplane.material.map.wrapT = THREE.RepeatWrapping;
+
+		bgplane.position.z = -1200;
+		// bgplane.position.z = -1000;
+		scene.add( bgplane );
+		
+		// colour ground plane
+		// var texgeometry = new THREE.PlaneGeometry( 1024, 512, 512, 512 );
+		const texgeometry = new THREE.SphereGeometry( 1000, 600, 300 );
+
+		var texmaterial = new THREE.MeshStandardMaterial({  
+			// color:0xff0000,
+			// map : new THREE.CanvasTexture(colcanvas),
+			// displacementMap:new THREE.TextureLoader().load( 'img/moon.png' ),
+			// displacementScale: 0.8,
+			map:new THREE.TextureLoader().load( 'img/moon.png' )
+			// map : new THREE.CanvasTexture(hitcanvas)
+			 });
+		bgsphere = new THREE.Mesh( texgeometry, texmaterial );
+		bgsphere.material.map.magFilter = THREE.NearestFilter;
+		bgsphere.material.map.minFilter = THREE.NearestFilter;
+		bgsphere.material.map.wrapS = bgsphere.material.map.wrapT = THREE.RepeatWrapping;
+
+		// bgsphere.position.y = -1000;
+				// bgplane.rotation.set(0,Math.PI,0);
+
+		bgsphere.visible = true;
+		bgplane.add( bgsphere );
+	}
+
+
+	// create player/cursor/target
+	function createplayer() {
+		player = new THREE.Group();
+		scene.add( player );
+
+		// 3D cursor
+		cursor = new THREE.Group();
+		scene.add( cursor );
+
+		// 3D player object
+		var geometry = new THREE.BoxGeometry( 5, 5, 5 );
+		var material = new THREE.MeshBasicMaterial( { color: 0xffffff, 
+			wireframe:true
+		} );
+		cube = new THREE.Mesh( geometry, material );
+		// cube.position.x = cursor.position.x;
+		// cube.position.z = 1002.5;
+		// cube.position.y = 1003;
+		scene.add( cube );
+
+		// triangle [direction arrow]
+		var trigeometry = new THREE.CircleGeometry( 1, 30 );
+		var tmaterial = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+		tri = new THREE.Mesh( trigeometry, tmaterial );
+		tri.rotation.set(-Math.PI/2,0,-Math.PI/6)
+		// tri.position.z = -5;
+		tri.position.y = 1;
+		player.add( tri );
+
+		// home target (rotate helper)
+		// targetobj = new THREE.Mesh( 
+		// 	new THREE.BoxGeometry( 2, 2, 2 ),
+		//   new THREE.MeshBasicMaterial( {color: 0xffffff} )
+		// );
+
+		targetobj = new THREE.Group();
+		// targetobj.position.y = 1;
+		cursor.add( targetobj );
+	}
+
+
+
+
+	// map check
+	function updateloop() {
+
+		// player movement lerp
+		player.position.x += (cursor.position.x - player.position.x)*0.3;
+		player.position.z += (cursor.position.z - player.position.z)*0.3;
+		bgsphere.material.map.offset.x = (player.position.x)/100; 
+		bgsphere.material.map.offset.y = -((player.position.z)/100); 
+		bgsphere.material.map.needsUpdate = true;
+		bgsphere.material.map.needsUpdate = true;
+
+
+		// keys
+		if (HERO.allowmove) {
+			// keys
+			if (keyboard.isDown(keyboard.LEFT) ){
+				cursor.position.x -= 0.5;
+				// player.lookAt(targetobj.position.x,0,targetobj.position.z);
+			}
+			if (keyboard.isDown(keyboard.RIGHT) ){
+				cursor.position.x += 0.5;
+				// player.lookAt(targetobj.position.x,0,targetobj.position.z);
+			}
+			if (keyboard.isDown(keyboard.UP) ){
+				cursor.position.z -= 0.5;
+				// player.lookAt(targetobj.position.x,0,targetobj.position.z);
+			}
+			if (keyboard.isDown(keyboard.DOWN) ){
+				cursor.position.z += 0.5;
+				// player.lookAt(targetobj.position.x,0,targetobj.position.z);
+			}
+		}// keys
+
+		// check colour under player
+		xu = (hitcanvas.width/2)+Math.floor( cursor.position.x);
+		xv = (hitcanvas.width/2)+Math.floor( cursor.position.z)-128;
+		xdata = htx.getImageData(xu, xv, 1, 1); // white/tree name
+		// cdata = ctx.getImageData(xu, xv, 1, 1); // grey/tree number
+
+
+		// move player
+		if (xdata.data[0]>254) {
+			cursor.position.x = HERO.posx;
+			cursor.position.z = HERO.posz;
+			HERO.allowmove = false;
+		} else {
+			HERO.posx = cursor.position.x; 
+			HERO.posz = cursor.position.z;
+			HERO.allowmove = true;
+
+			// ground (sphere) rotation
+			// bgsphere.rotation.x = cursor.position.z/100;
+
+			// rotate player
+			// cube.rotation.x = (cursor.position.x - cursor.position.z)*0.2;
+			// cube.rotation.x += (((HERO.speed/3)+(Math.cos(num/10)/10)) - cube.rotation.x)*0.2;
+
+        // const u = Math.random();
+        // const v = Math.random();
+        // const theta = 2 * Math.PI * u;
+        // const phi = Math.acos(2 * v - 1);
+
+
+			// draw cursor
+			htx.fillStyle = "blue";
+			htx.fillRect(xu, xv, 1, 1);   
+			bgplane.material.map.needsUpdate = true;
+			bgsphere.material.map.needsUpdate = true;
+
+		}// end move player
+
+
+		// stop at white
+		if (xdata.data[0] > 254) {return}
+
+		// move 3D scene with player
+		// scene.position.x = -player.position.x;
+		// scene.position.z = -player.position.z;
+		// bgsphere.lookAt(tri)
+		// bgplane.rotation.z = player.position.x/1000;
+		// bgplane.rotation.x = -player.position.z/1000;
+
+		// camera.position.z = player.position.z + 30;
+		// camera.position.y = player.position.y + 10;
+		// camera.position.x = player.position.x;
+		// camera.lookAt(player.position)
+
+
+		// moving allowed
+		if (HERO.moving) {
+			cursor.position.x += HERO.vx;
+			cursor.position.z += HERO.vy;
+			
+			//	
+
+
+		} // if moving
+
+		// read greys
+		// if (cdata.data[0] === 0) {
+		// 	hud.innerHTML = '';
+		// }
+
+
+		// // // check cursor colour
+		// if (cdata.data[0] != 0) { 
+		// 	hud.innerHTML = circles[cdata.data[0]].name.common;
+		// } 
+
+		// // move 3D tree on hover
+		// if (cdata.data[0] > 0 ) {
+		// 	trees[cdata.data[0]].position.y = 5;
+		// } else {
+		// 	for(var i = 0; i < trees.length; i++) {trees[i].position.y = 0;}
+		// }
+
+	} // end mapcheck
+
+
+
+	// animation loop
+	function animate() {
+		requestAnimationFrame( animate );
+		renderer.render( scene, camera );
+		updateloop();
+	};
+
+
+	// START <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	init3D();
+	createground();
+	createplayer();
+	animate();
+
+
+	// nipple.js
+	const nipple = nipplejs.create({
+		mode: 'dynamic',
+		dataOnly:true,
+		zone: document.getElementById('threecnv'),
+	});
+
+	// start
+	nipple.on("move", (e, data) => {
+		const vx = data.force * Math.cos(data.angle.radian);
+		const vy = -data.force * Math.sin(data.angle.radian);
+		const v = speedLimit(vx, vy, HERO.maxSpeed);
+		HERO.vx = v.vx;
+		HERO.vy = v.vy;
+		HERO.moving = true;
+		// player.lookAt(targetobj.position.x,0,targetobj.position.z);
+		// HERO.rotation = Math.atan2(HERO.vy, HERO.vx) + Math.PI * 0.5;
+		// player.rotation.y = -HERO.rotation;
+	});
+
+	// end
+	nipple.on("end", (e, data) => {
+		HERO.moving = false;
+	});
+</script>
+</body>
+</html>
