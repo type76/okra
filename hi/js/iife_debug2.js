@@ -9,11 +9,11 @@ function testingTextureCanvas(w=512,h=256) {
     const cellH = h / ySegs;
 
     let fontSize = 38;
-    if(fontSize > cellH) fontSize = Math.floor(cellH * 0.8);
+    if(fontSize > cellH) fontSize = Math.floor(cellH * 0.4);
     ctx.font = `${fontSize}px sans-serif`;
     for (let x = 0; x < xSegs; x++) {
         for (let y = 0; y < ySegs; y++) {
-            const label = `x:${x}, y:${y}`;
+            const label = `${x}:${y}`;
             const mez = ctx.measureText(label);
             ctx.fillStyle = (x + y) % 2 ? 'black' : 'white';
             ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
