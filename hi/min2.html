@@ -1,0 +1,267 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>globe</title>
+    <style>
+    @font-face {
+       font-family: 'uni0553-webfont';
+       src: url('font/uni0553-webfont.eot');
+       src: url('font/uni0553-webfont.eot?#iefix') format('embedded-opentype'), url('font/uni0553-webfont.woff') format('woff'), url('font/uni0553-webfont.ttf') format('truetype');
+       font-weight: normal;
+       font-style: normal;
+   }
+   html, body {background:#333 ;  margin: 0; padding: 0;}
+   body {
+        font-family: 'uni0553-webfont';
+       font-size: 15px; 
+       cursor: crosshair;
+       height:100%;
+       overflow: hidden;
+       margin: 0;
+       line-height: 1em;
+      background:#000;
+     }
+#cursorcnv {position: absolute; background: red; top: 30px;}
+#stats {
+position: absolute; top: 0;
+z-index: 99;
+font-family: 'uni0553-webfont';
+font-size: 32px;
+color: #fff;
+margin-top: 20px;
+}
+
+</style>
+</head>
+<body>
+    <div id="stats"></div>
+    <script src="js/three.min.js"></script>
+    <script src="js/OrbitControls.js"></script>
+
+    <script>
+  // keyboard
+  keyboard = {
+    _pressed: {},
+
+    LEFT: 37,
+    UP: 38,
+    RIGHT: 39,
+    DOWN: 40,
+
+    isDown: function(keyCode) {
+      return this._pressed[keyCode];
+    },
+
+    onKeydown: function(event) {
+      this._pressed[event.keyCode] = true;
+    },
+
+    onKeyup: function(event) {
+      delete this._pressed[event.keyCode];
+    }
+  };
+
+
+  // keyboard events
+  window.addEventListener('keyup', function(event) { keyboard.onKeyup(event); }, false);
+  window.addEventListener('keydown', function(event) { keyboard.onKeydown(event);
+  }, false);
+
+// earth col
+var earthcnv = document.createElement('canvas');
+ctx = earthcnv.getContext("2d", { willReadFrequently: true });
+earthcnv.id = "earthcnv";
+ earthcnv.width = 128;
+ earthcnv.height = 64;
+
+// cursor canvas
+var cursorcnv = document.createElement('canvas');
+crstx = cursorcnv.getContext("2d", { willReadFrequently: true });
+cursorcnv.id = "cursorcnv";
+cursorcnv.width = 128;
+cursorcnv.height = 64;
+// document.body.appendChild(cursorcnv);
+
+// col img
+var earthimg = new Image();
+earthimg.src = 'img/lookup_128.png';
+earthimg.onload = function () {
+  ctx.drawImage(earthimg, 0, 0, 128, 64);
+};
+
+// lookup img
+var earthcol128 = new Image();
+earthcol128.src = 'img/col_128.png';
+earthcol128.onload = function () {
+  crstx.drawImage(earthcol128, 0, 0, 128, 64);
+};
+
+
+//
+var fn = 'simplex'
+var xspeed = 0;
+var olspeed = 0;
+var image = ctx.createImageData(earthcnv.width, earthcnv.height);
+var data = image.data;
+var txtlength = 0;
+var typespeed = 70;
+
+
+ //GET JSON DATA
+ var locations = [];
+ var request = new XMLHttpRequest();
+ request.open('GET', "js/locations.json");
+ request.responseType = 'json';
+ request.send(); 
+ request.onload = function() {
+   locations = request.response;
+} 
+ 
+ // init position
+ var xu = 0; //cursor 2D.x pos
+ var xv = 0; //cursor 2D.y pos
+ var radius = 15;
+ var last = 0;
+ var i = 0;
+ 
+
+ // threejs
+ var scene = new THREE.Scene();
+ var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 50);
+ camera.position.z = 30;
+ var renderer = new THREE.WebGLRenderer( { alpha: true, antialias: true } );
+ renderer.setClearColor( 0xff0000, 0 );
+ renderer.setSize(window.innerWidth, window.innerHeight);
+ document.body.appendChild(renderer.domElement);
+
+// light
+var light = new THREE.AmbientLight( 0xeeeeee );
+scene.add( light );
+
+ // controls
+ var orbit = new THREE.OrbitControls(camera, renderer.domElement);
+orbit.minDistance = 20;
+orbit.enablePan = false;
+orbit.keys = { LEFT: 0, RIGHT: 0, UP: 0, BOTTOM: 0 }
+
+
+ //globe
+ earthgroup = new THREE.Group();
+ earthgroup.visible = false; 
+ scene.add( earthgroup );
+ 
+ 
+ //on click pivot
+ pvt = new THREE.Object3D();
+ pvt.position.set( 0, 0, 0 );
+ pvt.lookAt( 0, 300, 0 )
+ scene.add( pvt );
+ 
+ //cursor pivot
+ cursorpvt = new THREE.Object3D();
+ cursorpvt.position.set( 0, 0, 0 );
+ cursorpvt.lookAt( 0, 300, 0 )
+ scene.add( cursorpvt );
+ 
+ // raycaster
+ var raycaster = new THREE.Raycaster();
+ var mouse = new THREE.Vector2();
+ var mesh = new THREE.Object3D();
+ 
+ 
+ // earth 2D
+ var d = {
+   radius: 15,
+   widthSegments: 30,
+   heightSegments: 30
+};
+var geometry = new THREE.SphereGeometry(d.radius, d.widthSegments, d.heightSegments);
+var material = new THREE.MeshBasicMaterial({    
+  map : new THREE.CanvasTexture(cursorcnv),
+});
+var mesh = new THREE.Mesh(geometry, material);
+mesh.name = "earthgroup"   
+scene.add(mesh);
+
+
+
+// bump globe
+coltexture = new THREE.Texture(cursorcnv);
+coltexture.magFilter = THREE.NearestFilter;
+coltexture.minFilter = THREE.LinearMipMapLinearFilter;
+btexture = new THREE.TextureLoader().load( 'img/bump_128.png' );  
+btexture.magFilter = THREE.NearestFilter;
+btexture.minFilter = THREE.NearestFilter;
+ var landmaterial = new THREE.MeshStandardMaterial( {
+  map : coltexture,
+  displacementMap: btexture,
+  displacementScale: 1.2,
+ } );
+var bumpglobe = new THREE.Mesh(geometry, landmaterial);
+bumpglobe.name = "bumpglobe"   
+scene.add(bumpglobe);
+
+ 
+ // resize
+ window.addEventListener('resize', function() {
+   camera.aspect = window.innerWidth / window.innerHeight;
+   camera.updateProjectionMatrix();
+   renderer.setSize(window.innerWidth, window.innerHeight);
+}, false);
+ 
+ 
+ 
+ 
+  //RENDER
+ var render = function() {
+    coltexture.needsUpdate = true;
+    requestAnimationFrame(render);
+    renderer.render(scene, camera);
+
+    // keys
+    if (keyboard.isDown(keyboard.LEFT) ){
+    xu -= 1;
+    }
+    if (keyboard.isDown(keyboard.RIGHT) ){
+    xu += 1;
+    }
+    if (keyboard.isDown(keyboard.UP) ){
+    xv -= 1;
+    }
+    if (keyboard.isDown(keyboard.DOWN) ){
+    xv += 1;
+    }
+
+    // wrap around
+    if (xu>128) {xu=0}
+    if (xv>128) {xv=0}
+    if (xu<0) {xu=128}
+    if (xv<0) {xv=128}
+
+
+    pvt.lookAt( 0,0,0 );
+    var index = (Math.floor(xv) * 128 + Math.floor(xu)) * 4;
+    texData = ctx.getImageData(0, 0, 128, 64);
+    crstx.drawImage(earthcol128, 0, 0, 128, 64);
+    crstx.fillStyle = "red";            
+    crstx.fillRect(xu, xv, 1, 1);  
+
+    // find index to country
+    var r = texData.data[index];
+    cursorpvt.rotation.set(pvt.rotation.x, pvt.rotation.y, pvt.rotation.z);
+    document.querySelector("#stats").innerHTML = locations[r].name;          
+
+
+ };  //END RENDER
+
+
+
+
+ // START <<<<<<<<<<<<<<<<<<<<<<<<<
+ render();
+ 
+</script>
+</body>
+</html>
