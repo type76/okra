@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>testing</title>
+    <style>
+        body {
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+            background: #ccc;
+        }
+
+        canvas, #cnv {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #cnv {
+            z-index: 99;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="joy" id="joy"></div>
+
+
+
+    <script src="js/nipple.min.js"></script>
+    <!-- <script src="js/iife_noise.js"></script> -->
+    <script src="js/iife_controls.js"></script>
+    <script src="js/iife_debug2.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.122.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.122.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="js/VolumetricFire.js"></script>
+
+    <script>
+
+          // keyboard
+  keyboard = {
+    _pressed: {},
+
+    LEFT: 37,
+    UP: 38,
+    RIGHT: 39,
+    DOWN: 40,
+
+    isDown: function(keyCode) {
+      return this._pressed[keyCode];
+    },
+
+    onKeydown: function(event) {
+      this._pressed[event.keyCode] = true;
+    },
+
+    onKeyup: function(event) {
+      delete this._pressed[event.keyCode];
+    }
+  };
+
+
+  // keyboard events
+  window.addEventListener('keyup', function(event) { keyboard.onKeyup(event); }, false);
+  window.addEventListener('keydown', function(event) { keyboard.onKeydown(event);
+  }, false);
+
+
+        const sceneobjects = [];
+
+        const HERO = {
+            x: 0,
+            y: 0,
+            z: 0,
+            rx: 0,
+            ry: 2.4,
+            rz: 0,
+            vx:0,
+            vy:0,
+            v:0,
+            height: 13,
+            topRadius: 2,
+            bottomRadius: 3,
+            radialSegments: 12,
+            heightSegments: 12,
+            maxSpeed: 12
+        };
+        const TORCH = {
+            x: 0,
+            y: HERO.height - 3,
+            z: HERO.bottomRadius + 1,
+            rx: 0,
+            ry: 0,
+            rz: 0,
+            height: 3,
+            topRadius: 0.5,
+            bottomRadius: 0.1,
+            radialSegments: 12,
+            heightSegments: 12,
+        };
+        const PLANET = {
+            mesh: null,
+            radius: 300,
+
+            octDetail: 120, // level of detail at a great distance
+
+            position: { x: 0, y: 0, z: 0 },
+            velocity: { x: 0, y: 0, z: 0 },
+            acceleration: { x: 0, y: 0, z: 0 },
+            mass: 1,
+            color: 0x00ff00,
+        };
+        PLANET.geometry = new THREE.SphereGeometry(PLANET.radius, PLANET.octDetail, PLANET.octDetail);
+        const texScale = 4;
+        PLANET.material = new THREE.MeshStandardMaterial({
+            // color: PLANET.color,
+            map: canvasTexture(testingTextureCanvas(2048*texScale, 1024*texScale)),
+            // map: generateMap(),
+            // normalMap: generateNormalMap(),
+            // displacementMap: generateDisplacementMap(),
+            // roughnessMap: generateRoughnessMap(),
+            // metalnessMap: generateMetalnessMap(),
+            // aoMap: generateAOMap(),
+            // emissiveMap: generateEmissiveMap(),
+            // bumpMap: generateBumpMap(),
+            // alphaMap: generateAlphaMap(),
+            // envMap: generateEnvMap(),
+        });
+        PLANET.material.map.magFilter = THREE.NearestFilter;
+        PLANET.material.map.minFilter = THREE.NearestFilter;
+        PLANET.material.map.wrapS = PLANET.material.map.wrapT = THREE.RepeatWrapping;
+
+        document.body.appendChild(testingTextureCanvas());
+
+        const SCENE = new THREE.Scene();
+        const CAMERA = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        const RENDERER = new THREE.WebGLRenderer({alpha: true, antialias: true});
+        RENDERER.shadowMap.enabled = true; // Enable shadow mapping
+        RENDERER.setSize(window.innerWidth, window.innerHeight);
+        RENDERER.domElement.id = 'threecnv';
+        document.body.appendChild(RENDERER.domElement);
+
+        // ORBIT CONTROLS
+        // const CONTROLS = new THREE.OrbitControls(CAMERA, RENDERER.domElement);
+        // CONTROLS.enableDamping = true;
+        // CONTROLS.dampingFactor = 0.25;
+        // CONTROLS.enableZoom = true;
+        // CONTROLS.enablePan = false;
+
+        // INIT HERO
+        HERO.mesh = heroMesh();
+        HERO.mesh.position.x = HERO.x;
+        HERO.mesh.position.y = HERO.y;
+        HERO.mesh.position.z = HERO.z;
+        HERO.mesh.rotation.x = HERO.rx;
+        HERO.mesh.rotation.y = HERO.ry;
+        HERO.mesh.rotation.z = HERO.rz;
+        SCENE.add(HERO.mesh);
+
+        // INIT PLANET
+        PLANET.mesh = new THREE.Mesh(PLANET.geometry, PLANET.material);
+        PLANET.mesh.position.x = 0;
+        PLANET.mesh.position.y = -PLANET.radius;
+        PLANET.mesh.position.z = 0;
+        PLANET.mesh.rotation.x = -Math.PI / 2;
+        SCENE.add(PLANET.mesh);
+        // PLANET.mesh.castShadow = true;
+        PLANET.mesh.receiveShadow = true;
+
+
+        const housegeometry = new THREE.BoxBufferGeometry( 50, 50, 50 );
+        const bmaterial = new THREE.MeshBasicMaterial( {color: 0xff0000} );
+        const housebox = new THREE.Mesh( housegeometry, bmaterial );
+        housebox.position.y = 25+PLANET.radius;
+        housebox.lookAt(0,0,0)
+        PLANET.mesh.add( housebox );
+        sceneobjects.push(housebox)
+
+        ZOOM_FACTOR = 7;
+
+        CAMERA.position.x = 0;
+        CAMERA.position.y = 3 * ZOOM_FACTOR;
+        CAMERA.position.z = 50 * ZOOM_FACTOR;
+
+        CAMERA.lookAt(HERO.mesh.position);
+
+        // fire
+        VolumetricFire.texturePath = 'img/';
+        var fireWidth  = 4;
+        var fireHeight = 4;
+        var fireDepth  = 4;
+        var sliceSpacing = 0.8;
+
+        var fire = new VolumetricFire(
+        fireWidth,
+        fireHeight,
+        fireDepth,
+        sliceSpacing,
+        CAMERA
+        );
+        HERO.mesh.add( fire.mesh );
+        fire.mesh.position.set( 0, 8, 0 );
+
+        /* HELPERS */
+        // const axesHelper = new THREE.AxesHelper(15);
+        // SCENE.add(axesHelper);
+        // const pointLightHelper = new THREE.PointLightHelper( HERO.torchLight, 1 );
+        // SCENE.add( pointLightHelper );
+        // const xzHelper = new THREE.GridHelper( 100, 100, "#000", "#222222");
+        // SCENE.add( xzHelper );
+        // const xyHelper = new THREE.GridHelper( 100, 100, "#000", "#222222");
+        // xyHelper.rotation.x = Math.PI / 2;
+        // SCENE.add( xyHelper );
+        globalLight = new THREE.AmbientLight(0x333333, 1);
+        SCENE.add(globalLight);
+
+
+        function heroMesh() {
+            const group = new THREE.Group();
+
+            // group.add(capeMesh());
+            group.add(bodyMesh());
+
+            group.add(torchMesh());
+            group.add(torchLight());
+
+            return group;
+
+            function torchMesh() {
+                
+        
+                const geometry = new THREE.CylinderGeometry(
+                    TORCH.topRadius, 
+                    TORCH.bottomRadius,
+                    TORCH.height,
+                    TORCH.radialSegments,
+                    TORCH.heightSegments
+                );
+                const material = new THREE.MeshStandardMaterial({ color: 0xffcc00 });
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set(TORCH.x, TORCH.y, TORCH.z);
+                // mesh.castShadow = true;
+                // mesh.receiveShadow = true;
+                return mesh;
+            }
+
+            function torchLight() {
+                const light = new THREE.PointLight(0xffffff, 10, 100); // color, intensity, distance
+                light.position.set(TORCH.x, TORCH.y+2, TORCH.z); // Adjust the position as needed
+                light.castShadow = true;
+                HERO.torchLight = light;
+                return light;
+            }
+
+            function bodyMesh() {
+                const geometry = new THREE.CylinderGeometry(
+                    HERO.topRadius, 
+                    HERO.bottomRadius,
+                    HERO.height,
+                    HERO.radialSegments,
+                    HERO.heightSegments
+                );
+                // const geometry = new THREE.CylinderGeometry(HERO.radius, HERO.radius, HERO.height, 12);
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: 0x00ff00,
+                    wireframe:true
+                 });
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                return mesh;
+            }
+            function capeMesh() {    
+                const points = [];
+                const h = HERO.height;
+                const d = HERO.radius * 2;
+                for (let i = 1; i < 10; i++) {
+                    const _x = Math.sin(i * 0.2) * d;
+                    const _y = -(i - h) * 2;
+                    points.push(new THREE.Vector2(_x, _y));
+                }
+                const geometry = new THREE.LatheGeometry(points, 12, 0, Math.PI * 0.9);
+                const material = new THREE.MeshStandardMaterial({ 
+                    map: generateMap(),
+                    bumpMap: generateBumpMap(),
+                });
+                material.side = THREE.DoubleSide;
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                return mesh;
+            }
+        }
+
+        function generateBumpMap(w = 512, h = 256) {
+            return generateMap(w, h);
+        }
+        function generateNormalMap(w = 512, h = 256) {
+            return generateMap(w, h);
+        }
+        function generateDisplacementMap(w = 512, h = 256) {
+            return generateMap(w, h);
+        }
+        function generateRoughnessMap(w = 512, h = 256) {
+            return generateMap(w, h);
+        }
+        function generateMetalnessMap(w = 512, h = 256) {
+            return generateMap(w, h);
+        }
+        function generateAOMap(w = 512, h = 256) {
+            return generateMap(w, h);
+        }
+        function generateEmissiveMap(w = 512, h = 256) {
+            return generateMap(w, h);
+        }
+        function generateBumpMap(w = 512, h = 256) {
+            return generateMap(w, h);
+        }
+        function generateAlphaMap(w = 512, h = 256) {
+            return generateMap(w, h);
+        }
+        function generateEnvMap(w = 512, h = 256) {
+            return generateMap(w, h);
+        }
+        function canvasTexture(canvas) {
+            const texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+        function generateMap(w = 512, h = 256) {
+            const canvas = generateCanvas(w, h);
+            const texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+        function generateCanvas(w = 512, h = 256) {
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const context = canvas.getContext('2d');
+            const imageData = context.getImageData(0, 0, w, h);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const value = Math.floor(Math.max(Math.random(), 0.8) * 256);
+                imageData.data[i] = 0;
+                imageData.data[i + 1] = value;
+                imageData.data[i + 2] = 0;
+                imageData.data[i + 3] = 255;
+            }
+            context.putImageData(imageData, 0, 0);
+            const texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+
+        // speed limiter
+        function speedLimit(vx, vy, speedLimit) {
+            const hyp = Math.hypot(HERO.vx, HERO.vy);
+            if (hyp === 0) return { vx: 0, vy: 0 };
+            const maxSpeed = Math.min(hyp, speedLimit);
+            const ratio = HERO.maxSpeed / hyp;
+            return {
+                vx: ratio * vx,
+                vy: ratio * vy
+            };
+        }
+
+
+        // window resize
+        window.addEventListener('resize', function(){
+          CAMERA.aspect = window.innerWidth / window.innerHeight;
+          CAMERA.updateProjectionMatrix();
+          RENDERER.setSize( window.innerWidth, window.innerHeight );
+        }, false)
+
+
+        // nipple.js
+        const nipple = nipplejs.create({
+            // mode: 'dynamic',dataOnly:true // hide joystick
+            zone: document.body,
+            color: "red",
+            mode: 'static',
+            restOpacity:0.5,
+            zone: document.getElementById('joy'),
+            position: {
+                left: '50%',
+                bottom: '20%'
+            }
+        });
+
+        // start
+        nipple.on("move", (e, data) => {
+            // HERO.vx = data.force * Math.cos(data.angle.radian);
+            // HERO.vy = -data.force * Math.sin(data.angle.radian);
+            // const v = speedLimit(HERO.vx, HERO.vy, HERO.maxSpeed);
+            
+            HERO.vx = data.force * Math.cos(data.angle.radian)/5000;
+            HERO.vy = data.force * Math.sin(data.angle.radian)/5000;
+
+            // HERO.moving = true;
+        });
+
+        // end
+        nipple.on("end", (e, data) => {
+            HERO.moving = false;
+            HERO.vx = 0;
+            HERO.vy = 0;
+        });
+
+
+
+        // loop
+        let lastTime = 0;
+        var spherical = new THREE.Spherical();
+
+        function animate() {
+            const time = performance.now();
+            const deltaTime = time - lastTime;
+            requestAnimationFrame(animate);
+            // CONTROLS.update();
+            RENDERER.render(SCENE, CAMERA);
+            lastTime = time;
+    
+            fire.update( time/1000 ); 
+            
+            // movement
+            // joystick
+            HERO.x += HERO.vx;
+            HERO.y += HERO.vy;
+
+            // keys
+            if (keyboard.isDown(keyboard.LEFT) ){
+            HERO.x -= 0.001;
+            }
+            if (keyboard.isDown(keyboard.RIGHT) ){
+            HERO.x += 0.001;
+            }
+            if (keyboard.isDown(keyboard.UP) ){
+            HERO.y += 0.001;
+            }
+            if (keyboard.isDown(keyboard.DOWN) ){
+            HERO.y -= 0.001;
+            }
+            
+            // move texture with HERO
+            PLANET.material.map.offset.x = HERO.x;
+            PLANET.material.map.offset.y = HERO.y;
+
+            //
+            if (typeof sceneobjects[0] !== 'undefined') {
+                for ( var i = 0, l = sceneobjects.length; i < l; i ++ ) {
+                    var phi = Math.acos( -1 + ( 2 * i ) / l );
+                    var theta = Math.sqrt( l * Math.PI ) * phi;
+                    spherical.set( PLANET.radius, phi+=(HERO.y*Math.PI), theta-=(HERO.x*Math.PI*2) );
+                    sceneobjects[i].position.setFromSpherical( spherical );
+                    sceneobjects[i].lookAt(0,-PLANET.radius,0)
+                }
+            }
+
+        }; // animate loop
+
+        animate();
+    </script>
+</body>
+
+</html>
