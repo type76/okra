@@ -162,7 +162,7 @@
 				const ground = createParalellepiped( 40, 1, 40, 0, pos, quat, new THREE.MeshPhongMaterial( { color: 0xFFFFFF } ) );
 				ground.castShadow = true;
 				ground.receiveShadow = true;
-				textureLoader.load( 'textures/grid.png', function ( texture ) {
+				textureLoader.load( 'img/grid.png', function ( texture ) {
 
 					texture.wrapS = THREE.RepeatWrapping;
 					texture.wrapT = THREE.RepeatWrapping;
@@ -382,8 +382,8 @@
 				 color: 0xFFFFFF,
 				 		metalness: 0,
 						roughness: 2,
-						map : new THREE.TextureLoader().load( 'cruella.png' ),
-						displacementMap: new THREE.TextureLoader().load( 'cruellabmp.png' ),
+						map : new THREE.TextureLoader().load( 'img/cruella.png' ),
+						displacementMap: new THREE.TextureLoader().load( 'img/cruellabmp.png' ),
 						displacementScale: 2
 				  } ) );
 				volume.castShadow = true;
@@ -392,7 +392,7 @@
 				volume.rotation.y = -Math.PI/3;
 				scene.add( volume );
 
-				textureLoader.load( 'cruella.png', function ( texture ) {
+				textureLoader.load( 'img/cruella.png', function ( texture ) {
 
 					volume.material.map = texture;
 					volume.material.needsUpdate = true;
