@@ -46,31 +46,23 @@ body{
 <body tabindex="1">
 
 <div id="btns">
-    <a class="btn" id="idle">idle<a>
+    <a class="btn" id="xidle">idle<a>
     <a class="btn" id="walk">walk</a>
     <a class="btn" id="run">run</a>
     <a class="btn" id="sprint">sprint</a>
-<!--     <a class="btn" id="car">car<a>
-    <a class="btn" id="dying">dying<a>
-    <a class="btn" id="xdying">xdying<a> -->
 </div>
 
-<script src="js/nipplejs.min.js"></script>   
 <script src="js/three.min.js"></script>
 <script src="js/OrbitControls.js"></script>
 <script src='js/inflate.min.js'></script>
 <script src='js/FBXLoader.js'></script>
 
 
-
 <script>
 // set speed
 sprint.addEventListener("click", (event) => {setxvar(3)});
 run.addEventListener("click", (event) => {setxvar(1.8)});
-idle.addEventListener("click", (event) => {setxvar(0)});
-// car.addEventListener("click", (event) => {setxvar(0)});
-// dying.addEventListener("click", (event) => {setxvar(0)});
-// xdying.addEventListener("click", (event) => {setxvar(0)});
+xidle.addEventListener("click", (event) => {setxvar(0)});
 walk.addEventListener("click", (event) => {setxvar(0.8)});
 
 
@@ -82,7 +74,8 @@ function setxvar(argument) {
 
 // globals
 var scene, clock, camera, renderer, clock, mixer, actions, spine;
-// var rocks = [];
+
+
 var anims = [];
 var parts = [];
 var speed = 0;
