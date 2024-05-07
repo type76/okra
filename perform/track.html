@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta content='width=device-width, initial-scale=1' name='viewport'/>
 	<title>follow</title>
 	<style type="text/css">
@@ -109,8 +110,8 @@ function onPointerUp() {
 function onPointerDown( e ) {
     e.preventDefault();
     isMouseDown = true;
+    onMouseMove(e)
 }
-
 
 // Follows the mouse event
 function onMouseMove(event) {
