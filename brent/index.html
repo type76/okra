@@ -1,0 +1,268 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>plane</title>
+    <style>
+    html, body {background: #222;  margin: 0; padding: 0;}
+    body {
+        font-family: 'sans-serif', monospace;
+        text-transform: lowercase;
+        font-size: 15px; 
+        cursor: crosshair;
+        height:100%;
+        overflow: hidden;
+        color: #eee;
+    }
+   #hitcanvas {
+    display: none;
+    position: absolute;
+    top: -800px;
+    left:-800px;
+    z-index: 99;
+    transform: scale(0.2);
+   }
+   #hud {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 99;
+
+   }
+
+</style>
+</head>
+
+<body>
+
+<div id="hud">
+    <p id="xvar">hello</p>
+</div>
+
+
+    <script src="js/three.min.js"></script>
+    <script src="js/OrbitControls.js"></script>
+
+    <script>
+        var xu = 0;
+        var xv = 0;
+
+// get canvas and context
+var hitCanvas = document.createElement('canvas');
+var htx = hitCanvas.getContext('2d', { willReadFrequently: true });
+hitCanvas.id = 'hitcanvas'
+hitCanvas.height = 2048;
+hitCanvas.width = 2048;
+// img
+var hitimg = new Image();
+hitimg.onload = ready;
+hitimg.src = "map/ealing-hit.png";
+function ready() {
+    htx.drawImage(hitimg, 0, 0, hitcanvas.width, hitcanvas.height);  
+}
+
+document.body.appendChild(hitCanvas);
+
+//set scene
+var scene = new THREE.Scene();
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+// render
+var renderer = new THREE.WebGLRenderer( { alpha: true, antialias: true } );
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+document.body.appendChild(renderer.domElement);
+
+// camera
+var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
+camera.position.x = 0;
+camera.position.y = 70;
+camera.position.z = 10;
+
+
+// controls
+var controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableZoom = false;
+controls.zoomSpeed = 1.2;
+controls.panSpeed = 0.8;
+controls.minDistance = 10;
+controls.maxDistance = 200;
+controls.enableZoom = true;
+controls.enablePan = false;
+controls.maxPolarAngle = Math.PI * 0.49;
+
+
+// grid
+// const size = 100;
+// const divisions = 10;
+// const gridHelper = new THREE.GridHelper( size, divisions, 0x444444, 0x444444 );
+// scene.add( gridHelper );
+// gridHelper.position.y = 3;
+
+
+
+//plane geometry
+var geometry = new THREE.PlaneBufferGeometry( 10, 10, 100, 100 );
+//plane materials
+var coltexture = new THREE.TextureLoader().load( 'map/ealing-c.png' );
+var bumptexture = new THREE.TextureLoader().load( 'map/ealing-bmp2.png' );
+// var normtexture = new THREE.TextureLoader().load( 'map/ealing-normal.png' );
+coltexture.magFilter = THREE.NearestFilter;
+coltexture.minFilter = THREE.LinearMipMapLinearFilter;
+var material = new THREE.MeshStandardMaterial( { 
+    // color:0x00ff00,
+    roughness: 0.9,
+    map: coltexture, 
+    bumpMap: bumptexture,
+    // normalMap: normtexture,
+    bumpScale  :  0.75,
+    displacementMap: bumptexture,
+    displacementScale: 0.6
+} );
+
+// ground plane
+var baseplane = new THREE.Mesh( geometry, material );
+baseplane.name = 'baseplane';
+baseplane.rotation.set(-Math.PI/2,0,0);
+baseplane.position.set(0,-0.1,0);
+baseplane.scale.set(10,10,10);
+baseplane.name = 'baseplane';
+baseplane.receiveShadow = true;
+baseplane.castShadow = true
+scene.add( baseplane );
+geometry.computeVertexNormals();
+
+
+
+// //picker light
+// var pklight = new THREE.PointLight( 0xffffff, 1, 60 );
+// pklight.position.set( 0, 30, 0 );
+// scene.add( pklight );
+
+//
+const xgeometry = new THREE.BoxGeometry( 0.5, 20, 0.5 );
+const xmaterial = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+const cube = new THREE.Mesh( xgeometry, xmaterial );
+scene.add( cube );
+cube.position.set(0, 10, 0)
+
+
+//
+var light = new THREE.DirectionalLight(0xffffff, 0.1)
+light.position.set(0, 90, 220)
+light.castShadow = true;
+light.shadow.mapSize.width = 256;
+light.shadow.mapSize.height = 256;
+light.shadow.camera.near = 0.5;
+light.shadow.camera.far = 600;
+light.shadow.camera.left = -100;
+light.shadow.camera.right = 100;
+light.shadow.camera.top = 100;
+light.shadow.camera.bottom = -100;
+light.shadow.mapSize.width = 1024;
+light.shadow.mapSize.height = 1024;
+// light.shadow.radius = 5
+// light.shadow.blurSamples = 25
+light.lookAt(cube.position)
+scene.add(light)
+
+var directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+directionalLight.position.set( 0, 20, 0 );
+directionalLight.intensity = "2";
+scene.add( directionalLight );
+
+
+//
+window.addEventListener('resize', function() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}, false);
+
+window.addEventListener( 'pointermove', onPointerMove );
+window.addEventListener( 'pointerdown', onPointerDown );
+
+
+//RENDER
+var render = function() {
+    // num++;
+    requestAnimationFrame(render);
+    renderer.render(scene, camera);
+    // baseplane.position.y = 1-Math.cos(num/100)*0.7;
+    // light.position.x = Math.cos(num/20)*30;
+    // light.position.z = Math.sin(num/20)*30;
+
+
+};  //END RENDER
+
+
+render();
+
+
+    function onPointerDown( event ) {
+        // cursor.visible = true;
+        console.log('event')
+
+        pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+        pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+        raycaster.setFromCamera( pointer, camera );
+
+        const intersects = raycaster.intersectObject( baseplane, true );
+
+        if ( intersects.length > 0 ) {
+            cube.position.set(intersects[0].point.x, 0, intersects[0].point.z);
+              // const xu = Math.floor(intersects[0].uv.x*zoomCanvas.width);
+              // const xv = -(Math.floor(intersects[0].uv.y*zoomCanvas.width)-(zoomCanvas.width-1));
+              // console.log(xu,xv)
+            // draw on canvas
+            // draw(zoomContext, 1, xu, xv);
+        }
+
+    }
+
+//
+function onPointerMove( event ) {
+    pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+    raycaster.setFromCamera( pointer, camera );
+
+    const intersects = raycaster.intersectObject( baseplane, true );
+
+    if ( intersects.length > 0 ) {
+            cube.position.set(intersects[0].point.x, 0, intersects[0].point.z);            
+            // light.position.set(intersects[0].point.x, 0, intersects[0].point.z);
+
+        // check colour under player
+        xu = (hitcanvas.width/2)+Math.floor( cube.position.x)*20;
+        xv = (hitcanvas.width/2)+Math.floor( cube.position.z)*20;
+        // white/collision
+        xdata = htx.getImageData(xu, xv, 1, 1); 
+        xvar.innerHTML = xdata.data[0];
+
+        // draw cursor
+        // htx.fillStyle = "blue";
+        // htx.fillRect(xu, xv, 8, 8);   
+        // console.log(xdata.data[0])
+
+
+            // selectplane.position.set(Math.floor(intersects[0].point.x), 4, Math.floor(intersects[0].point.z))
+            // const xu = Math.floor(intersects[0].uv.x*zoomCanvas.width);
+            // const xv = -(Math.floor(intersects[0].uv.y*zoomCanvas.height)-(zoomCanvas.height-1));
+
+            // draw on canvas
+            // draw(zoomContext, 1, xu, xv);
+
+    }
+
+}
+</script>
+
+</body>
+
+</html> 
