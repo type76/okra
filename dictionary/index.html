@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>slang search</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet">
+    <link href='app.css' rel='stylesheet' type='text/css' />
+
+  </head>
+  <body>
+    <div id="flag"></div>
+
+      <div class="App">
+        <article class="main">
+          <header class="Header">
+            <div class="SearchBox">
+              <div class="Search">
+                <input type="text" autoComplete="none" autoCorrect="none" autoCapitalize="none" spellCheck="false" placeholder="search"/>
+                <button class="clear">&times;</button>
+              </div>
+
+              <ul class="SuggestionList"></ul>
+
+            </div>
+          </header>
+          
+          <ul class="wordList"></ul>
+          
+
+          <div id="output">
+            <h2>Dictionary</h2>
+          </div>
+        </article>
+      </div><!-- .App -->
+    
+    <script src="minisearch.js"></script>
+    <script src="app.js" type="text/javascript"></script>
+    
+  </body>
+</html>
+
