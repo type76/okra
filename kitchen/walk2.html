@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>walk</title>
+</head>
+<style type="text/css">
+body {
+  overflow: hidden;
+  margin: 0;
+  background-color: #000;
+}
+
+#div3D{
+	position: absolute;
+	width:100%;
+	height: 100%;
+  overflow:hidden;
+}
+
+
+  #shoot {
+    cursor: pointer;
+    position: absolute;
+    z-index: 111;
+    bottom: 30px;
+    right: 30px;
+    display: block;
+    width: 100px;
+    height: 100px;
+    border-radius: 100%;
+    border:none;
+    outline: none;
+    background-color: transparent;
+  }
+  
+  .back {
+    background-color: rgba(0,0,0,0) !important;
+  }
+
+  .front {
+    box-shadow: 0 0 14px rgba(0,0,0,0.1);
+    cursor: pointer;
+  }
+
+  #shoot {
+    position: absolute;
+    z-index: 999;
+    transition: 0.2s all ease-in-out;
+    opacity: 0.7;
+  }
+  #shoot:hover, #shoot:active {
+    opacity: 1;
+  }
+
+  #shoot:before {
+    position: absolute;
+    line-height: 0.5em;
+    text-align: center;
+    top: 25px;
+    left: 25px;
+    color: #000;
+    font-size: 2em;
+    content: '';
+    background-color: rgba(255,255,255,0.4);
+    border-radius: 100%;
+    width: 50px;
+    height: 50px;
+    display: block;
+    box-shadow: 0 0 14px rgba(0,0,0,0.2);
+  }
+  #shoot:before {
+    transform: scale(1);
+  }
+  #shoot:active:before {
+    transform: scale(0.9) !important;
+    box-shadow: 0 0 18px rgba(0,0,0,0.5); 
+    background-color: rgba(255,255,255,0.5);
+  }</style>
+<body>
+
+  <div class="joy" id="joy"></div>
+  <button id="shoot" onclick="bounce()">&nbsp;</button>
+
+  <div id="div3D"></div>
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.102.0/build/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.7.3/nipplejs.min.js"></script>
+
+    <script type="text/javascript">
+moving = false;sitting = false;
+var n = 0;
+var zbody, rarm, larm, lleg, rleg
+
+const player = {
+  moving:false,
+  maxSpeed:0.2,
+  x:0,
+  y:0,
+  vx:0,
+  vy:0,
+  force:0,
+  speed : 0,
+  rotation:0,
+};
+
+// nipple.js
+const nipple = nipplejs.create({
+  // mode: 'dynamic',dataOnly:true 
+  zone: document.body,
+  color: "white",
+  mode: 'static',
+  // restOpacity:0.1,
+  zone: document.getElementById('joy'),
+  // lockY: true,
+  position: {
+    left: '80px',
+    bottom: '80px'
+  }
+});
+
+
+// speed limiter
+function speedLimit(vx, vy, speedLimit) {
+  const hyp = Math.hypot(vx, vy);
+  if (hyp === 0) return { vx: 0, vy: 0 };
+  const maxSpeed = Math.min(hyp, speedLimit);
+  const ratio = maxSpeed / hyp;
+  return {
+    vx: ratio * vx,
+    vy: ratio * vy
+  };
+}
+
+
+// // start
+nipple.on("move", (e, data) => {
+  // console.log(data)
+  const vx = data.force * Math.cos(data.angle.radian);
+  const vy = -data.force * Math.sin(data.angle.radian);
+  const v = speedLimit(vx, vy, player.maxSpeed);
+  player.vx = v.vx;
+  player.vy = v.vy;
+  player.rotation = -Math.atan2(v.vy, v.vx);
+  hero.rotation.y = player.rotation;
+  //
+  player.force = data.distance/25;
+  player.speed = data.distance/300;
+  //
+  moving = true;
+});
+
+// end
+nipple.on("end", (e, data) => {
+  moving = false;
+  player.vx = 0;
+  player.vy = 0;
+});
+
+
+
+// VARIABLES 
+var scene,
+  camera, fieldOfView, aspectRatio, nearPlane, farPlane,
+  gobalLight, shadowLight, backLight,
+  renderer,
+  container;
+
+var PI = Math.PI;
+var hero;
+var container;
+
+  
+//INIT THREE JS, SCREEN AND MOUSE EVENTS
+
+function initScreenAnd3D() {
+  container = document.getElementById('div3D');
+  HEIGHT = container.offsetHeight;
+  WIDTH = container.width;
+  windowHalfX = WIDTH / 2;
+  windowHalfY = HEIGHT / 2;
+
+  scene = new THREE.Scene();
+    
+  aspectRatio = WIDTH / HEIGHT;
+  fieldOfView = 50;
+  nearPlane = 1;
+  farPlane = 2000;
+  camera = new THREE.PerspectiveCamera(
+    fieldOfView,
+    aspectRatio,
+    nearPlane,
+    farPlane
+  );
+  camera.position.x = 0;
+  camera.position.z = 40;
+  camera.position.y = 5;
+
+  renderer = new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: true
+  });
+  renderer.setSize(WIDTH, HEIGHT);
+  renderer.setPixelRatio(window.devicePixelRatio ? window.devicePixelRatio : 1)
+  renderer.shadowMap.enabled = true;
+
+  container.appendChild(renderer.domElement);
+
+  window.addEventListener('resize', handleWindowResize, false);
+
+  handleWindowResize();
+}
+
+function handleWindowResize() {
+  HEIGHT = container.offsetHeight;
+  WIDTH = container.offsetWidth;
+  windowHalfX = WIDTH / 2;
+  windowHalfY = HEIGHT / 2;
+  renderer.setSize(WIDTH, HEIGHT);
+  camera.aspect = WIDTH / HEIGHT;
+  camera.updateProjectionMatrix();
+}
+
+function createLights() {
+  globalLight = new THREE.AmbientLight(0xffffff, 1);
+  shadowLight = new THREE.DirectionalLight(0xffffff, 1);
+  shadowLight.position.set(10, 8, 8);
+  shadowLight.castShadow = true;
+  shadowLight.shadow.camera.left = -40;
+  shadowLight.shadow.camera.right = 40;
+  shadowLight.shadow.camera.top = 40;
+  shadowLight.shadow.camera.bottom = -40;
+  shadowLight.shadow.camera.near = 1;
+  shadowLight.shadow.camera.far = 1000;
+  shadowLight.shadow.mapSize.width = shadowLight.shadow.mapSize.height = 2048;
+  scene.add(globalLight);
+  scene.add(shadowLight);
+}
+
+
+
+function createjson(model, place, posx, posy, posz, scalex) {
+  var loader = new THREE.BufferGeometryLoader();
+
+  loader.load(
+   'fin/'+model,
+   function ( geometry ) {
+     var material = new THREE.MeshLambertMaterial( { map: texture, 
+      // wireframe:true
+       } );
+     var object = new THREE.Mesh( geometry, material );
+     object.scale.set(scalex,1,1)
+     object.position.set(posx,posy,posz)
+     object.castShadow = true;
+     object.receiveShadow = true;
+     // center it
+     // new THREE.Box3().setFromObject( object ).getCenter( object.position ).multiplyScalar( - 1 );
+     place.add(object);
+
+   },
+   function ( xhr ) {
+   },
+   function ( xhr ) {
+     console.log( 'An error happened' );
+   }
+   );
+}
+
+function createHero() {
+  hero = new THREE.Group();
+  hero.rotation.y = -Math.PI/2; // for camera
+  hero.scale.set(20,20,20)
+  scene.add(hero);
+  //
+  herogroup = new THREE.Group();
+  herogroup.rotation.y = -Math.PI/2;
+  herogroup.position.y = 0.08; // ground it <<
+  hero.add(herogroup);
+
+  // texture
+  texture = new THREE.TextureLoader().load( 'col3.png' );
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  
+  // body parts
+  zbody = new THREE.Group();
+  herogroup.add(zbody);
+  larm = new THREE.Group();
+  herogroup.add(larm);
+  rarm = new THREE.Group();
+  herogroup.add(rarm);
+  lleg = new THREE.Group();
+  herogroup.add(lleg);
+  rleg = new THREE.Group();
+  herogroup.add(rleg);
+
+  // children are animated
+  createjson('body.json', zbody, 0, 0, 0, 1);
+  createjson('arm2.json', larm, -0.16, 0.25, -0.01, -1);
+  createjson('arm2.json', rarm, 0.16, 0.25, -0.01, 1);
+  createjson('leg2.json', lleg, -0.1, -0.01, 0, 1);
+  createjson('leg2.json', rleg, 0.1, -0.01, 0, -1);
+}
+
+// walk
+function walk() {
+  rarm.children[0].rotation.x = Math.cos(n*0.3);
+  larm.children[0].rotation.x = Math.sin(n*0.3);
+  lleg.children[0].rotation.x = Math.cos(n*0.6);
+  rleg.children[0].rotation.x = Math.sin(n*0.6);
+  hero.rotation.y += Math.sin(n*0.4)/60;
+  hero.rotation.z += Math.cos(n*0.6)/60;
+  herogroup.position.y = 0.08+(Math.sin(n*0.6)/60);
+}
+
+// bounce
+function bounce(){
+  // toggle sitting
+  sitting = sitting ? false : true;
+  console.log(sitting)
+}
+
+
+// render loop
+function loop(){
+  if (moving) {
+      n++;
+      walk();
+      hero.position.x += (player.vx*player.force);
+      hero.position.z += (player.vy*player.force); 
+      camera.position.x = hero.position.x;
+      camera.position.z = hero.position.z+40;
+  } else {
+    // lerp all to zero
+      rarm.children[0].rotation.x += (0-rarm.children[0].rotation.x)*0.4;
+      larm.children[0].rotation.x += (0-larm.children[0].rotation.x)*0.4;
+      lleg.children[0].rotation.x += (0-lleg.children[0].rotation.x)*0.4;
+      rleg.children[0].rotation.x += (0-rleg.children[0].rotation.x)*0.4;
+      herogroup.position.y += (0.08 - herogroup.position.y)*0.3;
+  }
+
+  render();  
+  requestAnimationFrame(loop);
+}
+
+function render(){
+  renderer.render(scene, camera);
+}
+
+window.addEventListener('load', init, false);
+
+function init(event){
+  initScreenAnd3D();
+  createLights();
+
+  // grid
+  var size = 100;
+  var divisions = 10;
+  var gridHelper = new THREE.GridHelper(size, divisions);
+  scene.add(gridHelper);
+  createHero();
+  setTimeout(function() {
+    loop();
+  }, 500);
+}
+
+
+</script>
+</body>
+</html>
