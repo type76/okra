@@ -1,0 +1,180 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>kitchen</title>
+	<style type="text/css">
+	* {margin: 0; padding: 0;}
+	*:focus {outline: none;}
+
+	body { margin: 0; 
+		background: #000; 
+		color: #fff;
+		font-family: monospace;
+		user-select:none;
+		width: 100%;
+		height: 100%;
+	}
+
+	canvas { 
+		display: block; 
+		width: 100%; 
+		height: 100vh; 
+		image-rendering: optimizeSpeed;
+		image-rendering: -moz-crisp-edges;
+		image-rendering: -o-crisp-edges;
+		image-rendering: -webkit-optimize-contrast;
+		image-rendering: pixelated;
+		image-rendering: optimize-contrast;
+		-ms-interpolation-mode: nearest-neighbor;
+	}
+
+	button {
+		padding: 10px;
+		position: relative;
+		z-index: 3;
+		top: 0px;
+	}
+
+	#hud {
+		display: block;
+		width: 100vw;
+		text-align: center;
+		margin: 0;
+		position: absolute;
+		bottom: 10px;
+	}	
+
+</style>
+</head>
+<body>
+
+	<div id="hud">
+<button onclick="go(0)">zero</button>
+<button onclick="go(1)">one</button>
+<button onclick="go(2)">two</button>
+	</div>
+
+
+	<script src="https://cdn.jsdelivr.net/npm/three@0.122.0/build/three.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/three@0.122.0/examples/js/controls/OrbitControls.js"></script>
+	<script src="js/Tween.js"></script>
+
+
+	<script type="text/javascript">
+// 3D
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// camera
+camera.position.set(0,0.1,0.8);
+camera.lookAt(0,0,0);
+
+var controls = new THREE.OrbitControls( camera, renderer.domElement);
+controls.maxDistance = 2;
+controls.minDistance = 0.5;
+controls.maxPolarAngle = Math.PI * 0.48;
+
+
+// floor
+const geometry = new THREE.PlaneGeometry( 1.5, 1.5 );
+const material = new THREE.MeshBasicMaterial( { 
+	map: new THREE.TextureLoader().load( 'flr.png' )
+	 } );
+material.map.magFilter = THREE.NearestFilter;
+material.map.minFilter = THREE.NearestFilter;
+
+const floor = new THREE.Mesh( geometry, material );
+floor.rotation.x = -Math.PI*0.5;
+floor.position.y = -0.2;
+scene.add( floor );
+
+var loader = new THREE.BufferGeometryLoader();
+
+loader.load(
+	'kitchen.json',
+	function ( geometry ) {
+		var ktexture = new THREE.TextureLoader().load( 'ktx.png' );
+		var material = new THREE.MeshBasicMaterial( { 
+			map: ktexture,
+			side: THREE.DoubleSide
+		 } );
+		var object = new THREE.Mesh( geometry, material );
+		object.name = "kitchen";
+		object.castShadow = true;
+		object.receiveShadow = true;
+		scene.add( object );
+		object.material.map.minFilter = object.material.map.magFilter = THREE.NearestFilter;
+
+            							},
+	function ( xhr ) {
+	},
+	function ( xhr ) {
+		console.log( 'An error happened' );
+	}
+	);
+
+// events
+window.addEventListener( 'resize', onWindowResize, false );
+// resize event
+function onWindowResize() {
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+  // move pointer
+  var mouseX = 0;
+  let windowHalfX = window.innerWidth / 2;
+  // var mouseY = 0;
+  document.body.addEventListener( 'pointermove', onPointerMove );
+  function onPointerMove( event ) {
+
+    if ( event.isPrimary === false ) return;
+      mouseX = -(event.clientX - windowHalfX)/2000;
+      // limit x pos
+      if (mouseX<-0.4) {mouseX = -0.4;}   
+      if (mouseX>0.4) {mouseX = 0.4;} 
+    }
+
+// click
+function xcamclick(thisx,thisy,thisz) {
+	new TWEEN.Tween( camera.position ).to( {x: thisx, y: thisy, z: thisz}, 500 )
+	.easing( TWEEN.Easing.Quadratic.EaseInOut)
+	.onUpdate(function (object) {
+		camera.lookAt(0,0,0);
+	})
+	.start();
+}
+
+
+
+// btn
+function go(argument) {
+	if (argument == 0) {xcamclick(0,1,0.01);}
+	if (argument == 1) {xcamclick(0,0.2,1);}
+	if (argument == 2) {xcamclick(0,0.4,0.8);}
+}
+
+
+function animate() {
+	requestAnimationFrame( animate );
+	renderer.render( scene, camera );
+	TWEEN.update();
+	// controls.update();
+	// camera.position.x += ((mouseX)-camera.position.x)*0.2;
+	// camera.lookAt(0,0,0);
+};
+
+
+//  START		<<<<<<<<<<<<<<<<  
+animate();
+
+</script>
+
+</body>
+</html>
