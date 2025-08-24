@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TZTrade - Service Categories</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c7873;
+            --secondary: #52de97;
+            --accent: #ff9a3c;
+            --light: #f7f9f9;
+            --dark: #333333;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem;
+            box-shadow: var(--shadow);
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo i {
+            margin-right: 10px;
+        }
+        
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin-left: 1.5rem;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: var(--secondary);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .page-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--primary);
+        }
+        
+        .search-box {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .search-box input {
+            flex-grow: 1;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .category-section {
+            margin-bottom: 3rem;
+        }
+        
+        .section-title {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .category-btn {
+            background: white;
+            border: none;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: left;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .category-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .category-icon {
+            font-size: 2rem;
+            color: var(--primary);
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(44, 120, 115, 0.1);
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        
+        .category-content {
+            flex-grow: 1;
+        }
+        
+        .category-name {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+        
+        .category-desc {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+            margin-top: 3rem;
+        }
+        
+        @media (max-width: 768px) {
+            .category-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-links {
+                display: none;
+            }
+            
+            .search-box {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <i class="fas fa-tools"></i>
+                <span>TZTrade</span>
+            </div>
+            <div class="nav-links">
+                <a href="#">Home</a>
+                <a href="#">Find Services</a>
+                <a href="#">Become a Provider</a>
+                <a href="#">Login</a>
+            </div>
+        </nav>
+    </header>
+    
+    <div class="container">
+        <h1 class="page-title">Find Service Providers in Tanzania</h1>
+        
+        <div class="search-box">
+            <input type="text" placeholder="Search for a specific service...">
+            <button class="category-btn" style="flex-grow: 0; white-space: nowrap;">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="section-title">
+                <i class="fas fa-home"></i>
+                Home Improvement & Building
+            </h2>
+            
+            <div class="category-grid">
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-house-user"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Builders</h3>
+                        <p class="category-desc">Bricklayers, agricultural buildings, general construction</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-bath"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Bathroom Specialists</h3>
+                        <p class="category-desc">Installers, fitters, and bathroom renovators</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-bed"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Bedroom Specialists</h3>
+                        <p class="category-desc">Custom bedrooms, fittings, and installations</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Kitchen Specialists</h3>
+                        <p class="category-desc">Kitchen fitters, designers, and installers</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-road"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Driveways/Patios/Paths</h3>
+                        <p class="category-desc">Installation and repair of outdoor surfaces</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-fence"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Fencing/Gates</h3>
+                        <p class="category-desc">Fence and gate installation and repair</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="section-title">
+                <i class="fas fa-tools"></i>
+                Repairs & Maintenance
+            </h2>
+            
+            <div class="category-grid">
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-faucet"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Plumbers</h3>
+                        <p class="category-desc">Pipe installation, repairs, and maintenance</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Electricians</h3>
+                        <p class="category-desc">Electrical installations, repairs, and safety inspections</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-house-damage"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Roofers</h3>
+                        <p class="category-desc">Roof repair, installation, and maintenance</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Heating Engineers</h3>
+                        <p class="category-desc">Central heating system installation and repair</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-gas-pump"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Gas Engineers</h3>
+                        <p class="category-desc">Gas appliance installation and safety checks</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Locksmiths</h3>
+                        <p class="category-desc">Lock installation, repair, and emergency services</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+        
+        <div class="category-section">
+            <h2 class="section-title">
+                <i class="fas fa-star"></i>
+                Specialist Services
+            </h2>
+            
+            <div class="category-grid">
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-vector-square"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Carpet Fitters</h3>
+                        <p class="category-desc">Professional carpet installation and repair</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-border-style"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Plasterers</h3>
+                        <p class="category-desc">Wall and ceiling plastering services</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Alarms/Security</h3>
+                        <p class="category-desc">Security system installation and monitoring</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-soap"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Cleaning Services</h3>
+                        <p class="category-desc">Residential and commercial cleaning</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-people-carry"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">Handyman Services</h3>
+                        <p class="category-desc">General repairs and maintenance tasks</p>
+                    </div>
+                </button>
+                
+                <button class="category-btn">
+                    <div class="category-icon">
+                        <i class="fas fa-tv"></i>
+                    </div>
+                    <div class="category-content">
+                        <h3 class="category-name">TV Aerial Fitters</h3>
+                        <p class="category-desc">TV aerial installation and signal optimization</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>&copy; 2023 TZTrade - Connecting Tanzania with Trusted Tradespeople</p>
+        <p>Email: info@tztrade.com | Phone: +255 123 456 789</p>
+    </footer>
+
+    <script>
+        // JavaScript for interactive elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Category button click handler
+            const categoryButtons = document.querySelectorAll('.category-btn');
+            categoryButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const categoryName = this.querySelector('.category-name').textContent;
+                    // In a real implementation, this would redirect to a providers page
+                    alert(`Showing providers for: ${categoryName}`);
+                });
+            });
+            
+            // Search functionality
+            const searchInput = document.querySelector('.search-box input');
+            const searchButton = document.querySelector('.search-box .category-btn');
+            
+            searchButton.addEventListener('click', function() {
+                if (searchInput.value.trim() !== '') {
+                    alert(`Searching for: ${searchInput.value}`);
+                    // In a real implementation, this would filter the categories
+                }
+            });
+            
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && searchInput.value.trim() !== '') {
+                    alert(`Searching for: ${searchInput.value}`);
+                    // In a real implementation, this would filter the categories
+                }
+            });
+        });
+    </script>
+</body>
+</html>

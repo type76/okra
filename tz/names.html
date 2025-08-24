@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swahili Name Suggestions for TZTrade</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c7873;
+            --secondary: #52de97;
+            --accent: #ff9a3c;
+            --light: #f7f9f9;
+            --dark: #333333;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: var(--dark);
+            line-height: 1.6;
+            background: linear-gradient(135deg, #f7f9f9 0%, #e4f0ef 100%);
+            min-height: 100vh;
+        }
+        
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .intro {
+            text-align: center;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+        
+        .names-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .name-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .name-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .name-card.favorite {
+            border: 2px solid var(--accent);
+        }
+        
+        .name-title {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .name-meaning {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        
+        .name-desc {
+            color: #444;
+            margin-bottom: 1rem;
+            flex-grow: 1;
+        }
+        
+        .favorite-btn {
+            background: none;
+            border: none;
+            color: #ddd;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .favorite-btn.active {
+            color: var(--accent);
+        }
+        
+        .favorite-btn:hover {
+            color: var(--accent);
+        }
+        
+        .category-tag {
+            display: inline-block;
+            background: var(--light);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--dark);
+            margin-top: 0.5rem;
+        }
+        
+        .favorites-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-top: 2rem;
+        }
+        
+        .favorites-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .favorite-item {
+            background: var(--light);
+            padding: 0.8rem 1.2rem;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .favorite-item .remove-btn {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        
+        .favorite-item .remove-btn:hover {
+            color: #ff5252;
+        }
+        
+        footer {
+            background-color: var(--dark);
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+            margin-top: 3rem;
+        }
+        
+        @media (max-width: 768px) {
+            .names-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <i class="fas fa-handshake"></i>
+            <span>TZTrade Swahili Names</span>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="intro">
+            <h1>Swahili Name Suggestions for Your Service Platform</h1>
+            <p>Here are 20 memorable, relevant, and light-hearted Swahili names for your Tanzania-based service marketplace. Click the heart icon to save your favorites!</p>
+        </div>
+        
+        <div class="names-grid">
+            <div class="name-card">
+                <div class="name-title">
+                    <span>KaziPoA</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Good Work" or "Pleasant Job"</div>
+                <div class="name-desc">A cheerful name that suggests quality service and positive experiences.</div>
+                <span class="category-tag">Cheerful & Memorable</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>MkonoWaMsaada</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Helping Hand"</div>
+                <div class="name-desc">Evokes trust and support, perfect for a service that connects people with helpers.</div>
+                <span class="category-tag">Trustworthy</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>FundiLink</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Artisan Link"</div>
+                <div class="name-desc">Combines Swahili ("fundi" meaning artisan) with English for easy recognition.</div>
+                <span class="category-tag">Modern Blend</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>KaziSafi</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Clean Work"</div>
+                <div class="name-desc">Suggests quality, professionalism, and good results.</div>
+                <span class="category-tag">Professional</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>JengaNyumbani</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Build Home"</div>
+                <div class="name-desc">Perfect for home improvement services, from the verb "jenga" (to build).</div>
+                <span class="category-tag">Home Focused</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>Mkakati</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"The Strategy" or "The Plan"</div>
+                <div class="name-desc">Suggests smart solutions and well-executed services.</div>
+                <span class="category-tag">Smart & Strategic</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>HudumaPoA</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Good Service"</div>
+                <div class="name-desc">Simple, direct, and clearly communicates quality service.</div>
+                <span class="category-tag">Direct & Clear</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>ChaguoBora</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Best Choice"</div>
+                <div class="name-desc">Positions your platform as the top choice for service seekers.</div>
+                <span class="category-tag">Premium</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>BarakaKazi</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Blessed Work"</div>
+                <div class="name-desc">Suggests fortunate, beneficial work arrangements for both parties.</div>
+                <span class="category-tag">Positive Vibe</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>UjuziHub</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Skills Hub"</div>
+                <div class="name-desc">Modern name positioning your platform as a center of expertise.</div>
+                <span class="category-tag">Modern</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>PataFundi</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Get an Artisan"</div>
+                <div class="name-desc">Action-oriented name that clearly states what the platform does.</div>
+                <span class="category-tag">Action-Oriented</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>Mshikamano</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Solidarity" or "Cooperation"</div>
+                <div class="name-desc">Emphasizes community and working together.</div>
+                <span class="category-tag">Community Focused</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>TalantaKazi</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Talent Work"</div>
+                <div class="name-desc">Highlights the skilled talent available on your platform.</div>
+                <span class="category-tag">Talent Emphasis</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>HarakaKazi</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Quick Work"</div>
+                <div class="name-desc">Suggests speedy service delivery and efficiency.</div>
+                <span class="category-tag">Efficiency Focused</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>ElimuZaidi</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"More Knowledge" or "Expertise"</div>
+                <div class="name-desc">Positions your platform as knowledgeable and expert-driven.</div>
+                <span class="category-tag">Expertise Focused</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>FurahaKazi</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Happy Work"</div>
+                <div class="name-desc">Suggests enjoyable, satisfying work experiences for all.</div>
+                <span class="category-tag">Positive Vibe</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>JikoniNaZaidi</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Kitchen and More"</div>
+                <div class="name-desc">Playful name that suggests comprehensive home services.</div>
+                <span class="category-tag">Playful & Comprehensive</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>ThamaniKazi</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Value Work"</div>
+                <div class="name-desc">Emphasizes the value and quality customers will receive.</div>
+                <span class="category-tag">Value Proposition</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>UkaribuKazi</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Nearby Work" or "Local Work"</div>
+                <div class="name-desc">Highlights the local nature of the services offered.</div>
+                <span class="category-tag">Local Focus</span>
+            </div>
+            
+            <div class="name-card">
+                <div class="name-title">
+                    <span>BidiiKazi</span>
+                    <button class="favorite-btn"><i class="fas fa-heart"></i></button>
+                </div>
+                <div class="name-meaning">"Hard Work" or "Diligence"</div>
+                <div class="name-desc">Suggests dedication, effort, and commitment to quality.</div>
+                <span class="category-tag">Diligence Focused</span>
+            </div>
+        </div>
+        
+        <div class="favorites-section">
+            <h2>Your Favorite Names</h2>
+            <p>Click the heart icon on any name to add it here</p>
+            <div class="favorites-list">
+                <!-- Favorites will be added here by JavaScript -->
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>&copy; 2023 Tanzania Service Platform Name Suggestions</p>
+        <p>Created with ❤️ for your Tanzanian service marketplace</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const favoriteButtons = document.querySelectorAll('.favorite-btn');
+            const favoritesList = document.querySelector('.favorites-list');
+            
+            favoriteButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const nameCard = this.closest('.name-card');
+                    const nameTitle = nameCard.querySelector('.name-title span').textContent;
+                    const nameMeaning = nameCard.querySelector('.name-meaning').textContent;
+                    
+                    this.classList.toggle('active');
+                    nameCard.classList.toggle('favorite');
+                    
+                    // Check if this name is already in favorites
+                    const existingFav = Array.from(favoritesList.children).find(item => {
+                        return item.textContent.includes(nameTitle);
+                    });
+                    
+                    if (this.classList.contains('active')) {
+                        // Add to favorites if not already there
+                        if (!existingFav) {
+                            const favoriteItem = document.createElement('div');
+                            favoriteItem.className = 'favorite-item';
+                            favoriteItem.innerHTML = `
+                                ${nameTitle} - ${nameMeaning}
+                                <button class="remove-btn"><i class="fas fa-times"></i></button>
+                            `;
+                            favoritesList.appendChild(favoriteItem);
+                            
+                            // Add event listener to remove button
+                            favoriteItem.querySelector('.remove-btn').addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                favoriteItem.remove();
+                                button.classList.remove('active');
+                                nameCard.classList.remove('favorite');
+                            });
+                        }
+                    } else {
+                        // Remove from favorites
+                        if (existingFav) {
+                            existingFav.remove();
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
