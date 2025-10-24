@@ -32,6 +32,7 @@
     <script type="module">
         import * as THREE from "three";
 
+        var clicked = false;
         var blinking = false;
         var rnd = 0;
         var oldrnd = 0;
@@ -88,6 +89,10 @@
         const mouseMesh = new THREE.Group();
         mouseMesh.position.x = 1;
         scene.add(mouseMesh);
+
+        const lerpedcursor = new THREE.Group();
+        lerpedcursor.position.x = 1;
+        scene.add(lerpedcursor);
 
         // main character group
         const character = new THREE.Group();
@@ -171,8 +176,8 @@
 
         //  onPointer down
         function onPointerDown( event ) {
+            clicked = true;
             blink();
-
         }
 
 
@@ -184,8 +189,11 @@
 
             if (rnd == 0 || oldrnd == rnd) {return}
             oldrnd = rnd;
-            // console.log(rnd)
-            zzfx(...[.1,2.6,300,.02,.01,.008,,1.1,-80,86,,,,,106,,,.91,.01,.2,-1040]); // Blip 255
+
+            if (!clicked) {
+            zzfx(...[.1,2.6,300,.02,.01,.008,,1.1,-80,86,,,,,106,,,.91,.01,.2,-1040]);                
+            }
+
             setTimeout(function () {
                 zzfx(...[.1,2.6,800,.02,.01,.008,,1.1,-80,86,,,,,106,,,.91,.01,.2,-1040]); // Blip 255
                 head.material.map = idleface;
@@ -194,12 +202,21 @@
         }
 
 
+        // handle window resize
+        window.addEventListener('resize', function(){
+          renderer.setSize( window.innerWidth, window.innerHeight );
+          camera.aspect   = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+        }, false)
+
 
         // Animation Loop
         function animate() {
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
-            character.lookAt(mouseMesh.position);
+            lerpedcursor.position.y += (mouseMesh.position.y - lerpedcursor.position.y)*0.2
+            lerpedcursor.position.z += (mouseMesh.position.z - lerpedcursor.position.z)*0.2
+            character.lookAt(lerpedcursor.position);
             if ( Math.random() > 0.99 ){
                 blink();
             }
