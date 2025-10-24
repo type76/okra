@@ -1,3 +1,8 @@
+<!-- to do: 
+1. tongue (sphere behind teeth)
+2. 5 mouth shapes
+3. blink
+-->
 <!doctype html>
 <html lang="en">
 <head>
@@ -14,28 +19,33 @@
         }
     </style>
 
-<!-- Import Map for Three.js r170 -->
-<script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.170.0/build/three.module.js"
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.170.0/build/three.module.js"
+            }
         }
-    }
-</script>
+    </script>
 </head>
 <body>
+    <script type="text/javascript" src="zzfx.js"></script>
     <script type="module">
         import * as THREE from "three";
 
-        // === Scene ===
+        var blinking = false;
+        var rnd = 0;
+        var oldrnd = 0;
+
+        // Scene
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x101010);
 
         //raycaster
         let raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
+        const pointer = new THREE.Vector2();
 
-        // === Camera ===
+
+        // Camera
         const camera = new THREE.PerspectiveCamera(
             50,
             window.innerWidth / window.innerHeight,
@@ -44,12 +54,13 @@
             );
         camera.position.set(4, 0, 0);
 
-        // === Renderer ===
+        // Renderer
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
+        THREE.ColorManagement.workingColorSpace = THREE.SRGBColorSpace;
 
-        // === Lighting ===
+        // Lighting
         const ambient = new THREE.AmbientLight(0xcccccc, 1);
 
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
@@ -57,7 +68,7 @@
         dirLight.castShadow = true;
         scene.add(ambient, dirLight);
 
-        //plane geometry
+        // hover plane geometry
         let plgeometry = new THREE.PlaneGeometry(10, 10, 1, 1);
 
         //plane material
@@ -73,19 +84,18 @@
         plane.position.x = 1;
         scene.add(plane);
 
-        // cursor object
-        const mouseGeometry = new THREE.SphereGeometry(0.1, 22, 22);
-        const mouseMaterial = new THREE.MeshBasicMaterial({
-            color: 0xffff00,
-        });
-        // const mouseMesh = new THREE.Mesh(mouseGeometry, mouseMaterial);
+        // hidden 3D cursor
         const mouseMesh = new THREE.Group();
         mouseMesh.position.x = 1;
         scene.add(mouseMesh);
 
         // main character group
-        const maincharacter = new THREE.Group();
-        scene.add(maincharacter);
+        const character = new THREE.Group();
+        scene.add(character);
+
+        // textures
+        var blinkface = new THREE.TextureLoader().load("sm-faceblink.png");
+        var idleface = new THREE.TextureLoader().load("sm-face.png");
 
         // head
         var geometry = new THREE.SphereGeometry(1, 256, 256);
@@ -108,7 +118,7 @@
         head.scale.x = 0.8;
         head.scale.y = 0.9;
         head.rotation.y = -Math.PI / 2;
-        maincharacter.add(head);
+        character.add(head);
         camera.lookAt(head.position);
 
         // ears
@@ -130,57 +140,73 @@
         ear2.rotation.set(-0.05, 0, -0.1);
         ear2.position.set(-0.1, 0.7, -0.35);
         head.add(ear2);
+        
 
-        // === Animation Loop ===
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-            maincharacter.lookAt(mouseMesh.position);
+        // look at cursor
+        document.addEventListener( 'pointermove', onPointerMove );
+        document.addEventListener( 'pointerdown', onPointerDown );
+
+        function onPointerMove( event ) {
+
+            pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+            pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+            raycaster.setFromCamera( pointer, camera );
+
+            const intersects = raycaster.intersectObject( plane, true );
+
+            if ( intersects.length > 0 ) {
+                movecursor(intersects[0].point.z, intersects[0].point.y);
+            }
+
         }
-        animate();
 
-        //
-        function movehero(z, y) {
+
+
+        // move cursor
+        function movecursor(z, y) {
             mouseMesh.position.z = z;
             mouseMesh.position.y = y;
         }
 
-        // === Resize Handling ===
-        window.addEventListener("resize", () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        //  onPointer down
+        function onPointerDown( event ) {
+            blink();
 
-        // update touch
-        let updateTouchCoordinates = function (evt) {
-            stopwarp = false;
-            stretch();
-            mouse.x = (evt.touches[0].pageX / window.innerWidth) * 2 - 1;
-            mouse.y = -(evt.touches[0].pageY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            let intersects = raycaster.intersectObject(plane);
-            if (intersects.length > 0) {
-                movehero(intersects[0].point.z, intersects[0].point.y);
+        }
+
+
+        // blink
+        function blink(){
+            head.material.map = blinkface;
+            head.material.map.needsUpdate = true;
+            rnd = Math.floor(Math.random()*10)*50;
+
+            if (rnd == 0 || oldrnd == rnd) {return}
+            oldrnd = rnd;
+            // console.log(rnd)
+            zzfx(...[.1,2.6,300,.02,.01,.008,,1.1,-80,86,,,,,106,,,.91,.01,.2,-1040]); // Blip 255
+            setTimeout(function () {
+                zzfx(...[.1,2.6,800,.02,.01,.008,,1.1,-80,86,,,,,106,,,.91,.01,.2,-1040]); // Blip 255
+                head.material.map = idleface;
+                head.material.map.needsUpdate = true;       
+             }, rnd);
+        }
+
+
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+            character.lookAt(mouseMesh.position);
+            if ( Math.random() > 0.99 ){
+                blink();
             }
-        };
+        }
 
-        // update mouse
-        let updateMouseCoordinates = function (evt) {
-            evt.preventDefault();
+        animate();
 
-            mouse.x = (evt.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(evt.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            let intersects = raycaster.intersectObject(plane);
-            if (intersects.length > 0) {
-                movehero(intersects[0].point.z, intersects[0].point.y);
-            }
-        };
-
-        window.addEventListener("touchstart", updateTouchCoordinates);
-        window.addEventListener("touchmove", updateTouchCoordinates);
-        window.addEventListener("mousemove", updateMouseCoordinates, false);
     </script>
 </body>
 </html>
