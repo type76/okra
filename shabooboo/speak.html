@@ -1,22 +1,17 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <meta charset="UTF-8" />
-        <title>SHABOOBOO - Improved</title>
+        <meta charset="UTF-8">
+        <title>SHABOOBOO</title>
         <style>
             body {
                 margin: 0;
                 overflow: hidden;
                 background: #000;
-                font-family: Arial, sans-serif;
+                font-family: monospace;
             }
             canvas {
                 display: block;
-            }
-            .info {
-                position: absolute;
-                z-index: 99;
-                display: none;
             }
             #hud {
                 position: absolute;
@@ -35,7 +30,6 @@
                 left: 50%;
                 transform: translate(-50%, -50%);
                 color: white;
-                font-size: 18px;
                 z-index: 100;
             }
             #subs {
@@ -60,51 +54,14 @@
         </script>
     </head>
     <body>
-        <div id="loading">Loading textures...</div>
+        <div id="loading">Loading</div>
         
         <div id="hud">
             <button id="btn">Speak</button>
             <button id="rantbtn">Rant</button>
         </div>
-        
-        <div class="info">
-            <form onsubmit="sendMessage();return false" id="inform">
-                <button type="submit" value="Send" id="sendmsg">&gt;</button>
-                <input
-                    type="text"
-                    size="32"
-                    name="message"
-                    id="input"
-                    autocomplete="off"
-                    onkeyup="cleanbf()"
-                    onkeydown="cleanbf()"
-                    tabindex="1"
-                    value="My uncle"
-                />
-
-                <input
-                    type="range"
-                    min="0"
-                    max="2"
-                    value="1"
-                    step="0.1"
-                    id="pitch"
-                />
-
-                <input
-                    type="range"
-                    min="0.5"
-                    max="2"
-                    value="0.8"
-                    step="0.1"
-                    id="rate"
-                />
-            </form>
-            <select selected="Fred"></select>
-        </div>
 
         <div id="subs"></div>
-
 
         <script type="text/javascript" src="rant.min.js"></script>
 
@@ -116,6 +73,8 @@
             var oldrnd = 0;
             var speed = 70; // ANIMATION SPEED
             var rate = 0.85; // SPEECH SPEED
+            var pitch = 2; // SPEECH PITCH
+
             var text = "shaboobu";
 
             // Scene
@@ -196,7 +155,7 @@
             class FaceManager {
                 constructor() {
                     this.textures = {};
-                    this.currentFace = '1';
+                    this.currentFace = '0';
                     this.isReady = false;
                     this.textureLoader = new THREE.TextureLoader();
                 }
@@ -372,8 +331,6 @@
 
             // Speech Synthesis
             var synth = window.speechSynthesis;
-            var voiceSelect = document.querySelector("select");
-            var voices = [];
 
             function spk(text) {
                 if (!faceManager.isReady) {
@@ -382,14 +339,7 @@
                 }
                 
                 var utterThis = new SpeechSynthesisUtterance(text);
-                var selectedOption =
-                    voiceSelect.selectedOptions[0].getAttribute("data-name");
-                for (var i = 0; i < voices.length; i++) {
-                    if (voices[i].name === selectedOption) {
-                        utterThis.voice = voices[i];
-                    }
-                }
-                utterThis.pitch = pitch.value * (text.length * 0.3);
+                utterThis.pitch = pitch;
                 utterThis.rate = rate;
 
                 // change voice
@@ -400,7 +350,7 @@
                 synth.speak(utterThis);
             }
 
-            // Improved lip sync mapping
+            // Lip sync mapping
             const phonemeMap = {
                 // Closed mouth
                 'silence': '0', ' ': '0', '.': '0', ',': '0',
@@ -418,7 +368,7 @@
                 'f': '9', 'F': '9', 'v': '9', 'V': '9',
                 
                 // Tongue up (L, N, D, T)
-                'l': '6', 'L': '6', 'n': '5', 'N': '5', 'd': '5', 'D': '5', 't': '1', 'T': '1',
+                'l': '6', 'L': '6', 'n': '5', 'N': '5', 'd': '5', 'D': '5', 't': '4', 'T': '4',
                 
                 // Sibilants (S, Z, C)
                 's': '5', 'S': '5', 'z': '5', 'Z': '5', 'c': '5', 'C': '5',
@@ -427,7 +377,7 @@
                 'g': '3', 'G': '3', 'k': '3', 'K': '3', 'h': '5', 'H': '5', 'r': '7', 'R': '7',
                 
                 // Default for unmapped characters
-                'default': '1'
+                'default': '0'
             };
 
             // lip sync to letters
@@ -459,39 +409,12 @@
                 faceManager.setFace(faceIndex);
             }
 
-            // wait for voices to be loaded before fetching list
-            window.speechSynthesis.onvoiceschanged = function () {
-                var xvoices = window.speechSynthesis.getVoices();
-            };
-
-            function populateVoiceList() {
-                voices = synth.getVoices();
-
-                for (var i = 0; i < voices.length; i++) {
-                    var option = document.createElement("option");
-                    option.textContent =
-                        voices[i].name + " (" + voices[i].lang + ")";
-
-                    if (voices[i].default) {
-                        option.textContent += " -- DEFAULT";
-                    }
-
-                    option.setAttribute("data-lang", voices[i].lang);
-                    option.setAttribute("data-name", voices[i].name);
-                    voiceSelect.appendChild(option);
-                }
-            }
-
-            populateVoiceList();
-            if (speechSynthesis.onvoiceschanged !== undefined) {
-                speechSynthesis.onvoiceschanged = populateVoiceList;
-            }
-
             document.querySelector('#btn').addEventListener('click', hello);
 
             function hello(){
                 mouthshape(text);
                 spk(text);
+                document.querySelector('#subs').innerHTML = text;
             }
 
             document.querySelector('#rantbtn').addEventListener('click', sayit);
@@ -503,7 +426,6 @@
                 spk(introsentence);
                 document.querySelector('#subs').innerHTML = introsentence;
             }
-
 
             // Initialize and start
             faceManager.init().then(() => {
