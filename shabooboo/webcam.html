@@ -83,9 +83,6 @@
             .webcam-active #webcam-overlay {
                 display: block;
             }
-            .webcam-active canvas {
-                mix-blend-mode: lighten;
-            }
             #words {
                 position: absolute;
                 bottom: 0;
@@ -613,7 +610,7 @@
 
             function sayit(){
                 var rant = require("rant");
-                var introsentence=rant('<verb.ing> <adj> <noun.plural> with my <noun -body>');
+                var introsentence=rant('<sound>');
                 mouthshape(introsentence);
                 spk(introsentence);
                 document.querySelector('#subs').innerHTML = introsentence;
@@ -649,7 +646,7 @@
                     
                     // Simple append with space
                     input.value = input.value + (input.value ? ' ' : '') + word;
-                    input.focus();
+                    // input.focus();
                 }
             });
 
