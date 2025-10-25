@@ -58,6 +58,7 @@
                 max-width: 300px;
             }
             #topl {
+                display: inline;
                 top: 0;
                 left: 5px;
                 z-index: 99;
@@ -101,10 +102,14 @@
                 padding: 4px 8px;
                 border-radius: 3px;
                 font-size: 12px;
+                display: block;
             }
             .content-buttons button:hover {
                 background: #555;
                 border-color: #777;
+            }
+            #deletetext {
+                display: inline;
             }
         </style>
 
@@ -120,12 +125,13 @@
         <div id="loading">Loading</div>
 
         <div id="hud">
+            <button id="deletetext">DEL</button>
             <form id="topl" onsubmit="sendrant();return false">
             <input type="text" size="32" name="isay" id="textinput" autocomplete="off" value="<adj> <noun> has <adv> <verb.ed> a <noun>" >
-                <button type="submit" value="Send" id="tellme" >&gt;</button>
+            <button type="submit" value="Send" id="tellme" >&gt;</button>
             </form>
 
-            <button id="deletetext">DEL</button>
+            
             
             <div class="content-buttons">
                 <button id="newsbtn">📰 News</button>
