@@ -10,6 +10,9 @@
                 overflow: hidden;
                 background: #000;
                 font-family: monospace;
+                touch-action: none; /* Prevent browser touch behaviors */
+                -webkit-user-select: none; /* Prevent text selection on iOS */
+                user-select: none;
             }
             canvas {
                 display: block;
@@ -42,15 +45,17 @@
                 word-wrap: break-word;
                 text-align: center;
                 width: 100%;
+                box-sizing: border-box;
             }
             #hud {
                 position: absolute;
                 z-index: 99;
                 width: 100%;
-                left: 0;
-                top: 0;
-                padding: 10px;
-                text-align: center;
+                left: 5px;
+                top: 5px;
+                display: flex;
+                gap: 10px;
+                align-items: center;
             }
             #hud button {
                 background: #333;
@@ -69,6 +74,7 @@
                 border: 1px solid #555;
                 padding: 5px;
                 font-family: monospace;
+                flex: 1;
             }
         </style>
         <script type="importmap">
@@ -81,7 +87,7 @@
     </head>
     <body>
         <div id="hud">
-            <!--<button id="deletetext">CLEAR</button>-->
+            <button id="deletetext">CLEAR</button>
             <input
                 type="text"
                 size="32"
@@ -259,6 +265,7 @@
                 antialias: true,
             });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.domElement.style.touchAction = "none"; // Important for mobile
             document.body.appendChild(renderer.domElement);
             THREE.ColorManagement.workingColorSpace = THREE.SRGBColorSpace;
 
@@ -270,8 +277,8 @@
             dirLight.castShadow = true;
             scene.add(ambient, dirLight);
 
-            // hover plane geometry
-            let plgeometry = new THREE.PlaneGeometry(10, 10, 1, 1);
+            // Make the plane larger for better mobile interaction
+            let plgeometry = new THREE.PlaneGeometry(20, 20, 1, 1);
 
             //plane material
             let plmaterial = new THREE.MeshBasicMaterial({
@@ -279,7 +286,7 @@
                 opacity: 0,
             });
 
-            //plane object3D
+            //plane object3D - position it better for mobile
             let plane = new THREE.Mesh(plgeometry, plmaterial);
             plane.name = "plane";
             plane.rotation.y = Math.PI / 2;
@@ -458,21 +465,39 @@
                 );
                 mouthshape(content);
                 spk(content);
-                setTimeout(function () {
-                    document.getElementById("textinput").value = "";
-                }, 200);
             }
 
-            // look at cursor
-            document.addEventListener("pointermove", onPointerMove);
+            // Unified pointer/touch move handler
+            function handlePointerMove(event) {
+                // Prevent default to avoid scrolling and other browser behaviors
+                event.preventDefault();
 
-            function onPointerMove(event) {
-                pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-                pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                // Get coordinates from either mouse or touch event
+                let clientX, clientY;
 
+                if (event.type.includes("touch")) {
+                    // Touch event
+                    if (event.touches.length > 0) {
+                        clientX = event.touches[0].clientX;
+                        clientY = event.touches[0].clientY;
+                    } else {
+                        return; // No touches
+                    }
+                } else {
+                    // Mouse event
+                    clientX = event.clientX;
+                    clientY = event.clientY;
+                }
+
+                // Convert to normalized device coordinates
+                pointer.x = (clientX / window.innerWidth) * 2 - 1;
+                pointer.y = -(clientY / window.innerHeight) * 2 + 1;
+
+                // Update raycaster
                 raycaster.setFromCamera(pointer, camera);
 
-                const intersects = raycaster.intersectObject(plane, true);
+                // Check for intersections with the plane
+                const intersects = raycaster.intersectObject(plane);
 
                 if (intersects.length > 0) {
                     movecursor(intersects[0].point.z, intersects[0].point.y);
@@ -484,6 +509,15 @@
                 mouseMesh.position.z = z;
                 mouseMesh.position.y = y;
             }
+
+            // Set up event listeners for both mouse and touch
+            document.addEventListener("mousemove", handlePointerMove);
+            document.addEventListener("touchmove", handlePointerMove, {
+                passive: false,
+            });
+            document.addEventListener("touchstart", handlePointerMove, {
+                passive: false,
+            });
 
             // blink
             function blink() {
@@ -521,10 +555,13 @@
                     updateHeadAnimation();
                 }
 
+                // Smoothly interpolate cursor position
                 lerpedcursor.position.y +=
                     (mouseMesh.position.y - lerpedcursor.position.y) * 0.2;
                 lerpedcursor.position.z +=
                     (mouseMesh.position.z - lerpedcursor.position.z) * 0.2;
+
+                // Make character look at the smoothed cursor position
                 character.lookAt(lerpedcursor.position);
 
                 // Random blink
@@ -546,11 +583,14 @@
                 utterThis.rate = rate;
 
                 // change voice
-                utterThis.voice = speechSynthesis
-                    .getVoices()
-                    .filter(function (voice) {
-                        return voice.name == "Tessa";
-                    })[0];
+                const voices = speechSynthesis.getVoices();
+                if (voices.length > 0) {
+                    // Try to find Tessa, or use the first available voice
+                    const tessaVoice = voices.find((voice) =>
+                        voice.name.includes("Tessa"),
+                    );
+                    utterThis.voice = tessaVoice || voices[0];
+                }
 
                 // Start head animation BEFORE speaking
                 if (typeof startHeadAnimation === "function") {
@@ -682,19 +722,18 @@
                 animate();
 
                 // Set up UI controls
-                // const deleteButton = document.getElementById("deletetext");
+                const deleteButton = document.getElementById("deletetext");
                 const speakButton = document.getElementById("speakbutton");
                 const textInput = document.getElementById("textinput");
 
-                // // Clear button functionality
-                // deleteButton.addEventListener("click", function () {
-                //     document.getElementById("subs").innerHTML = "";
-                //     document.getElementById("textinput").value = "";
-                //     synth.cancel(); // Stop any ongoing speech
-                //     if (typeof stopHeadAnimation === "function") {
-                //         stopHeadAnimation();
-                //     }
-                // });
+                // Clear button functionality
+                deleteButton.addEventListener("click", function () {
+                    document.getElementById("subs").innerHTML = "";
+                    synth.cancel(); // Stop any ongoing speech
+                    if (typeof stopHeadAnimation === "function") {
+                        stopHeadAnimation();
+                    }
+                });
 
                 // Speak button functionality
                 speakButton.addEventListener("click", function () {
@@ -719,6 +758,13 @@
                     if (this.value === "say something interesting") {
                         this.value = "";
                     }
+                });
+
+                // Prevent default touch behaviors on buttons
+                [deleteButton, speakButton].forEach((button) => {
+                    button.addEventListener("touchstart", (e) => {
+                        e.preventDefault();
+                    });
                 });
             });
         </script>
