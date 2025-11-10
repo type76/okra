@@ -129,6 +129,8 @@ Notes:
             let headTiltOffset = Math.random() * Math.PI * 2;
             let earWiggleOffset = Math.random() * Math.PI * 2;
             let animationIntensity = 0;
+            let disableLookAt = false;
+            let lookAtTimeout = null;
 
             // Animation settings
             const HEAD_BOB_SPEED = 0.2;
@@ -715,15 +717,32 @@ Notes:
                     updateHeadAnimation();
                 }
 
-                lerpedcursor.position.y +=
-                    (mouseMesh.position.y - lerpedcursor.position.y) * 0.2;
-                lerpedcursor.position.z +=
-                    (mouseMesh.position.z - lerpedcursor.position.z) * 0.2;
-                character.lookAt(lerpedcursor.position);
+                if (!disableLookAt) {
+                    lerpedcursor.position.y +=
+                        (mouseMesh.position.y - lerpedcursor.position.y) * 0.2;
+                    lerpedcursor.position.z +=
+                        (mouseMesh.position.z - lerpedcursor.position.z) * 0.2;
+                    character.lookAt(lerpedcursor.position);
+                }
 
                 if (Math.random() > 0.995 && faceManager.isReady) {
                     blink();
                 }
+            }
+
+            // disable lookat
+            function temporarilyDisableLookAt(duration = 500) {
+                disableLookAt = true;
+
+                // Clear any existing timeout
+                if (lookAtTimeout) {
+                    clearTimeout(lookAtTimeout);
+                }
+
+                // Re-enable after specified duration
+                lookAtTimeout = setTimeout(() => {
+                    disableLookAt = false;
+                }, duration);
             }
 
             // Speech Synthesis
@@ -842,37 +861,44 @@ Notes:
                 // Clear button
                 const clearFunction = function (e) {
                     if (e) e.preventDefault();
+                    temporarilyDisableLookAt(800); // Disable for 800ms
                     document.getElementById("subs").innerHTML = "";
                     synth.cancel();
                     if (typeof stopHeadAnimation === "function") {
                         stopHeadAnimation();
                     }
                 };
-                deleteButton.addEventListener("touchend", clearFunction);
-                deleteButton.addEventListener("click", clearFunction);
 
                 // Speak button
                 const speakFunction = function (e) {
                     if (e) e.preventDefault();
+                    temporarilyDisableLookAt(800); // Disable for 800ms
                     const text = textInput.value.trim();
                     if (text) {
                         speakContent(text);
                     }
                 };
-                speakButton.addEventListener("touchend", speakFunction);
-                speakButton.addEventListener("click", speakFunction);
 
                 // Voice button
                 const voiceFunction = function (e) {
                     if (e) e.preventDefault();
+                    temporarilyDisableLookAt(800); // Disable for 800ms
                     changeVoice();
                 };
+
+                deleteButton.addEventListener("touchend", clearFunction);
+                deleteButton.addEventListener("click", clearFunction);
+
+                speakButton.addEventListener("touchend", speakFunction);
+                speakButton.addEventListener("click", speakFunction);
+
                 voiceButton.addEventListener("touchend", voiceFunction);
                 voiceButton.addEventListener("click", voiceFunction);
 
                 // Enter key support
                 textInput.addEventListener("keypress", function (e) {
                     if (e.key === "Enter") {
+                        temporarilyDisableLookAt(800); // Disable for 800ms
                         const text = textInput.value.trim();
                         if (text) {
                             speakContent(text);
