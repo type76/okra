@@ -10,8 +10,7 @@
                 overflow: hidden;
                 background: #000;
                 font-family: monospace;
-                /* touch-action: none; /* Prevent browser touch behaviors */ */
-                -webkit-user-select: none; /* Prevent text selection on iOS */
+                -webkit-user-select: none;
                 user-select: none;
             }
             canvas {
@@ -20,6 +19,8 @@
                 top: 0;
                 left: 0;
                 z-index: 2;
+                /* Apply touch-action: none ONLY to the canvas */
+                touch-action: none;
             }
 
             #loading {
@@ -49,7 +50,7 @@
             }
             #hud {
                 position: absolute;
-                z-index: 999;
+                z-index: 99;
                 width: 100%;
                 left: 5px;
                 top: 5px;
@@ -469,8 +470,14 @@
 
             // Unified pointer/touch move handler
             function handlePointerMove(event) {
-                // Prevent default to avoid scrolling and other browser behaviors
-                event.preventDefault();
+                // Only prevent default for touch events on the canvas, not the HUD
+                if (event.type.includes("touch")) {
+                    // Check if touch is on the canvas (not HUD elements)
+                    const isOnCanvas = event.target === renderer.domElement;
+                    if (isOnCanvas) {
+                        event.preventDefault();
+                    }
+                }
 
                 // Get coordinates from either mouse or touch event
                 let clientX, clientY;
@@ -726,16 +733,33 @@
                 const speakButton = document.getElementById("speakbutton");
                 const textInput = document.getElementById("textinput");
 
-                // Clear button functionality
-                deleteButton.addEventListener("click", function () {
+                // Clear button functionality - both touch and click
+                deleteButton.addEventListener("touchend", function (e) {
+                    e.preventDefault();
                     document.getElementById("subs").innerHTML = "";
-                    synth.cancel(); // Stop any ongoing speech
+                    synth.cancel();
                     if (typeof stopHeadAnimation === "function") {
                         stopHeadAnimation();
                     }
                 });
 
-                // Speak button functionality
+                deleteButton.addEventListener("click", function () {
+                    document.getElementById("subs").innerHTML = "";
+                    synth.cancel();
+                    if (typeof stopHeadAnimation === "function") {
+                        stopHeadAnimation();
+                    }
+                });
+
+                // Speak button functionality - both touch and click
+                speakButton.addEventListener("touchend", function (e) {
+                    e.preventDefault();
+                    const text = textInput.value.trim();
+                    if (text) {
+                        speakContent(text);
+                    }
+                });
+
                 speakButton.addEventListener("click", function () {
                     const text = textInput.value.trim();
                     if (text) {
