@@ -1,0 +1,899 @@
+<!--
+Notes:
+. USE KATHY VOICE
+.
+-->
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>SHABOOBOO</title>
+        <style>
+            body {
+                margin: 0;
+                overflow: hidden;
+                background: #000;
+                font-family: monospace;
+                -webkit-user-select: none;
+                user-select: none;
+            }
+            canvas {
+                display: block;
+                position: absolute;
+                top: 0;
+                left: 0;
+                z-index: 2;
+                touch-action: none;
+            }
+
+            #loading {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
+                z-index: 100;
+            }
+            #subs {
+                position: absolute;
+                z-index: 99;
+                bottom: 5px;
+                left: 0;
+                font-family: monospace;
+                text-align: center;
+                color: white;
+                font-size: 110%;
+                background: rgba(0, 0, 0, 0.8);
+                padding: 10px;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                text-align: center;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            #hud {
+                position: absolute;
+                z-index: 99;
+                width: 100%;
+                left: 5px;
+                top: 5px;
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+            #hud button {
+                background: #333;
+                color: white;
+                border: 1px solid #555;
+                padding: 5px 10px;
+                cursor: pointer;
+                font-family: monospace;
+                white-space: nowrap;
+            }
+            #hud button:hover {
+                background: #555;
+            }
+            #hud input {
+                background: #222;
+                color: white;
+                border: 1px solid #555;
+                padding: 5px;
+                font-family: monospace;
+                flex: 1;
+                min-width: 150px;
+            }
+            #voiceInfo {
+                color: white;
+                font-size: 12px;
+                padding: 2px 5px;
+                background: rgba(0, 0, 0, 0.7);
+                border-radius: 3px;
+            }
+        </style>
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://unpkg.com/three@0.170.0/build/three.module.js"
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <div id="hud">
+            <button id="deletetext">CLEAR</button>
+            <input
+                type="text"
+                size="32"
+                name="isay"
+                id="textinput"
+                autocomplete="off"
+                value="say something interesting"
+            />
+            <button id="speakbutton">SPEAK</button>
+            <button id="voicebutton">CHANGE VOICE</button>
+            <span id="voiceInfo">Voice: Default</span>
+        </div>
+
+        <div id="loading">Loading</div>
+
+        <div id="subs"></div>
+
+        <!-- Head Motion Script -->
+        <script type="text/javascript">
+            // head-motion.js - Head animation during speech
+            let isSpeaking = false;
+            let speechAnimationTime = 0;
+            let headBobOffset = Math.random() * Math.PI * 2;
+            let headTiltOffset = Math.random() * Math.PI * 2;
+            let earWiggleOffset = Math.random() * Math.PI * 2;
+            let animationIntensity = 0;
+
+            // Animation settings
+            const HEAD_BOB_SPEED = 0.2;
+            const HEAD_TILT_SPEED = 0.07;
+            const EAR_WIGGLE_SPEED = 0.15;
+
+            // Start head animation
+            function startHeadAnimation() {
+                isSpeaking = true;
+                animationIntensity = 0.4;
+                speechAnimationTime = 0;
+            }
+
+            // Stop head animation
+            function stopHeadAnimation() {
+                isSpeaking = false;
+                // Gradually reduce intensity
+                const reduceIntensity = () => {
+                    animationIntensity *= 0.9;
+                    if (animationIntensity > 0.01) {
+                        requestAnimationFrame(reduceIntensity);
+                    } else {
+                        animationIntensity = 0;
+                        resetToNeutral();
+                    }
+                };
+                reduceIntensity();
+            }
+
+            // Reset to neutral position
+            function resetToNeutral() {
+                if (window.character) {
+                    window.character.position.y = 0;
+                }
+
+                if (window.head) {
+                    window.head.rotation.z = 0;
+                }
+
+                if (window.ear && window.ear2) {
+                    window.ear.rotation.x = 0.1;
+                    window.ear.rotation.z = 0;
+                    window.ear2.rotation.x = -0.05;
+                    window.ear2.rotation.z = 0;
+                    window.ear.position.y = 0.7;
+                    window.ear2.position.y = 0.7;
+                }
+            }
+
+            // Update head animation - call this in animate function
+            function updateHeadAnimation() {
+                if (!isSpeaking && animationIntensity === 0) return;
+
+                // Increment offsets
+                headBobOffset += HEAD_BOB_SPEED;
+                headTiltOffset += HEAD_TILT_SPEED;
+                earWiggleOffset += EAR_WIGGLE_SPEED;
+
+                if (
+                    window.character &&
+                    window.head &&
+                    window.ear &&
+                    window.ear2
+                ) {
+                    // Head bobbing
+                    const bobY =
+                        Math.sin(headBobOffset) * 0.03 * animationIntensity;
+
+                    // Head tilting
+                    const tiltZ =
+                        Math.sin(headTiltOffset) * 0.1 * animationIntensity;
+
+                    // Apply head movements
+                    window.character.position.y = bobY;
+                    window.head.rotation.z = tiltZ;
+
+                    // Ear movements with overlapping timing
+                    const earWiggle1 =
+                        Math.sin(earWiggleOffset) * 0.08 * animationIntensity;
+                    const earWiggle2 =
+                        Math.sin(earWiggleOffset + 1.5) *
+                        0.06 *
+                        animationIntensity;
+
+                    // Ear tilting
+                    const earTilt1 =
+                        Math.sin(earWiggleOffset * 0.8) *
+                        0.1 *
+                        animationIntensity;
+                    const earTilt2 =
+                        Math.sin(earWiggleOffset * 0.8 + 1.2) *
+                        0.08 *
+                        animationIntensity;
+
+                    // Apply ear movements
+                    window.ear.rotation.x = 0.1 + earTilt1;
+                    window.ear.rotation.z = earWiggle1;
+                    window.ear2.rotation.x = -0.05 + earTilt2;
+                    window.ear2.rotation.z = earWiggle2;
+
+                    // Ear bouncing
+                    window.ear.position.y =
+                        0.7 +
+                        Math.sin(earWiggleOffset * 0.5) *
+                            0.02 *
+                            animationIntensity;
+                    window.ear2.position.y =
+                        0.7 +
+                        Math.sin(earWiggleOffset * 0.5 + 0.8) *
+                            0.015 *
+                            animationIntensity;
+                }
+            }
+
+            // Make functions globally available
+            window.startHeadAnimation = startHeadAnimation;
+            window.stopHeadAnimation = stopHeadAnimation;
+            window.updateHeadAnimation = updateHeadAnimation;
+        </script>
+
+        <script type="module">
+            import * as THREE from "three";
+
+            var clicked = false;
+            var rnd = 0;
+            var oldrnd = 0;
+            var speed = 70;
+            var rate = 0.85;
+            var pitch = 2;
+            var text = "shaboobu";
+
+            // Voice management
+            let availableVoices = [];
+            let currentVoiceIndex = 0;
+            let currentVoiceName = "Default";
+
+            // Random words list
+            const randomWords = [
+                "Hello",
+                "Greetings",
+                "Salutations",
+                "Hey there",
+                "Hi",
+                "Wonderful",
+                "Fantastic",
+                "Amazing",
+                "Brilliant",
+                "Excellent",
+                "Curious",
+                "Interesting",
+                "Fascinating",
+                "Intriguing",
+                "Remarkable",
+                "Delightful",
+                "Charming",
+                "Pleasant",
+                "Lovely",
+                "Splendid",
+                "Mysterious",
+                "Enigmatic",
+                "Cryptic",
+                "Puzzling",
+                "Baffling",
+                "Ethereal",
+                "Celestial",
+                "Otherworldly",
+                "Cosmic",
+                "Astral",
+                "Whimsical",
+                "Playful",
+                "Joyful",
+                "Cheerful",
+                "Jovial",
+                "Serendipity",
+                "Synchronicity",
+                "Coincidence",
+                "Fortuity",
+                "Kismet",
+                "Luminous",
+                "Radiant",
+                "Glowing",
+                "Shimmering",
+                "Glistening",
+                "Quintessential",
+                "Archetypal",
+                "Exemplary",
+                "Paradigmatic",
+                "Definitive",
+            ];
+
+            // Scene
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x101010);
+
+            //raycaster
+            let raycaster = new THREE.Raycaster();
+            const pointer = new THREE.Vector2();
+
+            // Camera
+            const camera = new THREE.PerspectiveCamera(
+                50,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000,
+            );
+            camera.position.set(4, 0, 0);
+
+            // Renderer
+            const renderer = new THREE.WebGLRenderer({
+                antialias: true,
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.domElement.style.touchAction = "none";
+            document.body.appendChild(renderer.domElement);
+            THREE.ColorManagement.workingColorSpace = THREE.SRGBColorSpace;
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xcccccc, 1);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(5, 10, 7);
+            dirLight.castShadow = true;
+            scene.add(ambient, dirLight);
+
+            // Make the plane larger for better mobile interaction
+            let plgeometry = new THREE.PlaneGeometry(20, 20, 1, 1);
+
+            //plane material
+            let plmaterial = new THREE.MeshBasicMaterial({
+                transparent: true,
+                opacity: 0,
+            });
+
+            //plane object3D
+            let plane = new THREE.Mesh(plgeometry, plmaterial);
+            plane.name = "plane";
+            plane.rotation.y = Math.PI / 2;
+            plane.position.x = 1;
+            scene.add(plane);
+
+            // hidden 3D cursor
+            const mouseMesh = new THREE.Group();
+            mouseMesh.position.x = 1;
+            scene.add(mouseMesh);
+
+            const lerpedcursor = new THREE.Group();
+            lerpedcursor.position.x = 1;
+            scene.add(lerpedcursor);
+
+            // main character group
+            const character = new THREE.Group();
+            scene.add(character);
+
+            // Make character globally available for head motion
+            window.character = character;
+
+            // textures
+            var faces = [
+                {
+                    n: "0",
+                    col: "sm-face-clean.png",
+                    bump: "sm-facebmp-clean.png",
+                },
+                { n: "1", col: "sm-face.png", bump: "sm-facebmp.png" },
+                { n: "2", col: "sm-faceblink.png", bump: "sm-facebmp.png" },
+                { n: "3", col: "sm-face-A.png", bump: "sm-facebmp-A.png" },
+                { n: "4", col: "sm-face-aaa.png", bump: "sm-facebmp-aaa.png" },
+                { n: "5", col: "sm-face-E.png", bump: "sm-facebmp-E.png" },
+                { n: "6", col: "sm-face-L.png", bump: "sm-facebmp-L.png" },
+                { n: "7", col: "sm-face-oo.png", bump: "sm-facebmp-oo.png" },
+                { n: "8", col: "sm-face-M.png", bump: "sm-facebmp-M.png" },
+                { n: "9", col: "sm-face-F.png", bump: "sm-facebmp-F.png" },
+            ];
+
+            // Face Manager Class
+            class FaceManager {
+                constructor() {
+                    this.textures = {};
+                    this.currentFace = "0";
+                    this.isReady = false;
+                    this.textureLoader = new THREE.TextureLoader();
+                }
+
+                async init() {
+                    await this.preloadTextures();
+                    this.isReady = true;
+                    document.getElementById("loading").style.display = "none";
+                }
+
+                async preloadTextures() {
+                    const loadPromises = faces.map(async (face) => {
+                        const [col, bump] = await Promise.all([
+                            this.loadTexture(face.col),
+                            this.loadTexture(face.bump),
+                        ]);
+                        this.texfix(col);
+                        this.texfix(bump);
+                        return { n: face.n, col, bump };
+                    });
+
+                    const loaded = await Promise.all(loadPromises);
+                    loaded.forEach((texture) => {
+                        this.textures[texture.n] = texture;
+                    });
+                }
+
+                loadTexture(url) {
+                    return new Promise((resolve, reject) => {
+                        this.textureLoader.load(
+                            url,
+                            resolve,
+                            undefined,
+                            reject,
+                        );
+                    });
+                }
+
+                texfix(texture) {
+                    texture.magFilter = texture.minFilter = THREE.NearestFilter;
+                }
+
+                setFace(faceIndex) {
+                    if (!this.isReady) return;
+
+                    const face = this.textures[faceIndex];
+                    if (face && this.currentFace !== faceIndex) {
+                        head.material.map = face.col;
+                        head.material.displacementMap = face.bump;
+                        head.material.needsUpdate = true;
+                        this.currentFace = faceIndex;
+                    }
+                }
+
+                getTexture(faceIndex) {
+                    return this.textures[faceIndex];
+                }
+            }
+
+            // Initialize Face Manager
+            const faceManager = new FaceManager();
+
+            // head
+            var geometry = new THREE.SphereGeometry(1, 256, 256);
+            var material = new THREE.MeshStandardMaterial({
+                metalness: 0.01,
+                roughness: 0.9,
+                map: new THREE.TextureLoader().load("sm-face-clean.png"),
+                displacementMap: new THREE.TextureLoader().load(
+                    "sm-facebmp-clean.png",
+                ),
+                roughnessMap: new THREE.TextureLoader().load(
+                    "sm-facerough.png",
+                ),
+                displacementScale: -1,
+            });
+
+            // Apply texture settings
+            material.map.magFilter = material.map.minFilter =
+                THREE.NearestFilter;
+            material.displacementMap.magFilter =
+                material.displacementMap.minFilter = THREE.NearestFilter;
+            material.roughnessMap.magFilter = material.roughnessMap.minFilter =
+                THREE.NearestFilter;
+
+            var head = new THREE.Mesh(geometry, material);
+            head.scale.x = 0.8;
+            head.scale.y = 0.9;
+            head.rotation.y = -Math.PI / 2;
+            character.add(head);
+            camera.lookAt(head.position);
+
+            // Make head globally available for head motion
+            window.head = head;
+
+            // ears
+            var bgeometry = new THREE.SphereGeometry(0.3, 8, 12);
+            var ear = new THREE.Mesh(
+                bgeometry,
+                new THREE.MeshStandardMaterial({
+                    map: new THREE.TextureLoader().load("v.png"),
+                    displacementMap: new THREE.TextureLoader().load("bmp.png"),
+                    displacementScale: -0.1,
+                }),
+            );
+            ear.position.set(-0.05, 0.7, 0.35);
+            ear.rotation.set(0.1, 0, 0);
+            ear.scale.set(0.5, 1.7, 0.6);
+            head.add(ear);
+
+            var ear2 = ear.clone();
+            ear2.rotation.set(-0.05, 0, -0.1);
+            ear2.position.set(-0.1, 0.7, -0.35);
+            head.add(ear2);
+
+            // Make ears globally available for head motion
+            window.ear = ear;
+            window.ear2 = ear2;
+
+            // Voice functions
+            function loadVoices() {
+                return new Promise((resolve) => {
+                    const voices = speechSynthesis.getVoices();
+                    if (voices.length > 0) {
+                        availableVoices = voices;
+                        resolve(voices);
+                    } else {
+                        speechSynthesis.onvoiceschanged = () => {
+                            availableVoices = speechSynthesis.getVoices();
+                            resolve(availableVoices);
+                        };
+                    }
+                });
+            }
+
+            function getRandomVoiceSettings() {
+                return {
+                    rate: 0.7 + Math.random() * 0.6, // 0.7 to 1.3
+                    pitch: 0.8 + Math.random() * 1.4, // 0.8 to 2.2
+                    volume: 0.8 + Math.random() * 0.2, // 0.8 to 1.0
+                };
+            }
+
+            function changeVoice() {
+                if (availableVoices.length === 0) return;
+
+                currentVoiceIndex =
+                    (currentVoiceIndex + 1) % availableVoices.length;
+                const newVoice = availableVoices[currentVoiceIndex];
+                currentVoiceName = newVoice.name;
+
+                // Update voice info display
+                document.getElementById("voiceInfo").textContent =
+                    `Voice: ${currentVoiceName.split(" ")[0]}`;
+
+                // Get a random word to demonstrate the voice
+                const randomWord =
+                    randomWords[Math.floor(Math.random() * randomWords.length)];
+
+                // Speak with the new voice and random settings
+                const settings = getRandomVoiceSettings();
+                speakContentWithSettings(randomWord, newVoice, settings);
+            }
+
+            function speakContentWithSettings(text, voice, settings) {
+                if (!faceManager.isReady) return;
+
+                document.querySelector("#subs").innerHTML = text.replace(
+                    /\n/g,
+                    "<br>",
+                );
+                mouthshape(text);
+
+                var utterThis = new SpeechSynthesisUtterance(text);
+                utterThis.voice = voice;
+                utterThis.rate = settings.rate;
+                utterThis.pitch = settings.pitch;
+                utterThis.volume = settings.volume;
+
+                if (typeof startHeadAnimation === "function") {
+                    startHeadAnimation();
+                }
+
+                synth.speak(utterThis);
+
+                utterThis.onend = function () {
+                    if (typeof stopHeadAnimation === "function") {
+                        setTimeout(stopHeadAnimation, 200);
+                    }
+                };
+            }
+
+            // Content speaking function
+            function speakContent(thistext) {
+                if (!faceManager.isReady) return;
+
+                const content = thistext;
+                document.querySelector("#subs").innerHTML = content.replace(
+                    /\n/g,
+                    "<br>",
+                );
+                mouthshape(content);
+
+                var utterThis = new SpeechSynthesisUtterance(content);
+                utterThis.pitch = pitch;
+                utterThis.rate = rate;
+
+                // Use current voice if available
+                if (
+                    availableVoices.length > 0 &&
+                    currentVoiceIndex < availableVoices.length
+                ) {
+                    utterThis.voice = availableVoices[currentVoiceIndex];
+                }
+
+                if (typeof startHeadAnimation === "function") {
+                    startHeadAnimation();
+                }
+
+                synth.speak(utterThis);
+
+                utterThis.onend = function () {
+                    if (typeof stopHeadAnimation === "function") {
+                        setTimeout(stopHeadAnimation, 200);
+                    }
+                };
+            }
+
+            // Unified pointer/touch move handler
+            function handlePointerMove(event) {
+                if (event.type.includes("touch")) {
+                    const isOnCanvas = event.target === renderer.domElement;
+                    if (isOnCanvas) {
+                        event.preventDefault();
+                    }
+                }
+
+                let clientX, clientY;
+
+                if (event.type.includes("touch")) {
+                    if (event.touches.length > 0) {
+                        clientX = event.touches[0].clientX;
+                        clientY = event.touches[0].clientY;
+                    } else {
+                        return;
+                    }
+                } else {
+                    clientX = event.clientX;
+                    clientY = event.clientY;
+                }
+
+                pointer.x = (clientX / window.innerWidth) * 2 - 1;
+                pointer.y = -(clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(pointer, camera);
+                const intersects = raycaster.intersectObject(plane);
+
+                if (intersects.length > 0) {
+                    movecursor(intersects[0].point.z, intersects[0].point.y);
+                }
+            }
+
+            function movecursor(z, y) {
+                mouseMesh.position.z = z;
+                mouseMesh.position.y = y;
+            }
+
+            document.addEventListener("mousemove", handlePointerMove);
+            document.addEventListener("touchmove", handlePointerMove, {
+                passive: false,
+            });
+            document.addEventListener("touchstart", handlePointerMove, {
+                passive: false,
+            });
+
+            function blink() {
+                faceManager.setFace("2");
+                rnd = Math.floor(Math.random() * 10) * 50;
+
+                if (rnd == 0 || oldrnd == rnd) {
+                    return;
+                }
+                oldrnd = rnd;
+
+                setTimeout(function () {
+                    faceManager.setFace("1");
+                }, rnd);
+            }
+
+            window.addEventListener(
+                "resize",
+                function () {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                },
+                false,
+            );
+
+            function animate() {
+                requestAnimationFrame(animate);
+                renderer.render(scene, camera);
+
+                if (typeof updateHeadAnimation === "function") {
+                    updateHeadAnimation();
+                }
+
+                lerpedcursor.position.y +=
+                    (mouseMesh.position.y - lerpedcursor.position.y) * 0.2;
+                lerpedcursor.position.z +=
+                    (mouseMesh.position.z - lerpedcursor.position.z) * 0.2;
+                character.lookAt(lerpedcursor.position);
+
+                if (Math.random() > 0.995 && faceManager.isReady) {
+                    blink();
+                }
+            }
+
+            // Speech Synthesis
+            var synth = window.speechSynthesis;
+
+            // Lip sync mapping
+            const phonemeMap = {
+                silence: "0",
+                " ": "0",
+                ".": "0",
+                ",": "0",
+                a: "3",
+                A: "3",
+                i: "5",
+                I: "5",
+                y: "5",
+                e: "5",
+                E: "5",
+                o: "7",
+                O: "7",
+                u: "7",
+                U: "7",
+                w: "7",
+                q: "7",
+                m: "8",
+                M: "8",
+                b: "8",
+                B: "8",
+                p: "8",
+                f: "9",
+                F: "9",
+                v: "9",
+                V: "9",
+                l: "6",
+                L: "6",
+                n: "5",
+                N: "5",
+                d: "5",
+                D: "5",
+                t: "4",
+                T: "4",
+                s: "5",
+                S: "5",
+                z: "5",
+                Z: "5",
+                c: "5",
+                C: "5",
+                g: "3",
+                G: "3",
+                k: "3",
+                K: "3",
+                h: "5",
+                H: "5",
+                r: "7",
+                R: "7",
+                default: "0",
+            };
+
+            function mouthshape(text) {
+                if (!faceManager.isReady) return;
+
+                if (typeof startHeadAnimation === "function") {
+                    startHeadAnimation();
+                }
+
+                for (let i = 0, len = text.length; i < len; i++) {
+                    setTimeout(
+                        (function (i) {
+                            return function () {
+                                lipsync(text[i]);
+                            };
+                        })(i),
+                        speed * i,
+                    );
+                }
+
+                setTimeout(
+                    () => {
+                        faceManager.setFace("1");
+                        if (typeof stopHeadAnimation === "function") {
+                            stopHeadAnimation();
+                        }
+                    },
+                    speed * text.length + 200,
+                );
+            }
+
+            function lipsync(character) {
+                const faceIndex = phonemeMap[character] || phonemeMap.default;
+                faceManager.setFace(faceIndex);
+            }
+
+            // Initialize and start
+            faceManager.init().then(async () => {
+                // Load voices first
+                await loadVoices();
+
+                // Initialize with a random voice
+                if (availableVoices.length > 0) {
+                    currentVoiceIndex = Math.floor(
+                        Math.random() * availableVoices.length,
+                    );
+                    currentVoiceName = availableVoices[currentVoiceIndex].name;
+                    document.getElementById("voiceInfo").textContent =
+                        `Voice: ${currentVoiceName.split(" ")[0]}`;
+                }
+
+                animate();
+
+                // Set up UI controls
+                const deleteButton = document.getElementById("deletetext");
+                const speakButton = document.getElementById("speakbutton");
+                const voiceButton = document.getElementById("voicebutton");
+                const textInput = document.getElementById("textinput");
+
+                // Clear button
+                const clearFunction = function (e) {
+                    if (e) e.preventDefault();
+                    document.getElementById("subs").innerHTML = "";
+                    synth.cancel();
+                    if (typeof stopHeadAnimation === "function") {
+                        stopHeadAnimation();
+                    }
+                };
+                deleteButton.addEventListener("touchend", clearFunction);
+                deleteButton.addEventListener("click", clearFunction);
+
+                // Speak button
+                const speakFunction = function (e) {
+                    if (e) e.preventDefault();
+                    const text = textInput.value.trim();
+                    if (text) {
+                        speakContent(text);
+                    }
+                };
+                speakButton.addEventListener("touchend", speakFunction);
+                speakButton.addEventListener("click", speakFunction);
+
+                // Voice button
+                const voiceFunction = function (e) {
+                    if (e) e.preventDefault();
+                    changeVoice();
+                };
+                voiceButton.addEventListener("touchend", voiceFunction);
+                voiceButton.addEventListener("click", voiceFunction);
+
+                // Enter key support
+                textInput.addEventListener("keypress", function (e) {
+                    if (e.key === "Enter") {
+                        const text = textInput.value.trim();
+                        if (text) {
+                            speakContent(text);
+                        }
+                    }
+                });
+
+                // Clear placeholder
+                textInput.addEventListener("focus", function () {
+                    if (this.value === "say something interesting") {
+                        this.value = "";
+                    }
+                });
+
+                // Prevent default on buttons
+                [deleteButton, speakButton, voiceButton].forEach((button) => {
+                    button.addEventListener("touchstart", (e) => {
+                        e.preventDefault();
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>
