@@ -1,0 +1,320 @@
+// kname
+window.kName = "Alex";
+
+// Hardcoded silly words
+const sillyWords = [
+    "flibbertigibbet", "gobbledygook", "lollygag", "kerfuffle", "brouhaha", 
+    "skedaddle", "gubbins", "thingamajig", "whatchamacallit", "doohickey",
+    "gizmo", "widget", "gadget", "fandango", "hullabaloo", "rumpus", 
+    "shenanigans", "hooey", "balderdash", "malarkey", "hokum", "bunkum", "codswallop", "gibberish", "claptrap",
+    "folderol", "piffle", "twaddle", "gobbledegook", "rigmarole", "hullaballoo"
+];
+
+const dictionary = {
+    "origin": [
+        "#openingLine# #plotChoice# And do you know what? #endingThought#"
+    ],
+
+    // opening lines
+    "openingLine": [
+        "One day, and it was a Tuesday I think,",
+        "It was one of those mornings when the dust motes were dancing in the sunlight,",
+        "You'll never guess what happened -",
+        "So there I was, just minding my own business and thinking about #sillyWord#,",
+        "It all started when the world went a bit #sillyAdjective#,",
+        "On a day that felt like it should be Saturday but was actually Wednesday,",
+        "Suddenly, without any warning whatsoever,",
+        "In the middle of what seemed like a perfectly normal afternoon,",
+        "Would you believe it?",
+        "I was just sitting there, contemplating the meaning of #sillyWord#, when"
+    ],
+
+    // plot development
+    "plotChoice": [
+        "#characterIntro# #situation# So what does #kidName# do? Well, #kidName# decides to #action# which leads to #consequence#",
+        "#characterIntro# #discovery# And then #kidName# thinks '#internalThought#' and #actionSequence#",
+        "#situation# and #kidName# is there going '#internalThought#' and then #actionSequence#",
+        "#characterIntro# finds themselves in a right old #sillyWord# of a situation where #problem# and then #actionSequence#"
+    ],
+
+    // endings
+    "endingThought": [
+        "it was one of those days you just don't forget!",
+        "sometimes the best adventures are the ones you don't plan!",
+        "that's what happens when you're just being yourself!",
+        "and everyone had a good laugh about it afterwards!",
+        "it just goes to show - you never know what might happen!",
+        "and the memory of it still makes me smile!",
+        "it was all a bit bonkers, but in a good way!",
+        "and that, my friend, is the story of the great #sillyWord#!",
+        "which just goes to prove that #sillyWord# is more important than you might think!"
+    ],
+
+    // Character introductions
+    "characterIntro": [
+        "there's this #adjective# person called #kidName#",
+        "my friend #kidName#, who's a bit of a #sillyWord# expert,",
+        "this #adjective# kid named #kidName#",
+        "#kidName#, who was feeling particularly #mood#",
+        "#kidName#, who knows a thing or two about #sillyWord#,"
+    ],
+
+    // Situations and discoveries
+    "situation": [
+        "notices that the #everydayThing# is doing something #unexpected#",
+        "finds themselves in a situation where #problem#",
+        "discovers that #surpriseDiscovery#",
+        "realizes that all the #objects# are #groupBehavior#",
+        "stumbles upon a right old #sillyWord# involving #peculiarThing#"
+    ],
+
+    "discovery": [
+        "discovers something amazing: #amazingFind#",
+        "finds out that #secretFact#",
+        "notices something peculiar about #peculiarThing#",
+        "realizes that #funnyRealization#",
+        "uncovers the secret of the #sillyWord# phenomenon"
+    ],
+
+    // Actions and consequences
+    "action": [
+        "#movement# #direction# the #location# while #simultaneousAction#",
+        "try to #solution#",
+        "have a good think about it and then #cleverIdea#",
+        "get #helper# involved and together they #teamAction#",
+        "embark on a #sillyWord# adventure to solve the mystery"
+    ],
+
+    "actionSequence": [
+        "before you can say '#sillyWord#', #quickAction# happens",
+        "first they #movement#, then they #movement#, then they #movement# #manner#",
+        "they start #movement# and #movement# until #achievement#",
+        "and then, in a moment of pure #sillyWord#, #quickAction# happens"
+    ],
+
+    "consequence": [
+        "and then suddenly #surpriseEvent#!",
+        "which causes #funnyResult#!",
+        "and then everything goes a bit #sillyAdjective#!",
+        "and wouldn't you know it - #unexpectedTurn#!",
+        "leading to the most magnificent #sillyWord# you ever did see!"
+    ],
+
+    // Internal thoughts
+    "internalThought": [
+        "Well, that's a bit #sillyWord#",
+        "I didn't see that #sillyWord# coming",
+        "This calls for some serious #sillyWord# thinking",
+        "What would my grandma do in this #sillyWord# situation?",
+        "This is getting #sillyWord# interesting",
+        "I think I need a biscuit and a good #sillyWord# think about this",
+        "Well, I #sillyWord# never!",
+        "That's a proper #sillyWord# and no mistake!"
+    ],
+
+    // Expanded vocabulary
+    "adjective": ["curious", "bouncy", "wobbly", "squeaky", "fidgety", "noisy", "quiet", "peculiar", "magnificent", "splendiferous", "wondrous", "flabbergasting"],
+    "mood": ["silly", "serious", "hungry", "sleepy", "bouncy", "curious", "philosophical", "contemplative", "flummoxed", "gobsmacked"],
+    "everydayThing": ["teapot", "doormat", "lamppost", "kettle", "newspaper", "cabbage", "fridge", "sofa", "umbrella stand", "potato peeler", "egg whisk", "clothes horse"],
+    "unexpected": ["singing opera", "doing the tango", "telling jokes", "floating in the air", "changing colors", "reciting poetry", "speaking backwards", "tap dancing", "juggling spoons"],
+    "problem": ["the cookies keep disappearing", "their shoes won't stay tied", "the cat is wearing a hat", "the milk tastes like lemonade", "the clock is running backwards", "the shadows are misbehaving"],
+    "surpriseDiscovery": [
+        "turnips have deeper thoughts than philosophers", 
+        "silence has a distinct flavor", 
+        "shadows are just light on holiday", 
+        "socks dream of greater things",
+        "dust bunnies have their own government",
+        "puddles are actually upside-down rainbows"
+    ],
+    "objects": ["chairs", "tables", "cushions", "shoes", "books", "plates", "spoons", "teacups", "hairbrushes", "pillows"],
+    "groupBehavior": ["having a party", "playing hide and seek", "forming a conga line", "debating the weather", "holding a secret meeting", "practicing synchronized swimming"],
+    "amazingFind": [
+        "a pathway lined with glowing mushrooms", 
+        "a forgotten map etched on birch bark", 
+        "a talking firefly who knew many secrets", 
+        "a door in the base of an ancient tree",
+        "a library where books tell their own stories",
+        "a kitchen where the appliances give cooking advice"
+    ],
+    "secretFact": [
+        "ducks are actually retired spies", 
+        "clouds are sheep on extended vacation", 
+        "teacups hold universal secrets", 
+        "doormats are failed flying carpets",
+        "pillows are actually very flat sheep",
+        "lampposts are just very tall nightlights"
+    ],
+    "peculiarThing": [
+        "the way the dust motes dance in sunlight", 
+        "how puddles always know the best jokes", 
+        "why toast always lands butter-side down", 
+        "what shadows do when no one's looking",
+        "where lost socks actually go",
+        "how silence gets its particular flavor"
+    ],
+    "funnyRealization": [
+        "the floor was actually the ceiling all along", 
+        "yesterday was actually tomorrow", 
+        "left was right and right was left", 
+        "quiet was loud and loud was quiet",
+        "up was down and down was sideways",
+        "inside was outside and outside was elsewhere"
+    ],
+    "movement": ["jump", "skip", "hop", "run", "crawl", "dance", "wiggle", "bounce", "twirl", "sashay", "prance", "galumph"],
+    "direction": ["around", "through", "over", "under", "across", "into", "upside down", "inside out", "backwards", "diagonally"],
+    "location": ["room", "garden", "kitchen", "stairs", "table", "chair", "whole house", "attic", "cellar", "shed", "cupboard under the stairs"],
+    "simultaneousAction": [
+        "singing a nonsense song", 
+        "wearing socks on their ears", 
+        "balancing a book on their head", 
+        "pretending to be a steam train",
+        "reciting the alphabet backwards",
+        "counting all the spots on the ceiling"
+    ],
+    "solution": [
+        "make up a silly song about it", 
+        "ask the goldfish for advice", 
+        "do a little dance", 
+        "have a good laugh and see what happens",
+        "consult the dictionary of #sillyWord#",
+        "have a good old-fashioned think"
+    ],
+    "cleverIdea": [
+        "turn the whole thing into a game", 
+        "pretend it's completely normal", 
+        "make up a story about it", 
+        "see if it works better backwards",
+        "approach it from a #sillyWord# perspective",
+        "apply the principles of advanced #sillyWord#"
+    ],
+    "helper": [
+        "their little sister", 
+        "the friendly postman", 
+        "next door's dog", 
+        "a passing butterfly",
+        "the man who fixes the streetlights",
+        "the lady who runs the corner shop"
+    ],
+    "teamAction": [
+        "have a brainstorming session", 
+        "make up a secret handshake", 
+        "form a detective agency", 
+        "start a fan club",
+        "establish a #sillyWord# committee",
+        "create an emergency response team"
+    ],
+    "manner": [
+        "like a wibbly-wobbly jelly",
+        "as fast as a speeding rocket",
+        "like a floppy spaghetti",
+        "as quiet as a sleeping mouse",
+        "like a bouncing ball",
+        "with the grace of a confused giraffe"
+    ],
+    "achievement": [
+        "they've memorized the sound of silence", 
+        "they've invented a new color", 
+        "they've taught a rock to appreciate poetry", 
+        "they've proved that yesterday is actually tomorrow",
+        "they've decoded the language of #sillyWord#",
+        "they've achieved perfect #sillyWord# harmony"
+    ],
+    "surpriseEvent": [
+        "a herd of wild kangaroos passes through", 
+        "the police arrive to arrest everyone for being too silly", 
+        "God appears and says it's all a bit much", 
+        "they run out of tea and have to go to the shops",
+        "the Queen turns up unannounced",
+        "it starts raining miniature violins"
+    ],
+    "funnyResult": [
+        "gravity stops working properly", 
+        "time starts going backwards", 
+        "all the words turn into pictures", 
+        "people start speaking in rhyme",
+        "everything becomes slightly transparent",
+        "colors start making different sounds"
+    ],
+    "sillyAdjective": ["wobbly", "squishy", "bouncy", "fizzy", "wiggly", "floppy", "absolutely bonkers", "flabbergasted", "gobsmacked", "flummoxed"],
+    "unexpectedTurn": [
+        "the Queen turns up for tea", 
+        "it starts raining chocolate buttons", 
+        "everyone suddenly speaks French", 
+        "the furniture starts telling jokes",
+        "the moon comes out for a closer look",
+        "all the clocks start ticking in unison"
+    ],
+    "quickAction": [
+        "everything turns upside down", 
+        "all the colors swap places", 
+        "animals start wearing hats", 
+        "the day becomes night",
+        "gravity takes a coffee break",
+        "silence becomes visible"
+    ]
+};
+
+// Get a random silly word from our array
+function getRandomSillyWord() {
+    return sillyWords[Math.floor(Math.random() * sillyWords.length)];
+}
+
+// Helper functions
+function getRandomWord(category) {
+    if (category === 'sillyWord') {
+        return getRandomSillyWord();
+    }
+    
+    const words = dictionary[category];
+    if (words && Array.isArray(words)) {
+        const choice = words[Math.floor(Math.random() * words.length)];
+        return choice;
+    }
+    return `[${category}]`;
+}
+
+function expandSymbol(symbol, customVariables = {}) {
+    // Prevent infinite recursion and handle kidName specially
+    if (symbol === 'kidName') {
+        return customVariables['kidName'] || kName;
+    }
+    
+    const options = dictionary[symbol];
+    if (!options) {
+        // If symbol doesn't exist, try to get a random word from it
+        return getRandomWord(symbol);
+    }
+    
+    const choice = options[Math.floor(Math.random() * options.length)];
+    
+    return choice.replace(/#(\w+)#/g, (match, symbol) => {
+        return expandSymbol(symbol, customVariables);
+    });
+}
+
+// Main story generator
+function generateKidsStory() {
+    const customVariables = {
+        'kidName': kName
+    };
+    
+    const story = expandSymbol('origin', customVariables);
+    
+    // Validate that we have a real story
+    if (story.includes('[') && story.includes(']')) {
+        // If story contains unresolved symbols, try one more time
+        return generateKidsStory();
+    }
+    
+    return story;
+}
+
+function generateNewStory() {
+    const story = generateKidsStory();
+    document.getElementById('story').textContent = story;
+}
+
+// // Initialize on load
+// window.onload = function() {
+//     generateNewStory();
+// };
