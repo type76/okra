@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Drum Pattern Passcode — Drum Machine with ZzFX</title>
+  <meta name="description" content="A browser-based drum machine with pattern encoding and customizable ZzFX sounds" />
+  <meta name="author" content="Raymond Larabie" />
+  <meta name="color-scheme" content="light" />
+  <style>
+    :root {
+      --bg: #e6e6e6;
+      --fg: #333;
+      --panel: #e0e0e0;
+      --cellOff: #d9d9d9;
+      --cellOn: #333;
+      --gridLine: #b8b8b8;
+      --focus: #666;
+      --playHead: #ff4444;
+      --instrumentActive: #333;
+    }
+
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: Helvetica, Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .wrap {
+      width: min(920px, 96vw);
+      padding: 16px 10px 28px;
+      box-sizing: border-box;
+    }
+
+    .title {
+      font-size: 14px;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      margin: 0 0 10px 0;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    /* Grid container */
+    .grid-container {
+      position: relative;
+      margin-left: -22px;
+    }
+
+    /* Column labels */
+    .col-labels {
+      display: grid;
+      grid-template-columns: 46px repeat(16, 1fr);
+      gap: 4px;
+      align-items: end;
+      margin-bottom: 6px;
+      position: relative;
+    }
+
+    .playhead {
+      position: absolute;
+      top: 0;
+      width: calc(100% / 16 - 4px);
+      height: 100%;
+      background-color: var(--playHead);
+      opacity: 0.3;
+      pointer-events: none;
+      transition: left 0.1s linear;
+      display: none;
+    }
+
+    .col-label {
+      font-size: 11px;
+      line-height: 14px;
+      text-align: center;
+      opacity: .9;
+    }
+
+    /* Grid table */
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 2px;
+      table-layout: fixed;
+      position: relative;
+    }
+
+    th, td { padding: 0; }
+    th {
+      width: 46px;
+      text-align: right;
+      font-size: 12px;
+      letter-spacing: .04em;
+      padding-right: 6px;
+    }
+
+    .instrument-btn {
+      padding: 4px 8px;
+      border: 1px solid var(--gridLine);
+      border-radius: 4px;
+      background: #efefef;
+      color: var(--fg);
+      cursor: pointer;
+      font-size: 12px;
+      text-align: center;
+      transition: all 0.1s ease;
+    }
+
+    .instrument-btn:hover { background: #e0e0e0; }
+    .instrument-btn:active { transform: scale(.98); }
+    .instrument-btn.active {
+      background: var(--instrumentActive);
+      color: white;
+      border-color: var(--instrumentActive);
+    }
+
+    .cell {
+      aspect-ratio: 1/0.6;
+      width: 100%;
+      border: 1px solid var(--gridLine);
+      border-radius: 4px;
+      background: var(--cellOff);
+      cursor: pointer;
+      transition: transform .03s ease;
+    }
+
+    .cell.on { background: var(--cellOn); border-color: var(--cellOn); }
+    .cell.playing { box-shadow: 0 0 0 2px var(--playHead); }
+    .cell:active { transform: scale(.98); }
+
+    /* 4-step grouping */
+    td:nth-child(8n + 6) .cell,
+    td:nth-child(8n + 7) .cell,
+    td:nth-child(8n + 8) .cell,
+    td:nth-child(8n + 9) .cell {
+      background: #e0e0e0;
+    }
+    td:nth-child(8n + 6) .cell.on,
+    td:nth-child(8n + 7) .cell.on,
+    td:nth-child(8n + 8) .cell.on,
+    td:nth-child(8n + 9) .cell.on {
+      background: var(--cellOn);
+      border-color: var(--cellOn);
+    }
+
+    /* Controls */
+    .controls {
+      margin: 20px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .daw-controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .play-button {
+      background: #333;
+      color: white;
+      border-color: #333;
+    }
+
+    .play-button.playing {
+      background: #ff4444;
+      border-color: #ff4444;
+    }
+
+    .sound-controls {
+      width: min(560px, 100%);
+    }
+
+    .zzfx-input {
+      width: 100%;
+      font-size: 14px;
+      padding: 10px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--gridLine);
+      background: #efefef;
+      color: var(--fg);
+      font-family: monospace;
+      box-sizing: border-box;
+    }
+
+    .zzfx-input:focus {
+      outline: 2px solid var(--focus);
+      outline-offset: 1px;
+    }
+
+    .zzfx-input.valid { border-color: #4CAF50; }
+    .zzfx-input.invalid { border-color: #ff4444; }
+
+    .help-text {
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    /* Passcode area */
+    .passcode {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .code-input {
+      width: min(560px, 100%);
+      font-size: 16px;
+      padding: 10px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--gridLine);
+      background: #efefef;
+      color: var(--fg);
+      text-align: center;
+      box-sizing: border-box;
+    }
+
+    button {
+      font-size: 14px;
+      padding: 8px 14px;
+      border-radius: 4px;
+      border: 1px solid var(--gridLine);
+      background: #efefef;
+      color: var(--fg);
+      cursor: pointer;
+    }
+
+    @media (max-width: 520px) {
+      .col-labels { grid-template-columns: 48px repeat(16, 1fr); }
+      th { width: 48px; font-size: 11px; }
+      table { border-spacing: 3px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <p class="title">Drum Pattern Passcode</p>
+
+      <div class="grid-container">
+        <div class="col-labels" id="colLabels">
+          <div class="spacer"></div>
+          <!-- Playhead will be inserted here -->
+        </div>
+        <table id="grid"></table>
+      </div>
+
+      <div class="controls">
+        <div class="daw-controls">
+          <button id="playBtn" class="play-button">▶ Play</button>
+          <button id="stopBtn">■ Stop</button>
+          <div class="tempo-control">
+            <label>Tempo</label>
+            <input id="tempo" type="number" min="40" max="240" value="120">
+          </div>
+        </div>
+
+        <div class="sound-controls">
+          <label>ZzFX Code for <span id="currentInstrument">AC (accent)</span></label>
+          <input id="zzfxCode" class="zzfx-input" placeholder="Paste zzfx code here, e.g., zzfx(1,,200,.01,.3)" />
+          <div class="help-text">
+            Click instrument buttons to select • Paste zzfx code • Press Enter to test
+          </div>
+        </div>
+      </div>
+
+      <div class="passcode">
+        <label for="code">Passcode</label>
+        <input id="code" class="code-input" />
+        <div class="copy-row">
+          <button id="copyBtn">Copy</button>
+          <button id="clearBtn">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ========== ZZXF Sound Engine ==========
+      let zzfx, zzfxV, zzfxX;
+      zzfxV = .1;
+      zzfx = (t=1,a=.05,n=220,e=0,f=0,h=.1,M=0,r=1,z=0,o=0,i=0,s=0,u=0,x=0,c=0,d=0,X=0,b=1,m=0,l=44100,B=99+e*l,C=f*l,P=h*l,g=m*l,w=X*l,A=2*Math.PI,D=t=>0<t?1:-1,I=B+g+C+P+w|0,S=z*=500*A/l**2,V=n*=(1+2*a*Math.random()-a)*A/l,j=D(c)*A/4,k=0,p=0,q=0,v=0,y=0,E=0,F=1,G=[],H=zzfxX.createBufferSource(),J=zzfxX.createBuffer(1,I,l))=>{
+        for(H.connect(zzfxX.destination);q<I;G[q++]=E)++y>100*d&&(y=0,E=k*n*Math.sin(p*c*A/l-j),E=D(E=M?1<M?2<M?3<M?Math.sin((E%A)**3):Math.max(Math.min(Math.tan(E),1),-1):1-(2*E/A%2+2)%2:1-4*Math.abs(Math.round(E/A)-E/A):Math.sin(E))*Math.abs(E)**r*t*zzfxV*(q<B?q/B:q<B+g?1-(q-B)/g*(1-b):q<B+g+C?b:q<I-w?(I-q-w)/P*b:0),E=w?E/2+(w>q?0:(q<I-w?1:(q-I)/w)*G[q-w|0]/2):E),k+=1-x+1e9*(Math.sin(q)+1)%2*x,p+=1-x+1e9*(Math.sin(q)**2+1)%2*x,n+=z+=500*o*A/l**3,F&&++F>s*l&&(n+=i*A/l,V+=i*A/l,F=0),u&&++v>u*l&&(n=V,z=S,v=1,F=F||1);
+          return J.getChannelData(0).set(G),H.buffer=J,H.start(),H;
+      }, zzfxX = new (window.AudioContext || window.webkitAudioContext);
+
+      // ========== Instrument Definitions ==========
+      const INSTRUMENTS = [
+        { short: "AC", long: "accent", default: [.5,,350,,.01,0,0,,,,,3,.5,,,5,.05] },
+        { short: "CY", long: "cymbal", default: [1,,400,,.1,.2,4,,1.5,,,,,,.5,,.3] },
+        { short: "CH", long: "closed hat", default: [.5,,1300,,.01,.03,3,.5,,,8,.5,,,.1,.05] },
+        { short: "OH", long: "open hat", default: [.5,,1000,,.02,.1,1,.2,,,4,.5,,,.2,.1] },
+        { short: "HT", long: "high tom", default: [1,,150,,.01,.2,1,.1,,,,,,,2,,.2] },
+        { short: "MT", long: "medium tom", default: [1,,100,,.01,.25,1,.1,,,,,,,1.5,,.25] },
+        { short: "SD", long: "snare drum", default: [1,,200,,.01,.3,1,.1,,,.5,,,,1.5,,.3] },
+        { short: "RS", long: "rim shot", default: [1,,800,,.01,.1,1,.05,,,,,,,8,,.1] },
+        { short: "LT", long: "low tom", default: [1,,60,,.01,.3,1,.1,,,,,,,1,,.3] },
+        { short: "CP", long: "hand claps", default: [1,,1000,,.01,.15,1,.05,,,,,,,.3,,.15] },
+        { short: "CB", long: "cow bell", default: [1,,800,,.01,.2,1,.05,,,,,,,5,,.2] },
+        { short: "BD", long: "bass drum", default: [1,,50,,.01,.3,1,.1,,,,,,,.5,,.3] }
+      ];
+
+      // ========== Global State ==========
+      let currentInstrument = 0;
+      let isPlaying = false;
+      let currentStep = 0;
+      let intervalId = null;
+      let tempo = 120;
+      const UI_COLS = 16;
+      let patternLength = 16;
+      let cells = Array(INSTRUMENTS.length).fill().map(() => Array(UI_COLS).fill(false));
+      
+      // Current sounds (mutable)
+      let instrumentSounds = INSTRUMENTS.map(inst => {
+        const params = [...inst.default];
+        return () => zzfx(...params);
+      });
+      let instrumentParams = INSTRUMENTS.map(inst => [...inst.default]);
+
+      // ========== DOM Elements ==========
+      const gridEl = document.getElementById('grid');
+      const colLabelsEl = document.getElementById('colLabels');
+      const playBtn = document.getElementById('playBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const tempoInput = document.getElementById('tempo');
+      const zzfxCodeInput = document.getElementById('zzfxCode');
+      const currentInstrumentSpan = document.getElementById('currentInstrument');
+      const codeEl = document.getElementById('code');
+      const copyBtn = document.getElementById('copyBtn');
+      const clearBtn = document.getElementById('clearBtn');
+
+      let playhead = null;
+
+      // ========== ZZXF Code Parser ==========
+      function parseZzfxCode(code) {
+        code = code.trim();
+        
+        // Remove comments
+        code = code.split('//')[0].trim();
+        
+        // Extract parameters from zzfx(...)
+        let paramsStr = '';
+        if (code.startsWith('zzfx(')) {
+          const start = code.indexOf('(');
+          const end = code.lastIndexOf(')');
+          if (start !== -1 && end !== -1) {
+            paramsStr = code.substring(start + 1, end);
+          }
+        } else if (code.startsWith('[')) {
+          const end = code.lastIndexOf(']');
+          if (end !== -1) {
+            paramsStr = code.substring(1, end);
+          }
+        } else {
+          paramsStr = code;
+        }
+        
+        // Parse comma-separated values
+        const rawParams = [];
+        let current = '';
+        let depth = 0;
+        
+        for (let i = 0; i < paramsStr.length; i++) {
+          const char = paramsStr[i];
+          
+          if (char === '(' || char === '[') {
+            depth++;
+            current += char;
+          } else if (char === ')' || char === ']') {
+            depth--;
+            current += char;
+          } else if (char === ',' && depth === 0) {
+            const val = current.trim();
+            rawParams.push(val);
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        
+        // Add last parameter
+        if (current.trim() !== '') {
+          rawParams.push(current.trim());
+        }
+        
+        // Convert to numbers, only take first 17 parameters (zzfx expects up to 17)
+        const params = [];
+        for (let i = 0; i < Math.min(rawParams.length, 17); i++) {
+          const val = rawParams[i].trim();
+          if (val === '' || val === 'undefined' || val === 'null') {
+            params.push(undefined);
+          } else {
+            // Try to evaluate the expression (safe for simple math)
+            try {
+              const num = eval(val);
+              if (typeof num === 'number' && !isNaN(num) && isFinite(num)) {
+                params.push(num);
+              } else {
+                params.push(undefined);
+              }
+            } catch {
+              params.push(undefined);
+            }
+          }
+        }
+        
+        // Fill remaining slots with undefined
+        while (params.length < 17) {
+          params.push(undefined);
+        }
+        
+        return params;
+      }
+
+      // ========== Grid UI ==========
+      function buildGrid() {
+        gridEl.innerHTML = '';
+        colLabelsEl.innerHTML = '<div class="spacer"></div>';
+        
+        // Create playhead element
+        playhead = document.createElement('div');
+        playhead.className = 'playhead';
+        playhead.id = 'playhead';
+        colLabelsEl.appendChild(playhead);
+        
+        // Column labels
+        for (let c = 1; c <= UI_COLS; c++) {
+          const div = document.createElement('div');
+          div.className = 'col-label';
+          div.textContent = (c % 2 === 1) ? c : '';
+          colLabelsEl.appendChild(div);
+        }
+        
+        // Instrument rows
+        INSTRUMENTS.forEach((inst, r) => {
+          const tr = document.createElement('tr');
+          
+          // Instrument button
+          const th = document.createElement('th');
+          const btn = document.createElement('button');
+          btn.className = 'instrument-btn';
+          btn.textContent = inst.short;
+          btn.title = `${inst.short} = ${inst.long}`;
+          btn.dataset.index = r;
+          btn.onclick = () => selectInstrument(r);
+          th.appendChild(btn);
+          tr.appendChild(th);
+          
+          // Pattern cells
+          for (let c = 0; c < UI_COLS; c++) {
+            const td = document.createElement('td');
+            const cell = document.createElement('button');
+            cell.className = 'cell';
+            cell.dataset.r = r;
+            cell.dataset.c = c;
+            cell.onclick = () => toggleCell(r, c);
+            td.appendChild(cell);
+            tr.appendChild(td);
+          }
+          
+          gridEl.appendChild(tr);
+        });
+        
+        renderGrid();
+      }
+
+      function selectInstrument(index) {
+        currentInstrument = index;
+        updateInstrumentDisplay();
+        playSound(index);
+        
+        // Highlight button
+        document.querySelectorAll('.instrument-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        document.querySelector(`.instrument-btn[data-index="${index}"]`).classList.add('active');
+      }
+
+      function toggleCell(r, c) {
+        // Expand pattern length if clicking beyond current length
+        if (c >= patternLength) {
+          patternLength = c + 1;
+        }
+        
+        cells[r][c] = !cells[r][c];
+        renderGrid();
+        updatePasscode();
+        
+        // Play sound if turning on
+        if (cells[r][c]) {
+          playSound(r);
+        }
+      }
+
+      function renderGrid() {
+        INSTRUMENTS.forEach((inst, r) => {
+          for (let c = 0; c < UI_COLS; c++) {
+            const cell = gridEl.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+            const isOn = c < patternLength ? cells[r][c] : false;
+            cell.classList.toggle('on', isOn);
+            cell.classList.remove('playing');
+          }
+        });
+      }
+
+      function playSound(index) {
+        try {
+          instrumentSounds[index]();
+        } catch (error) {
+          console.error('Error playing sound:', error);
+        }
+      }
+
+      // ========== Sequencer ==========
+      function playStep(step) {
+        // Clear previous highlights
+        document.querySelectorAll('.cell.playing').forEach(cell => {
+          cell.classList.remove('playing');
+        });
+        
+        // Update playhead position
+        if (playhead) {
+          const stepWidth = 100 / UI_COLS;
+          playhead.style.left = `${step * stepWidth}%`;
+          playhead.style.display = 'block';
+        }
+        
+        // Highlight and play current step
+        INSTRUMENTS.forEach((inst, r) => {
+          if (cells[r][step]) {
+            const cell = gridEl.querySelector(`.cell[data-r="${r}"][data-c="${step}"]`);
+            cell.classList.add('playing');
+            playSound(r);
+          }
+        });
+      }
+
+      function startSequencer() {
+        if (isPlaying) return;
+        
+        isPlaying = true;
+        playBtn.textContent = '⏸ Pause';
+        playBtn.classList.add('playing');
+        
+        if (playhead) {
+          playhead.style.display = 'block';
+        }
+        
+        const stepTime = (60 / tempo) * 1000 / 4;
+        intervalId = setInterval(() => {
+          playStep(currentStep);
+          currentStep = (currentStep + 1) % patternLength;
+        }, stepTime);
+      }
+
+      function stopSequencer() {
+        isPlaying = false;
+        playBtn.textContent = '▶ Play';
+        playBtn.classList.remove('playing');
+        clearInterval(intervalId);
+        
+        document.querySelectorAll('.cell.playing').forEach(cell => {
+          cell.classList.remove('playing');
+        });
+        
+        if (playhead) {
+          playhead.style.display = 'none';
+        }
+        currentStep = 0;
+      }
+
+      // ========== ZZXF Code Editor ==========
+      function updateInstrumentDisplay() {
+        const inst = INSTRUMENTS[currentInstrument];
+        currentInstrumentSpan.textContent = `${inst.short} (${inst.long})`;
+        
+        // Format parameters for display
+        const params = instrumentParams[currentInstrument];
+        const displayParams = params.slice();
+        
+        // Trim trailing undefined values
+        while (displayParams.length > 0 && displayParams[displayParams.length - 1] === undefined) {
+          displayParams.pop();
+        }
+        
+        const codeStr = `zzfx(...[${displayParams.join(',')}])`;
+        zzfxCodeInput.value = codeStr;
+        zzfxCodeInput.classList.remove('invalid', 'valid');
+      }
+
+      zzfxCodeInput.addEventListener('input', () => {
+        try {
+          const params = parseZzfxCode(zzfxCodeInput.value);
+          
+          // Validate parameters
+          const validParams = params.map(p => {
+            if (p === undefined) return undefined;
+            if (typeof p !== 'number' || !isFinite(p)) return undefined;
+            return p;
+          });
+          
+          // Update instrument
+          instrumentParams[currentInstrument] = validParams;
+          instrumentSounds[currentInstrument] = () => zzfx(...validParams);
+          
+          zzfxCodeInput.classList.remove('invalid');
+          zzfxCodeInput.classList.add('valid');
+        } catch (error) {
+          zzfxCodeInput.classList.remove('valid');
+          zzfxCodeInput.classList.add('invalid');
+        }
+      });
+
+      zzfxCodeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          playSound(currentInstrument);
+        }
+      });
+
+      // ========== Passcode Encoding ==========
+      const ALPHABET = "0123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+      const RADIX = 57n;
+
+      function encodePattern() {
+        // Simplified encoding - just tracks which cells are on
+        const bits = [];
+        
+        // Version and length
+        bits.push(1); // Sentinel
+        appendBits(bits, 0, 2); // Version
+        bits.push(patternLength === 16 ? 0 : 1); // Length flag
+        
+        if (patternLength !== 16) {
+          appendBits(bits, patternLength - 1, 10);
+        }
+        
+        // Row mask (all rows present in this simple version)
+        appendBits(bits, 0xFFF, 12);
+        
+        // Cell data
+        for (let r = 0; r < INSTRUMENTS.length; r++) {
+          for (let c = 0; c < patternLength; c++) {
+            bits.push(cells[r][c] ? 1 : 0);
+          }
+        }
+        
+        // Convert to base-57
+        let n = 0n;
+        bits.forEach(b => n = (n << 1n) | BigInt(b));
+        
+        let result = '';
+        while (n > 0n) {
+          const rem = Number(n % RADIX);
+          result = ALPHABET[rem] + result;
+          n = n / RADIX;
+        }
+        
+        return result || '1';
+      }
+
+      function appendBits(bits, value, count) {
+        for (let i = count - 1; i >= 0; i--) {
+          bits.push((value >> i) & 1);
+        }
+      }
+
+      function updatePasscode() {
+        codeEl.value = encodePattern();
+      }
+
+      // ========== Event Listeners ==========
+      playBtn.addEventListener('click', () => {
+        if (isPlaying) stopSequencer();
+        else startSequencer();
+      });
+
+      stopBtn.addEventListener('click', stopSequencer);
+
+      tempoInput.addEventListener('input', (e) => {
+        tempo = parseInt(e.target.value) || 120;
+        if (isPlaying) {
+          stopSequencer();
+          startSequencer();
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+          e.preventDefault();
+          if (isPlaying) stopSequencer();
+          else startSequencer();
+        }
+      });
+
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(codeEl.value);
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => copyBtn.textContent = 'Copy', 1000);
+        } catch {
+          codeEl.select();
+        }
+      });
+
+      clearBtn.addEventListener('click', () => {
+        stopSequencer();
+        patternLength = 16;
+        cells = Array(INSTRUMENTS.length).fill().map(() => Array(UI_COLS).fill(false));
+        renderGrid();
+        updatePasscode();
+      });
+
+      // ========== Initialization ==========
+      function init() {
+        buildGrid();
+        selectInstrument(0);
+        updatePasscode();
+      }
+
+      init();
+    </script>
+  </div>
+</body>
+</html>
