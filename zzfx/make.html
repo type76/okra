@@ -113,6 +113,7 @@ body {
     -webkit-appearance: none;
     cursor: pointer;
     margin: 0;
+    touch-action: pan-y;
 }
 
 #slider_masterVolume::-webkit-slider-thumb {
@@ -346,7 +347,10 @@ textarea {
     -webkit-appearance: none;
     cursor: pointer;
     margin: 5px 0;
+    touch-action: pan-y;
 }
+
+
 
 .param-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
@@ -366,6 +370,34 @@ textarea {
     cursor: pointer;
     border: 2px solid var(--te-black);
 }
+
+@media (max-width: 768px) {
+    .param-slider::-webkit-slider-thumb {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .param-slider::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+    }
+    
+    #slider_masterVolume::-webkit-slider-thumb {
+        width: 28px;
+        height: 28px;
+    }
+    
+    #slider_masterVolume::-moz-range-thumb {
+        width: 28px;
+        height: 28px;
+    }
+}
+
+.param-slider:active,
+.param-slider.touching {
+    opacity: 0.8;
+}
+
 
 .status {
     position: fixed;
@@ -543,6 +575,14 @@ function createSliders() {
         paramsContainer.appendChild(div);
         
         const slider = document.getElementById(`slider${i}`);
+        // Add touch feedback
+        slider.addEventListener('touchstart', function() {
+            this.classList.add('touching');
+        });
+        slider.addEventListener('touchend', function() {
+            this.classList.remove('touching');
+        });
+
         const valueDisplay = document.getElementById(`value${i}`);
         
         const formatValue = (val) => {
@@ -583,6 +623,25 @@ function updateSlidersFromCurrentSound() {
     });
 }
 
+// Add this function to prevent default touch behavior on sliders
+function preventTouchDefaults() {
+    const sliders = document.querySelectorAll('input[type="range"]');
+    
+    sliders.forEach(slider => {
+        slider.addEventListener('touchstart', function(e) {
+            if (e.target.type === 'range') {
+                document.body.style.overflow = 'hidden';
+            }
+        }, {passive: true});
+        
+        slider.addEventListener('touchend', function() {
+            document.body.style.overflow = '';
+        }, {passive: true});
+    });
+}
+
+
+
 function resizeCanvas() {
     const containerWidth = document.querySelector('.container').offsetWidth;
     const canvasWidth = Math.min(350, containerWidth - 40);
@@ -592,6 +651,7 @@ function resizeCanvas() {
 }
 
 function init() {
+    preventTouchDefaults();
     initializeSoundParams();
     createSliders();
     updateMasterVolume();
@@ -601,8 +661,27 @@ function init() {
     window.addEventListener('resize', resizeCanvas);
     
     canvas_soundWave.addEventListener('click', playSelected);
-    canvas_soundWave.addEventListener('touchstart', playSelected, {passive: true});
+    canvas_soundWave.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        playSelected();
+    }, {passive: false});
+    
     slider_masterVolume.addEventListener('input', updateMasterVolume);
+    slider_masterVolume.addEventListener('touchstart', function(e) {
+        // Allow touch on slider
+        e.stopPropagation();
+    }, {passive: true});
+    
+    // Add touch event listeners to all param sliders
+    document.querySelectorAll('.param-slider').forEach(slider => {
+        slider.addEventListener('touchstart', function(e) {
+            e.stopPropagation();
+        }, {passive: true});
+        
+        slider.addEventListener('touchmove', function(e) {
+            e.stopPropagation();
+        }, {passive: true});
+    });
     
     document.addEventListener('keydown', (e) => {
         if (e.code === 'Space' && document.activeElement.tagName !== 'BUTTON') {
@@ -610,12 +689,6 @@ function init() {
             playSelected();
         }
     });
-    
-    document.addEventListener('touchmove', (e) => {
-        if (e.target.type === 'range') {
-            e.preventDefault();
-        }
-    }, {passive: false});
 }
 
 function updateMasterVolume() {
