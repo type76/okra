@@ -1,0 +1,1364 @@
+<!doctype html>
+<html>
+<head>
+<title>ZZFX make</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+    --te-orange: #FF5500;
+    --te-orange-light: #FF8833;
+    --te-orange-dark: #CC4400;
+    --te-black: #111111;
+    --te-gray-dark: #222222;
+    --te-gray: #333333;
+    --te-gray-light: #444444;
+    --te-white: #F0F0F0;
+    --te-green: #00CC00;
+    --te-yellow: #FFCC00;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body { 
+    user-select: none; 
+    background: var(--te-black); 
+    color: var(--te-white); 
+    font-family: 'Courier New', monospace;
+    margin: 0;
+    padding: 50px 20px;
+    min-height: 100vh;
+}
+
+.container { 
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid var(--te-orange);
+    padding-bottom: 15px;
+}
+
+.title {
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--te-orange);
+    letter-spacing: 1px;
+    margin: 0 0 5px 0;
+    text-transform: uppercase;
+}
+
+#hud {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+}
+
+#hud button {
+    margin: 5px;
+}
+
+.export {
+    float: left;
+    background: #660000;
+}
+
+.subtitle {
+    font-size: 12px;
+    color: var(--te-gray-light);
+    margin: 0;
+    letter-spacing: 2px;
+}
+
+.button-row {
+    display: block;
+    width: 80%;
+    text-align: center;
+    margin: 10px auto;
+}
+
+.volume-section {
+    background: var(--te-gray-dark);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+    border: 1px solid var(--te-gray);
+}
+
+.volume-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    font-size: 16px;
+    color: var(--te-white);
+}
+
+.volume-percent {
+    color: var(--te-orange);
+    font-weight: bold;
+    font-size: 18px;
+}
+
+#slider_masterVolume {
+    width: 100%;
+    height: 6px;
+    background: var(--te-gray);
+    border-radius: 3px;
+    -webkit-appearance: none;
+    cursor: pointer;
+    margin: 0;
+}
+
+#slider_masterVolume::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    background: var(--te-orange);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid var(--te-black);
+    box-shadow: 0 0 0 1px var(--te-orange);
+}
+
+#slider_masterVolume::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    background: var(--te-orange);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid var(--te-black);
+    box-shadow: 0 0 0 1px var(--te-orange);
+}
+
+.canvas-container {
+    background: var(--te-gray-dark);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.canvas-label {
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background: var(--te-black);
+    padding: 0 10px;
+    font-size: 12px;
+    color: var(--te-orange);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+canvas { 
+    background: var(--te-black); 
+    display: block; 
+    margin: 20px auto;
+    width: 100%;
+    height: 100px;
+    border:#333 1px solid;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.buttons-section {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+    .buttons-section {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .buttons-section {
+        grid-template-columns: 1fr;
+    }
+}
+
+button {
+    background: var(--te-gray-dark);
+    color: var(--te-white);
+    border: 1px solid var(--te-gray);
+    padding: 15px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+button:hover {
+    background: var(--te-gray);
+    border-color: var(--te-orange);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 85, 0, 0.2);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+button.play {
+    background: var(--te-orange);
+    color: var(--te-black);
+    border-color: var(--te-orange);
+    font-weight: bold;
+}
+
+button.play:hover {
+    background: var(--te-orange-light);
+}
+
+button.primary {
+    border-color: var(--te-orange);
+    color: var(--te-orange);
+}
+
+button.primary:hover {
+    background: rgba(255, 85, 0, 0.1);
+}
+
+.code-section {
+    background: var(--te-gray-dark);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+    border: 1px solid var(--te-gray);
+    position: relative;
+}
+
+.code-label {
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background: var(--te-black);
+    padding: 0 10px;
+    font-size: 12px;
+    color: var(--te-orange);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+textarea { 
+    background: var(--te-black); 
+    height: auto; 
+    font-size: 14px; 
+    color: var(--te-green); 
+    width: 100%; 
+    font-family: 'Courier New', monospace; 
+    border: 1px solid var(--te-gray); 
+    padding: 15px;
+    border-radius: 4px;
+    resize: none;
+    min-height: 80px;
+    line-height: 1.4;
+}
+
+.params-section {
+    background: var(--te-gray-dark);
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid var(--te-gray);
+    position: relative;
+}
+
+.params-label {
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background: var(--te-black);
+    padding: 0 10px;
+    font-size: 12px;
+    color: var(--te-orange);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.params {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 10px;
+}
+
+@media (max-width: 1024px) {
+    .params {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .params {
+        grid-template-columns: 1fr;
+    }
+}
+
+.param {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 15px;
+    background: var(--te-black);
+    border-radius: 6px;
+    border: 1px solid var(--te-gray);
+}
+
+.param-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.param-name {
+    font-size: 12px;
+    color: var(--te-white);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.param-value {
+    font-size: 14px;
+    color: var(--te-orange);
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    min-width: 60px;
+    text-align: right;
+}
+
+.param-slider {
+    width: 100%;
+    height: 4px;
+    background: var(--te-gray);
+    border-radius: 2px;
+    -webkit-appearance: none;
+    cursor: pointer;
+    margin: 5px 0;
+}
+
+.param-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--te-orange);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid var(--te-black);
+}
+
+.param-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: var(--te-orange);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid var(--te-black);
+}
+
+.status {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--te-orange);
+    color: var(--te-black);
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.status.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.key-hint {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 11px;
+    color: var(--te-gray-light);
+    letter-spacing: 1px;
+}
+
+.key-hint kbd {
+    background: var(--te-gray-dark);
+    color: var(--te-orange);
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid var(--te-gray);
+    font-family: 'Courier New', monospace;
+    margin: 0 2px;
+}
+
+@keyframes buttonPress {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+button.pressed {
+    animation: buttonPress 0.1s ease;
+}
+
+@keyframes playingGlow {
+    0% { box-shadow: 0 0 5px var(--te-orange); }
+    50% { box-shadow: 0 0 15px var(--te-orange); }
+    100% { box-shadow: 0 0 5px var(--te-orange); }
+}
+
+.playing {
+    animation: playingGlow 0.5s ease-in-out infinite;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--te-gray-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--te-gray);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--te-orange);
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="volume-label" id="div_masterVolume">Master Volume 25%</div>
+    <input id="slider_masterVolume" title="Volume to scale all sounds by in percent" type="range" min="0" max="100" value="25">
+    
+    <canvas title="Image of sound wave, click to play the sound [SPACE]" id="canvas_soundWave" width="350" height="80"></canvas>
+    
+    <div id="hud">
+    <button onclick="playSelected()">Play</button>
+    <button onclick="exportWAV()" class="export">EXPORT WAV</button>
+    </div>
+
+    <div class="button-row">
+        <button onclick="generateRandomSound()">Random</button>
+        <button onclick="mutateSound()">Mutate</button>
+        <button onclick="makeNote()">Note</button>
+    </div>
+    
+    <div class="button-row">
+        <button onclick="makeSine()">Sine</button>
+        <button onclick="makeSaw()">Saw</button>
+        <button onclick="makeSquare()">Square</button>
+        <button onclick="makeBass()">Bass</button>
+    </div>
+    
+    <div class="button-row">
+        <button onclick="makeCymbal()">Cymbal</button>
+        <button onclick="makePluck()">Pluck</button>
+        <button onclick="makeWind()">Wind</button>
+        <button onclick="makeNoise()">Noise</button>
+    </div>
+    
+    <textarea title="Sound parameters code" id="textarea_code" readonly></textarea>
+
+    <div class="params" id="paramsContainer"></div>
+
+</div>
+
+<script>
+'use strict';
+
+const canvas_soundWave = document.getElementById('canvas_soundWave');
+const textarea_code = document.getElementById('textarea_code');
+const slider_masterVolume = document.getElementById('slider_masterVolume');
+const div_masterVolume = document.getElementById('div_masterVolume');
+const paramsContainer = document.getElementById('paramsContainer');
+
+let audioContext = null;
+let lastPlayedSound = null;
+
+const soundParams = [
+    {n:'Volume', v:1, min:0, max:2, step:.01, prop:'volume'},
+    {n:'Randomness', v:.05, min:0, max:0.5, step:.001, prop:'randomness'},
+    {n:'Frequency', v:220, min:20, max:2000, step:1, prop:'frequency'},
+    {n:'Attack', v:0, min:0, max:0.5, step:.001, prop:'attack'},
+    {n:'Sustain', v:0, min:0, max:1, step:.001, prop:'sustain'},
+    {n:'Release', v:.1, min:0, max:1, step:.001, prop:'release'},
+    {n:'Shape', v:0, min:0, max:5, step:1, prop:'shape'},
+    {n:'Shape Curve', v:1, min:0.1, max:3, step:.01, prop:'shapeCurve'},
+    {n:'Slide', v:0, min:-10, max:10, step:.01, prop:'slide'},
+    {n:'Delta Slide', v:0, min:-20, max:20, step:.01, prop:'deltaSlide'},
+    {n:'Pitch Jump', v:0, min:-50, max:50, step:.1, prop:'pitchJump'},
+    {n:'Pitch Jump Time', v:0, min:0, max:0.5, step:.001, prop:'pitchJumpTime'},
+    {n:'Repeat Time', v:0, min:0, max:0.5, step:.001, prop:'repeatTime'},
+    {n:'Noise', v:0, min:0, max:1, step:.01, prop:'noise'},
+    {n:'Modulation', v:0, min:0, max:50, step:.1, prop:'modulation'},
+    {n:'Bit Crush', v:0, min:0, max:1, step:.01, prop:'bitCrush'},
+    {n:'Delay', v:0, min:0, max:0.5, step:.001, prop:'delay'},
+    {n:'Sustain Volume', v:1, min:0, max:1, step:.01, prop:'sustainVolume'},
+    {n:'Decay', v:0, min:0, max:0.5, step:.001, prop:'decay'},
+    {n:'Tremolo', v:0, min:0, max:1, step:.01, prop:'tremolo'},
+    {n:'Filter', v:0, min:-1000, max:1000, step:1, prop:'filter'}
+];
+
+let currentSound = {};
+
+function initializeSoundParams() {
+    soundParams.forEach(param => {
+        currentSound[param.prop] = param.v;
+    });
+    currentSound.name = 'Default Sound';
+}
+
+function createSliders() {
+    soundParams.forEach((param, i) => {
+        const div = document.createElement('div');
+        div.className = 'param';
+        div.innerHTML = `
+            <div class="param-label-row">
+                <div class="param-name">${param.n}</div>
+                <div class="param-value" id="value${i}">${param.v}</div>
+            </div>
+            <input type="range" class="param-slider" id="slider${i}" 
+                   min="${param.min}" max="${param.max}" step="${param.step}" value="${param.v}">
+        `;
+        paramsContainer.appendChild(div);
+        
+        const slider = document.getElementById(`slider${i}`);
+        const valueDisplay = document.getElementById(`value${i}`);
+        
+        const formatValue = (val) => {
+            const num = parseFloat(val);
+            if (param.step < 0.01) return num.toFixed(3);
+            if (param.step < 0.1) return num.toFixed(2);
+            if (param.step < 1) return num.toFixed(1);
+            return Math.round(num);
+        };
+        
+        const updateSlider = () => {
+            const val = parseFloat(slider.value);
+            currentSound[param.prop] = val;
+            valueDisplay.textContent = formatValue(val);
+            updateCodeDisplay();
+            drawSoundWave();
+        };
+        
+        slider.addEventListener('input', updateSlider);
+        slider.addEventListener('change', updateSlider);
+        
+        valueDisplay.textContent = formatValue(param.v);
+    });
+}
+
+function updateSlidersFromCurrentSound() {
+    soundParams.forEach((param, i) => {
+        const slider = document.getElementById(`slider${i}`);
+        const valueDisplay = document.getElementById(`value${i}`);
+        if (slider && currentSound[param.prop] !== undefined) {
+            slider.value = currentSound[param.prop];
+            const val = currentSound[param.prop];
+            if (param.step < 0.01) valueDisplay.textContent = parseFloat(val).toFixed(3);
+            else if (param.step < 0.1) valueDisplay.textContent = parseFloat(val).toFixed(2);
+            else if (param.step < 1) valueDisplay.textContent = parseFloat(val).toFixed(1);
+            else valueDisplay.textContent = Math.round(val);
+        }
+    });
+}
+
+function resizeCanvas() {
+    const containerWidth = document.querySelector('.container').offsetWidth;
+    const canvasWidth = Math.min(350, containerWidth - 40);
+    canvas_soundWave.width = canvasWidth;
+    canvas_soundWave.style.width = canvasWidth + 'px';
+    drawSoundWave();
+}
+
+function init() {
+    initializeSoundParams();
+    createSliders();
+    updateMasterVolume();
+    generateRandomSound();
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    canvas_soundWave.addEventListener('click', playSelected);
+    canvas_soundWave.addEventListener('touchstart', playSelected, {passive: true});
+    slider_masterVolume.addEventListener('input', updateMasterVolume);
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && document.activeElement.tagName !== 'BUTTON') {
+            e.preventDefault();
+            playSelected();
+        }
+    });
+    
+    document.addEventListener('touchmove', (e) => {
+        if (e.target.type === 'range') {
+            e.preventDefault();
+        }
+    }, {passive: false});
+}
+
+function updateMasterVolume() {
+    const v = slider_masterVolume.value;
+    div_masterVolume.innerHTML = `Master Volume ${v}%`;
+}
+
+function generateRandomSound() {
+    soundParams.forEach(param => {
+        if (param.prop === 'name') return;
+        const range = param.max - param.min;
+        let randomValue;
+        
+        if (param.step < 1) {
+            randomValue = param.min + Math.random() * range;
+            randomValue = Math.round(randomValue / param.step) * param.step;
+        } else {
+            randomValue = Math.floor(param.min + Math.random() * (range + 1));
+        }
+        
+        currentSound[param.prop] = randomValue;
+    });
+    
+    currentSound.name = 'Random Sound';
+    updateSlidersFromCurrentSound();
+    updateCodeDisplay();
+    drawSoundWave();
+    playSelected();
+}
+
+function mutateSound() {
+    soundParams.forEach(param => {
+        if (param.prop === 'name') return;
+        const current = currentSound[param.prop];
+        const mutation = (Math.random() - 0.5) * (param.max - param.min) * 0.1;
+        let newValue = current + mutation;
+        
+        newValue = Math.max(param.min, Math.min(param.max, newValue));
+        
+        if (param.step < 1) {
+            newValue = Math.round(newValue / param.step) * param.step;
+        } else {
+            newValue = Math.round(newValue);
+        }
+        
+        currentSound[param.prop] = newValue;
+    });
+    
+    currentSound.name = 'Mutated Sound';
+    updateSlidersFromCurrentSound();
+    updateCodeDisplay();
+    drawSoundWave();
+    playSelected();
+}
+
+function makeNote() {
+    const waveforms = [0, 1, 2, 3];
+    const randomShape = waveforms[Math.floor(Math.random() * waveforms.length)];
+    
+    const notePreset = {
+        volume: 0.5,
+        randomness: 0.05,
+        frequency: 440,
+        attack: 0,
+        sustain: 0.1,
+        release: 0.1,
+        shape: randomShape,
+        shapeCurve: 1,
+        slide: 0,
+        deltaSlide: 0,
+        pitchJump: 0,
+        pitchJumpTime: 0,
+        repeatTime: 0,
+        noise: 0,
+        modulation: 0,
+        bitCrush: 0,
+        delay: 0,
+        sustainVolume: 1,
+        decay: 0,
+        tremolo: 0,
+        filter: 0
+    };
+    
+    Object.assign(currentSound, notePreset);
+    
+    const waveNames = ['Sine', 'Triangle', 'Saw', 'Square'];
+    currentSound.name = `${waveNames[randomShape]} Note`;
+    
+    updateSlidersFromCurrentSound();
+    updateCodeDisplay();
+    drawSoundWave();
+    playSelected();
+}
+
+function makeSine() {
+    const sinePreset = {
+        volume: 0.3,
+        randomness: 0,
+        frequency: 220,
+        attack: 0.01,
+        sustain: 0.2,
+        release: 0.1,
+        shape: 0,
+        shapeCurve: 1,
+        slide: 0,
+        deltaSlide: 0,
+        pitchJump: 0,
+        pitchJumpTime: 0,
+        repeatTime: 0,
+        noise: 0,
+        modulation: 0,
+        bitCrush: 0,
+        delay: 0,
+        sustainVolume: 0.8,
+        decay: 0,
+        tremolo: 0,
+        filter: 0
+    };
+    
+    Object.assign(currentSound, sinePreset);
+    currentSound.name = 'Sine Wave';
+    updateSlidersFromCurrentSound();
+    updateCodeDisplay();
+    drawSoundWave();
+    playSelected();
+}
+
+function makeSaw() {
+    const sawPreset = {
+        volume: 0.3,
+        randomness: 0,
+        frequency: 220,
+        attack: 0.01,
+        sustain: 0.2,
+        release: 0.1,
+        shape: 2,
+        shapeCurve: 1,
+        slide: 0,
+        deltaSlide: 0,
+        pitchJump: 0,
+        pitchJumpTime: 0,
+        repeatTime: 0,
+        noise: 0,
+        modulation: 0,
+        bitCrush: 0,
+        delay: 0,
+        sustainVolume: 0.8,
+        decay: 0,
+        tremolo: 0,
+        filter: -500
+    };
+    
+    Object.assign(currentSound, sawPreset);
+    currentSound.name = 'Saw Wave';
+    updateSlidersFromCurrentSound();
+    updateCodeDisplay();
+    drawSoundWave();
+    playSelected();
+}
+
+function makeSquare() {
+    const squarePreset = {
+        volume: 0.3,
+        randomness: 0,
+        frequency: 220,
+        attack: 0.01,
+        sustain: 0.2,
+        release: 0.1,
+        shape: 3,
+        shapeCurve: 1,
+        slide: 0,
+        deltaSlide: 0,
+        pitchJump: 0,
+        pitchJumpTime: 0,
+        repeatTime: 0,
+        noise: 0,
+        modulation: 0,
+        bitCrush: 0,
+        delay: 0,
+        sustainVolume: 0.8,
+        decay: 0,
+        tremolo: 0,
+        filter: -300
+    };
+    
+    Object.assign(currentSound, squarePreset);
+    currentSound.name = 'Square Wave';
+    updateSlidersFromCurrentSound();
+    updateCodeDisplay();
+    drawSoundWave();
+    playSelected();
+}
+
+function makeBass() {
+    const bassPreset = {
+        volume: 0.4,
+        randomness: 0.01,
+        frequency: 110,
+        attack: 0.05,
+        sustain: 0.3,
+        release: 0.2,
+        shape: 3,
+        shapeCurve: 1.5,
+        slide: -1,
+        deltaSlide: -0.5,
+        pitchJump: 0,
+        pitchJumpTime: 0,
+        repeatTime: 0,
+        noise: 0,
+        modulation: 10,
+        bitCrush: 0.1,
+        delay: 0,
+        sustainVolume: 0.6,
+        decay: 0.1,
+        tremolo: 0,
+        filter: -800
+    };
+    
+    Object.assign(currentSound, bassPreset);
+    currentSound.name = 'Bass';
+    updateSlidersFromCurrentSound();
+    updateCodeDisplay();
+    drawSoundWave();
+    playSelected();
+}
+
+function makeCymbal() {
+    const cymbalPreset = {
+        volume: 0.2,
+        randomness: 0.3,
+        frequency: 800,
+        attack: 0.01,
+        sustain: 0.05,
+        release: 0.5,
+        shape: 4,
+        shapeCurve: 1,
+        slide: -50,
+        deltaSlide: -10,
+        pitchJump: 0,
+        pitchJumpTime: 0,
+        repeatTime: 0,
+        noise: 0.8,
+        modulation: 0,
+        bitCrush: 0.3,
+        delay: 0,
+        sustainVolume: 0.2,
+        decay: 0.05,
+        tremolo: 0.2,
+        filter: 500
+    };
+    
+    Object.assign(currentSound, cymbalPreset);
+    currentSound.name = 'Cymbal';
+    updateSlidersFromCurrentSound();
+    updateCodeDisplay();
+    drawSoundWave();
+    playSelected();
+}
+
+function makePluck() {
+    const pluckPreset = {
+        volume: 0.3,
+        randomness: 0.02,
+        frequency: 330,
+        attack: 0,
+        sustain: 0.05,
+        release: 0.3,
+        shape: 1,
+        shapeCurve: 1,
+        slide: -5,
+        deltaSlide: -1,
+        pitchJump: 20,
+        pitchJumpTime: 0.01,
+        repeatTime: 0,
+        noise: 0.05,
+        modulation: 5,
+        bitCrush: 0,
+        delay: 0.1,
+        sustainVolume: 0.7,
+        decay: 0.05,
+        tremolo: 0,
+        filter: -200
+    };
+    
+    Object.assign(currentSound, pluckPreset);
+    currentSound.name = 'Pluck';
+    updateSlidersFromCurrentSound();
+    updateCodeDisplay();
+    drawSoundWave();
+    playSelected();
+}
+
+function makeWind() {
+    const windPreset = {
+        volume: 0.25,
+        randomness: 0.1,
+        frequency: 300,
+        attack: 0.5,
+        sustain: 1,
+        release: 0.5,
+        shape: 0,
+        shapeCurve: 1.2,
+        slide: 2,
+        deltaSlide: 0.5,
+        pitchJump: 0,
+        pitchJumpTime: 0,
+        repeatTime: 0,
+        noise: 0.2,
+        modulation: 15,
+        bitCrush: 0,
+        delay: 0,
+        sustainVolume: 0.3,
+        decay: 0,
+        tremolo: 0.3,
+        filter: -300
+    };
+    
+    Object.assign(currentSound, windPreset);
+    currentSound.name = 'Wind';
+    updateSlidersFromCurrentSound();
+    updateCodeDisplay();
+    drawSoundWave();
+    playSelected();
+}
+
+function makeNoise() {
+    const noisePreset = {
+        volume: 0.3,
+        randomness: 0.5,
+        frequency: 100,
+        attack: 0.01,
+        sustain: 0.2,
+        release: 0.3,
+        shape: 4,
+        shapeCurve: 1,
+        slide: 0,
+        deltaSlide: 0,
+        pitchJump: 0,
+        pitchJumpTime: 0,
+        repeatTime: 0,
+        noise: 1,
+        modulation: 0,
+        bitCrush: 0.5,
+        delay: 0,
+        sustainVolume: 0.5,
+        decay: 0,
+        tremolo: 0.1,
+        filter: 0
+    };
+    
+    Object.assign(currentSound, noisePreset);
+    currentSound.name = 'Noise';
+    updateSlidersFromCurrentSound();
+    updateCodeDisplay();
+    drawSoundWave();
+    playSelected();
+}
+
+function updateCodeDisplay() {
+    const params = soundParams.map(param => currentSound[param.prop]);
+    let code = 'zzfx(';
+    
+    params.forEach((param, index) => {
+        if (index > 0) code += ', ';
+        code += param;
+    });
+    
+    code += `);`;
+    textarea_code.value = code;
+}
+
+function drawSoundWave() {
+    const ctx = canvas_soundWave.getContext('2d');
+    const width = canvas_soundWave.width;
+    const height = canvas_soundWave.height;
+    
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, width, height);
+    
+    const totalDuration = parseFloat(currentSound.attack) + parseFloat(currentSound.sustain) + parseFloat(currentSound.release);
+    
+    if (totalDuration > 0) {
+        const attackWidth = width * (currentSound.attack / totalDuration);
+        const sustainWidth = width * (currentSound.sustain / totalDuration);
+        
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(attackWidth, 0, sustainWidth, height);
+    }
+    
+    ctx.strokeStyle = '#5AF';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    const frequency = parseFloat(currentSound.frequency);
+    const amplitude = parseFloat(currentSound.volume);
+    const noise = parseFloat(currentSound.noise);
+    
+    for (let x = 0; x < width; x++) {
+        const t = x / width * 4 * Math.PI;
+        let y = 0;
+        
+        switch (currentSound.shape) {
+            case 0: y = Math.sin(t * frequency / 100); break;
+            case 1: y = 2 * Math.abs(t * frequency / 50 % 2 - 1) - 1; break;
+            case 2: y = 2 * (t * frequency / 50 % 1) - 1; break;
+            case 3: y = Math.sin(t * frequency / 100) > 0 ? 0.7 : -0.7; break;
+            case 4: y = Math.random() * 2 - 1; break;
+            case 5: y = Math.sin(t * frequency / 100) * (1 - Math.abs(Math.sin(t * 2))); break;
+        }
+        
+        if (noise > 0) {
+            y += (Math.random() * 2 - 1) * noise;
+        }
+        
+        const envelope = getEnvelope(x / width);
+        y *= envelope * amplitude;
+        
+        const yPos = height/2 - y * height/2 * 0.8;
+        
+        if (x === 0) {
+            ctx.moveTo(x, yPos);
+        } else {
+            ctx.lineTo(x, yPos);
+        }
+    }
+    
+    ctx.stroke();
+    
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, height/2);
+    ctx.lineTo(width, height/2);
+    ctx.stroke();
+}
+
+function getEnvelope(pos) {
+    const attack = parseFloat(currentSound.attack);
+    const sustain = parseFloat(currentSound.sustain);
+    const release = parseFloat(currentSound.release);
+    const total = attack + sustain + release;
+    
+    if (total === 0) return 1;
+    
+    const scaledPos = pos * total;
+    
+    if (scaledPos < attack) {
+        return scaledPos / attack;
+    } else if (scaledPos < attack + sustain) {
+        return parseFloat(currentSound.sustainVolume);
+    } else if (scaledPos < total) {
+        const releasePos = (scaledPos - attack - sustain) / release;
+        return parseFloat(currentSound.sustainVolume) * (1 - releasePos);
+    }
+    
+    return 0;
+}
+
+function playSelected() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+    
+    if (lastPlayedSound) {
+        try {
+            lastPlayedSound.stop();
+        } catch(e) {}
+    }
+    
+    const audioBuffer = generateAudioBufferForPlayback();
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContext.destination);
+    source.start();
+    
+    lastPlayedSound = source;
+    flashCanvas();
+}
+
+function generateAudioBufferForPlayback() {
+    const volume = parseFloat(currentSound.volume) || 1;
+    const frequency = parseFloat(currentSound.frequency) || 220;
+    const attack = parseFloat(currentSound.attack) || 0;
+    const sustain = parseFloat(currentSound.sustain) || 0;
+    const release = parseFloat(currentSound.release) || 0.1;
+    const shape = parseInt(currentSound.shape) || 0;
+    const noise = parseFloat(currentSound.noise) || 0;
+    const sustainVolume = parseFloat(currentSound.sustainVolume) || 1;
+    const slide = parseFloat(currentSound.slide) || 0;
+    const deltaSlide = parseFloat(currentSound.deltaSlide) || 0;
+    const masterVolume = parseFloat(slider_masterVolume.value) / 100 || 0.25;
+    const shapeCurve = parseFloat(currentSound.shapeCurve) || 1;
+    const randomness = parseFloat(currentSound.randomness) || 0.05;
+    
+    const sampleRate = 44100;
+    const totalDuration = Math.max(0.1, attack + sustain + release);
+    const totalSamples = Math.ceil(totalDuration * sampleRate);
+    
+    const buffer = audioContext.createBuffer(1, totalSamples, sampleRate);
+    const channelData = buffer.getChannelData(0);
+    
+    let phase = 0;
+    let currentSlide = slide;
+    
+    let currentFreq = frequency;
+    if (randomness > 0) {
+        const randomFactor = 1 - randomness + 2 * randomness * Math.random();
+        currentFreq *= randomFactor;
+    }
+    
+    for (let i = 0; i < totalSamples; i++) {
+        const t = i / sampleRate;
+        
+        // Calculate envelope
+        let envelope = 1;
+        if (t < attack) {
+            envelope = Math.pow(t / attack, 0.5);
+        } else if (t < attack + sustain) {
+            envelope = sustainVolume;
+        } else if (t < totalDuration) {
+            const releasePos = (t - attack - sustain) / release;
+            envelope = sustainVolume * Math.pow(1 - releasePos, 0.5);
+        } else {
+            envelope = 0;
+        }
+        
+        // Update frequency with slide
+        let sampleFreq = currentFreq;
+        sampleFreq += currentSlide / sampleRate;
+        currentSlide += deltaSlide / sampleRate;
+        sampleFreq = Math.max(20, sampleFreq); // Minimum 20Hz
+        
+        // Generate waveform sample
+        const phaseIncrement = (sampleFreq * 2 * Math.PI) / sampleRate;
+        let sample = 0;
+        
+        switch (shape) {
+            case 0: // Sine
+                sample = Math.sin(phase);
+                break;
+            case 1: // Triangle
+                sample = 2 * Math.abs((phase / (2 * Math.PI)) % 1 - 0.5) * 2 - 1;
+                break;
+            case 2: // Saw
+                sample = 2 * ((phase / (2 * Math.PI)) % 1) - 1;
+                break;
+            case 3: // Square
+                sample = Math.sin(phase) > 0 ? 0.5 * shapeCurve : -0.5 * shapeCurve;
+                break;
+            case 4: // Noise
+                sample = (Math.random() * 2 - 1) * 0.7 * (noise || 1);
+                break;
+            case 5: // Custom (pulse wave)
+                sample = Math.sin(phase) * Math.sin(phase * 0.5);
+                break;
+        }
+        
+        // Add noise 
+        if (noise > 0 && shape !== 4) { 
+            sample += (Math.random() * 2 - 1) * noise * 0.5;
+        }
+        
+        // envelope, volume, and master volume with limiting
+        sample = Math.max(-0.99, Math.min(0.99, sample * envelope * volume * masterVolume));
+        
+        channelData[i] = sample;
+        phase += phaseIncrement;
+        // Keep phase in range
+        if (phase > 100 * Math.PI) phase -= 100 * Math.PI;
+    }
+    
+    // low-pass filter
+    if (parseFloat(currentSound.filter) < 0) {
+        applyLowPassFilter(channelData, Math.abs(parseFloat(currentSound.filter)) || 1000);
+    }
+    
+    return buffer;
+}
+
+// Flash canvas
+function flashCanvas() {
+    canvas_soundWave.style.borderColor = '#5AF';
+    setTimeout(() => {
+        canvas_soundWave.style.borderColor = '#333';
+    }, 100);
+}
+
+
+// Export WAV file
+function exportWAV() {
+    try {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        // Generate audio buffer from playback 
+        const audioBuffer = generateAudioBufferForPlayback();
+        
+        // Convert to WAV
+        const wavData = audioBufferToWav(audioBuffer);
+        
+        // Create download link
+        const blob = new Blob([wavData], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sound_${Date.now()}.wav`;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+        
+        console.log('WAV exported successfully');
+        
+    } catch (error) {
+        console.error('Error exporting WAV:', error);
+    }
+}
+
+// low-pass filter
+function applyLowPassFilter(data, cutoffFreq) {
+    const sampleRate = 44100;
+    const rc = 1.0 / (2 * Math.PI * cutoffFreq);
+    const dt = 1.0 / sampleRate;
+    const alpha = dt / (rc + dt);
+    
+    let lastValue = data[0];
+    for (let i = 1; i < data.length; i++) {
+        lastValue = lastValue + alpha * (data[i] - lastValue);
+        data[i] = lastValue;
+    }
+}
+
+// AudioBuffer to WAV converter
+function audioBufferToWav(buffer, options) {
+    options = options || {};
+    var numChannels = buffer.numberOfChannels;
+    var sampleRate = buffer.sampleRate;
+    var format = options.float32 ? 3 : 1;
+    var bitDepth = format === 3 ? 32 : 16;
+    
+    var result;
+    if (numChannels === 2) {
+        result = interleave(buffer.getChannelData(0), buffer.getChannelData(1));
+    } else {
+        result = buffer.getChannelData(0);
+    }
+    
+    return encodeWAV(result, format, sampleRate, numChannels, bitDepth);
+}
+
+function encodeWAV(samples, format, sampleRate, numChannels, bitDepth) {
+    var bytesPerSample = bitDepth / 8;
+    var blockAlign = numChannels * bytesPerSample;
+    
+    var buffer = new ArrayBuffer(44 + samples.length * bytesPerSample);
+    var view = new DataView(buffer);
+    
+    /* RIFF identifier */
+    writeString(view, 0, 'RIFF');
+    /* RIFF chunk length */
+    view.setUint32(4, 36 + samples.length * bytesPerSample, true);
+    /* RIFF type */
+    writeString(view, 8, 'WAVE');
+    /* format chunk identifier */
+    writeString(view, 12, 'fmt ');
+    /* format chunk length */
+    view.setUint32(16, 16, true);
+    /* sample format (raw) */
+    view.setUint16(20, format, true);
+    /* channel count */
+    view.setUint16(22, numChannels, true);
+    /* sample rate */
+    view.setUint32(24, sampleRate, true);
+    /* byte rate (sample rate * block align) */
+    view.setUint32(28, sampleRate * blockAlign, true);
+    /* block align (channel count * bytes per sample) */
+    view.setUint16(32, blockAlign, true);
+    /* bits per sample */
+    view.setUint16(34, bitDepth, true);
+    /* data chunk identifier */
+    writeString(view, 36, 'data');
+    /* data chunk length */
+    view.setUint32(40, samples.length * bytesPerSample, true);
+    
+    if (format === 1) { // Raw PCM
+        floatTo16BitPCM(view, 44, samples);
+    } else { // Float32
+        writeFloat32(view, 44, samples);
+    }
+    
+    return buffer;
+}
+
+function interleave(inputL, inputR) {
+    var length = inputL.length + inputR.length;
+    var result = new Float32Array(length);
+    
+    var index = 0;
+    var inputIndex = 0;
+    
+    while (index < length) {
+        result[index++] = inputL[inputIndex];
+        result[index++] = inputR[inputIndex];
+        inputIndex++;
+    }
+    
+    return result;
+}
+
+function writeFloat32(output, offset, input) {
+    for (var i = 0; i < input.length; i++, offset += 4) {
+        output.setFloat32(offset, input[i], true);
+    }
+}
+
+function floatTo16BitPCM(output, offset, input) {
+    for (var i = 0; i < input.length; i++, offset += 2) {
+        var s = Math.max(-1, Math.min(1, input[i]));
+        output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+}
+
+function writeString(view, offset, string) {
+    for (var i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+    }
+}
+
+
+// START -----------------------------
+window.addEventListener('load', init);
+
+</script>
+</body>
+</html>
