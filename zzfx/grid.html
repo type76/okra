@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>seq</title>
+	<style>
+		@font-face {
+		  font-family: 'uni-05_64';
+		    src:  url('font/uni-05_64.ttf.woff') format('woff'),
+		    url('font/uni-05_64.ttf.svg#uni-05_64') format('svg'),
+		    url('font/uni-05_64.ttf.eot'),
+		    url('font/uni-05_64.eot?#iefix') format('embedded-opentype'); 
+		    font-weight: normal;
+		    font-style: normal;
+		}
+		body {
+			background-color: #333;
+			color: #fff;
+			font-family: monospace;
+			margin: 0;
+			padding: 20px;
+			box-sizing: border-box;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			min-height: 100vh;
+			font-family: 'uni-05_64';
+		}
+		a {color: #fff; text-decoration: none;}
+		a:hover, .hud-row button:hover {color: yellow;}
+		#grid {
+			display: grid;
+			grid-template-columns: repeat(16, 32px);
+			grid-template-rows: repeat(16, 32px);
+			gap: 1px;
+			margin: 0;
+			background-color: #111;
+			padding-left:6px;
+			padding-top:6px;
+		}
+		.note-cell {
+			width: 26px;
+			height: 26px;
+			background-color: #333;
+			cursor: pointer;
+			transition: background-color 0.1s;
+		}
+		.note-cell.active {
+			background-color: #666;
+		}
+		.note-cell.current-step {
+			background-color: #444;
+		}
+		.note-cell.active.current-step {
+			background-color: #888;
+		}
+		#container {
+			position: relative;
+			display: inline-block;
+			margin: 0;
+			padding: 0;
+		}
+		#hud {
+			width: 512px;
+			margin-bottom: 0;
+			position: relative;
+		}
+
+		button {
+			background-color: #111;
+			border: none;
+			color: #fff;
+		    font-family: 'uni-05_64';
+			padding: 10px;
+			cursor: pointer;
+			text-align: left;
+			margin: 0;
+			line-height: 12px;
+		}
+		.hud-row button:hover, .hud-row button:focus {
+			background-color: #555;
+		}
+		.hud-row {
+			display: flex;
+			gap: 10px;
+		}
+		.hud-section {
+			display: flex;
+			flex-direction: column;
+			gap: 1px;
+			flex: 1;
+		}
+		.hud-label {
+			color: #888;
+			font-size: 12px;
+			margin-bottom: 5px;
+			display: inline-block;
+		}
+		#grid-nav {
+			max-height: 40px;
+			margin: 10px 0 0 0;
+		}
+		.grid-nav-btn {
+			display: inline-block;
+			padding: 8px 20px;
+			margin: 0 8px 0 0;
+			border-top: #111 4px solid;
+		}
+		.grid-nav-btn.active {
+			color: yellow;
+			padding-bottom: 20px;
+		}
+		.grid-nav-btn.playing {
+			border-top: #ccc 4px solid;
+		}
+		#tempo-slider {
+			width: 100%;
+			background-color: #111;
+			-webkit-appearance: none;
+			height: 8px;
+			border-radius: 4px;
+			outline: none;
+		}
+		#tempo-slider::-webkit-slider-thumb {
+			-webkit-appearance: none;
+			width: 20px;
+			height: 20px;
+			border-radius: 50%;
+			background-color: #fff;
+			cursor: pointer;
+		}
+		#tempo-value {
+			color: #ccc;
+			font-size: 12px;
+			text-align: left;
+			margin-top: 5px;
+			display: inline-block;
+		}
+		.resetbtn {
+			position: absolute;
+			bottom: 8px;
+			right: 0;
+		}
+	</style>
+</head>
+<body>
+	<div id="hud">
+		<div class="hud-row">
+			<div class="hud-section">
+				<div class="hud-label">CONTROLS</div>
+				<div class="hud-row">
+					<button id="stop">stop</button>
+					<button id="instructions">save</button>
+					<button id="add-grid">+ grid</button>
+					<button id="remove-grid">- grid</button>
+					<button id="copy-paste">copy</button>
+				</div>
+				<a class="resetbtn" href="#">reset</a>
+			</div>
+			
+			<div class="hud-section">
+				<div class="hud-label">TEMPO <div id="tempo-value">120 BPM</div></div>
+				<input type="range" id="tempo-slider" min="50" max="400" value="120">
+			</div>
+		</div>
+		
+		<div class="hud-section">
+			<div id="grid-nav"></div>
+		</div>
+	</div>
+	
+	<div id="container">
+		<div id="grid"></div>
+	</div>
+</body>
+
+<script type="text/javascript">
+	// ZzFXMicro - Zuper Zmall Zound Zynth - v1.3.2 by Frank Force
+	let zzfxV=.3,               // volume
+	zzfxX=new AudioContext, // audio context
+	zzfx=                   // play sound
+	(p=1,k=.05,b=220,e=0,r=0,t=.1,q=0,D=1,u=0,y=0,v=0,z=0,l=0,E=0,A=0,F=0,c=0,w=1,m=0,B=0
+		,N=0)=>{let M=Math,d=2*M.PI,R=44100,G=u*=500*d/R/R,C=b*=(1-k+2*k*M.random(k=[]))*d/R,
+	g=0,H=0,a=0,n=1,I=0,J=0,f=0,h=N<0?-1:1,x=d*h*N*2/R,L=M.cos(x),Z=M.sin,K=Z(x)/4,O=1+K,
+	X=-2*L/O,Y=(1-K)/O,P=(1+h*L)/2/O,Q=-(h+L)/O,S=P,T=0,U=0,V=0,W=0;e=R*e+9;m*=R;r*=R;t*=
+	R;c*=R;y*=500*d/R**3;A*=d/R;v*=d/R;z*=R;l=R*l|0;p*=zzfxV;for(h=e+m+r+t+c|0;a<h;k[a++]
+		=f*p)++J%(100*F|0)||(f=q?1<q?2<q?3<q?4<q?(g/d%1<D/2)*2-1:Z(g**3):M.max(M.min(M.tan(g)
+			,1),-1):1-(2*g/d%2+2)%2:1-4*M.abs(M.round(g/d)-g/d):Z(g),f=(l?1-B+B*Z(d*a/l):1)*(4<q?
+		s:(f<0?-1:1)*M.abs(f)**D)*(a<e?a/e:a<e+m?1-(a-e)/m*(1-w):a<e+m+r?w:a<h-c?(h-a-c)/t*w:
+		0),f=c?f/2+(c>a?0:(a<h-c?1:(h-a)/c)*k[a-c|0]/2/p):f,N?f=W=S*T+Q*(T=U)+P*(U=f)-Y*V-X*(
+		V=W):0),x=(b+=u+=y)*M.cos(A*H++),g+=x+x*E*Z(a**5),n&&++n>z&&(b+=v,C+=v,n=0),!l||++I%l
+		||(b=C,u=G,n=n||1);X=zzfxX,p=X.createBuffer(1,h,R);p.getChannelData(0).set(k);b=X.
+		createBufferSource();b.buffer=p;b.connect(X.destination);b.start()}
+
+	var isPlaying = true;
+	var currentStep = 0;
+	var lastUpdateTime = 0;
+	var bpm = 120; // BPM (beats per minute)
+	var stepInterval = 0; // Will be calculated from BPM
+	
+	// Multiple grids system
+	var grids = [];
+	var currentGridIndex = 0;
+	var playingGridIndex = 0; // Track which grid is currently playing
+	
+	// Copy/paste buffer
+	var copiedGrid = null;
+	
+	// Note frequencies for pentatonic scale starting from C3
+	var noteFrequencies = [
+		130.81, 146.83, 164.81, 196.00, 220.00, // C3, D3, E3, G3, A3
+		261.63, 293.66, 329.63, 392.00, 440.00, // C4, D4, E4, G4, A4
+		523.25, 587.33, 659.25, 783.99, 880.00, // C5, D5, E5, G5, A5
+		1046.50 // C6
+	];
+	
+	// Calculate step interval from BPM
+	function calculateStepInterval(bpmValue) {
+		return 60000 / (bpmValue * 4);
+	}
+	
+	// Initialize
+	(function (locationObj) {
+		// initial step interval
+		stepInterval = calculateStepInterval(bpm);
+		
+		// Try to load multiple grids from hash
+		try {
+			var hashData = atob(locationObj.hash.substr(2));
+			// Check if it's a single grid or multiple grids
+			if (hashData.length === 32) {
+				// Single grid (old format)
+				grids[0] = parseGridFromHash(hashData);
+			} else if (hashData.length > 0) {
+				// Multiple grids (new format)
+				var gridCount = hashData.charCodeAt(0);
+				var offset = 1;
+				for (var i = 0; i < gridCount; i++) {
+					var gridHash = hashData.substr(offset, 32);
+					grids.push(parseGridFromHash(gridHash));
+					offset += 32;
+				}
+			} else {
+				// No hash data
+				grids[0] = createEmptyGrid();
+			}
+		} catch(e) {
+			// If any error, start with empty grid
+			grids[0] = createEmptyGrid();
+		}
+		
+		// Create HTML grid
+		createGridDisplay();
+		
+		// Update URL when clicking save - now saves ALL grids
+		document.getElementById('instructions').addEventListener('click', function() {
+			saveAllGrids();
+		});
+		
+		// Start animation loop
+		requestAnimationFrame(updateSequencer);
+		
+		// Stop/Start button handler
+		document.getElementById('stop').onclick = function() {
+			isPlaying = !isPlaying;
+			this.textContent = isPlaying ? "stop" : "start";
+			if (isPlaying) {
+				lastUpdateTime = performance.now() - stepInterval;
+				requestAnimationFrame(updateSequencer);
+			}
+		};
+		
+		// Add grid button
+		document.getElementById('add-grid').addEventListener('click', function() {
+			grids.push(createEmptyGrid());
+			currentGridIndex = grids.length - 1;
+			updateGridDisplay();
+			updateGridNavigation();
+		});
+		
+		// Remove grid button
+		document.getElementById('remove-grid').onclick = function() {
+			if (grids.length > 1) {
+				grids.splice(currentGridIndex, 1);
+				if (currentGridIndex >= grids.length) {
+					currentGridIndex = grids.length - 1;
+				}
+				if (playingGridIndex >= grids.length) {
+					playingGridIndex = grids.length - 1;
+				}
+				updateGridDisplay();
+				updateGridNavigation();
+			}
+		};
+		
+		// Copy/Paste button
+		document.getElementById('copy-paste').onclick = function() {
+			if (copiedGrid === null) {
+				// Copy current grid
+				copiedGrid = grids[currentGridIndex].slice(); // Deep copy
+				this.textContent = "paste";
+				// Flash the button to show copy success
+				this.style.backgroundColor = '#444';
+				setTimeout(() => {
+					if (this.textContent === "paste") {
+						this.style.backgroundColor = '#111';
+					}
+				}, 200);
+			} else {
+				// Paste to current grid
+				grids[currentGridIndex] = copiedGrid.slice(); // Deep copy
+				updateGridDisplay();
+				this.textContent = "copy";
+				// Flash the button to show paste success
+				this.style.backgroundColor = '#444';
+				setTimeout(() => {
+					this.style.backgroundColor = '#111';
+				}, 200);
+			}
+		};
+		
+		// Tempo slider - now in BPM (50-400)
+		var tempoSlider = document.getElementById('tempo-slider');
+		var tempoValue = document.getElementById('tempo-value');
+		
+		tempoSlider.addEventListener('input', function() {
+			bpm = parseInt(this.value);
+			stepInterval = calculateStepInterval(bpm);
+			tempoValue.textContent = bpm + ' BPM';
+		});
+		
+		// Initial display update
+		updateGridNavigation();
+		updateGridDisplay();
+		
+	})(top.location);
+	
+	function createEmptyGrid() {
+		var grid = [];
+		for (var i = 0; i < 256; i++) {
+			grid[i] = 0;
+		}
+		return grid;
+	}
+	
+	function parseGridFromHash(hashData) {
+		var grid = [];
+		for (var i = 0; i < 256; i++) {
+			grid[i] = (hashData.charCodeAt(i >> 3) >> (7 - (i % 8))) & 1;
+		}
+		return grid;
+	}
+	
+	function encodeGridToHash(grid) {
+		var encodedData = "";
+		var byteValue = 0;
+		
+		for (var i = 0; i < 256; i++) {
+			var row = i % 16;
+			
+			// Pack 8 bits into a byte
+			if (row % 8) {
+				byteValue = byteValue * 2 + grid[i];
+			} else {
+				byteValue = grid[i];
+			}
+			
+			if (row % 8 == 7) {
+				encodedData += String.fromCharCode(byteValue);
+			}
+		}
+		
+		return encodedData;
+	}
+	
+	function saveAllGrids() {
+		// Format: first byte = number of grids, then each grid's 32-byte hash
+		var encodedData = String.fromCharCode(grids.length);
+		
+		for (var i = 0; i < grids.length; i++) {
+			encodedData += encodeGridToHash(grids[i]);
+		}
+		
+		top.location.hash = "#!" + btoa(encodedData);
+	}
+	
+	function createGridDisplay() {
+		var gridContainer = document.getElementById('grid');
+		gridContainer.innerHTML = '';
+		
+		for (var row = 0; row < 16; row++) {
+			for (var col = 0; col < 16; col++) {
+				var cell = document.createElement('div');
+				cell.className = 'note-cell';
+				cell.dataset.row = row;
+				cell.dataset.col = col;
+				cell.dataset.index = col * 16 + row;
+				
+				cell.addEventListener('click', function(e) {
+					var col = parseInt(this.dataset.col);
+					var row = parseInt(this.dataset.row);
+					var index = col * 16 + row;
+					
+					grids[currentGridIndex][index] = !grids[currentGridIndex][index];
+					
+					updateGridDisplay();
+				});
+				
+				gridContainer.appendChild(cell);
+			}
+		}
+		
+		updateGridDisplay();
+	}
+	
+	function updateGridDisplay() {
+		var cells = document.querySelectorAll('.note-cell');
+		var currentGrid = grids[currentGridIndex];
+		
+		cells.forEach(function(cell) {
+			var col = parseInt(cell.dataset.col);
+			var row = parseInt(cell.dataset.row);
+			var index = col * 16 + row;
+			
+			// Clear all states first
+			cell.classList.remove('active', 'current-step');
+			
+			// Set active state for current grid
+			if (currentGrid[index]) {
+				cell.classList.add('active');
+			}
+			
+			// Only show current step if we're viewing the playing grid
+			if (currentGridIndex === playingGridIndex && col === currentStep) {
+				cell.classList.add('current-step');
+			}
+		});
+	}
+	
+	function updateGridNavigation() {
+		var gridNav = document.getElementById('grid-nav');
+		gridNav.innerHTML = '';
+		
+		grids.forEach(function(grid, index) {
+			var btn = document.createElement('button');
+			btn.className = 'grid-nav-btn';
+			btn.textContent = (index + 1);
+			
+			if (index === currentGridIndex) {
+				btn.classList.add('active');
+			}
+			if (index === playingGridIndex) {
+				btn.classList.add('playing');
+			}
+			
+			btn.addEventListener('click', function() {
+				currentGridIndex = index;
+				updateGridDisplay();
+				updateGridNavigation();
+				// Update copy/paste button text based on whether we have something copied
+				var copyPasteBtn = document.getElementById('copy-paste');
+				if (copiedGrid !== null) {
+					copyPasteBtn.textContent = "paste";
+				} else {
+					copyPasteBtn.textContent = "copy";
+				}
+			});
+			
+			gridNav.appendChild(btn);
+		});
+	}
+	
+	function updateSequencer(timestamp) {
+		if (!isPlaying) return;
+		
+		// Throttle updates to stepInterval
+		if (timestamp - lastUpdateTime >= stepInterval) {
+			lastUpdateTime = timestamp;
+			
+			// Only play from the currently active grid in the sequence
+			if (grids.length > 0) {
+				var currentPlayingGrid = grids[playingGridIndex];
+				
+				for (var y = 0; y < 16; y++) {
+					if (currentPlayingGrid[currentStep * 16 + y]) {
+						// Play ZzFX note based on the row (y position)
+						var frequency = noteFrequencies[y] || 440;
+						// Adjust parameters for better sound
+						zzfx(
+							0.3,      // volume
+							0.05,     // randomness
+							frequency, // frequency
+							0,        // attack
+							0.15,     // sustain
+							0.1,      // release
+							0,        // shape (0=sine, 1=square, 2=saw, 3=triangle, 4=noise)
+							1,        // shape curve
+							0,        // slide
+							0,        // delta slide
+							0,        // pitch jump
+							0,        // pitch jump time
+							0,        // repeat time
+							0,        // noise
+							0,        // modulation
+							0,        // bit crush
+							0,        // delay
+							1,        // sustain volume
+							0,        // decay
+							0         // tremolo
+						);
+					}
+				}
+			}
+			
+			// Move to next step
+			currentStep = (currentStep + 1) % 16;
+			
+			// When we loop back to step 0, move to next grid
+			if (currentStep === 0 && grids.length > 1) {
+				playingGridIndex = (playingGridIndex + 1) % grids.length;
+				updateGridNavigation();
+				// Force update display for both old and new playing grid views
+				updateGridDisplay();
+			} else {
+				// Only update display if we're viewing the playing grid
+				if (currentGridIndex === playingGridIndex) {
+					updateGridDisplay();
+				}
+			}
+		}
+		
+		requestAnimationFrame(updateSequencer);
+	}
+</script>
+</body>
+</html>
