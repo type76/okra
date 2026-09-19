@@ -17,7 +17,7 @@ a collection of 3D and design work
 - [street](https://type76.github.io/okra/street)
 - [tories](https://type76.github.io/okra/tories)
 - [tuktuk](https://type76.github.io/okra/tuktuk)
-- [wayo](https://type76.github.io/okra/wayo)
+- [wayo](https://type76.github.io/okra/wayo/office)
 - [wayo3D](https://type76.github.io/okra/wayo3D)
 - [wobbly](https://type76.github.io/okra/wobbly)
 - [words](https://type76.github.io/okra/words)
