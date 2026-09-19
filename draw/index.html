@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>draw</title>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, user-scalable=no">
+
+  <style type="text/css">
+  @font-face {
+    font-family: 'uni0553';
+    src: url('font/uni0553-webfont.eot');
+    src: url('font/uni0553-webfont.eot?#iefix') format('embedded-opentype'),
+    url('font/uni0553-webfont.woff') format('woff'),
+    url('font/uni0553-webfont.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-smooth: never;
+  }
+  button, body {
+    font-family: 'uni0553';
+  }
+
+  body {
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    background: #2a2a2a;
+    color: #ccc;
+    user-select:none;
+    font-size:18px;
+  }
+
+
+  button {cursor: pointer;}
+
+body.hideui #hud, body.hideui #tl {visibility: hidden;}
+
+  #tl {
+    position: absolute;
+    bottom: 0px;
+    left: 0px;
+    z-index: 3;
+    background: rgba(0,0,0,0.1);
+  }
+
+  #framelineup {
+    position: absolute;
+    bottom: 0px;
+    left: 0px;
+    z-index: 3;
+  }
+
+
+  #drawing-canvas {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    z-index: 2;
+  }
+
+  #timeline {
+    display: inline-block;
+    border-top: #fff 2px solid;
+    position: relative;
+    z-index: 1;
+  }
+
+  #gotoframe {
+    position: absolute;
+    top: -32px;
+    height: 1em;
+    width: 100%;
+  }
+
+  #gotoframe button {
+    outline: none;
+    border: none;
+    background: rgba(0,0,0,0.2);
+    color: #fff;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 32px;
+    line-height: 32px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  #gotoframe button:hover {
+    background: #111;
+  }
+
+  #gotoframe button:after {
+    content: '';
+    display: block;
+    width: 1px;
+    height: 128px;
+    background: rgba(255,255,255,0.1);
+    position: absolute;
+    right: 0;
+  }
+
+  #threejs-container {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }	
+  #hud {position: absolute; top: -18px; left: 0; z-index: 999; line-height: 32px;
+    transform: scale(0.8);}
+  #hud p {text-align: left; padding: 0; margin: 0 0 4px 0;}
+
+  #btnup {background: transparent; color: red;}
+
+  button {display: inline-block; background: transparent; outline: none; border: none; color: #fff; font-size: 18px;}
+
+  #tl button:hover {
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+  }
+
+
+  #btnplay, #btnnext { 
+    margin: 0 0 4px 0; padding: 0; border: none; 
+    outline: none; font-family: monospace; 
+    color: #eee; 
+    cursor: pointer; display: block; 
+    width: 64px; height: 64px;
+  }
+
+  #btnplay svg, #btnnext svg { 
+    opacity: 0.4;
+  }
+
+  #btnplay:hover svg, #btnnext:hover svg {
+    opacity: 1;
+  }
+
+#hud button:hover {
+      background: rgba(0,0,0,0.1);
+      opacity: 1;
+}
+
+
+  button.off .playsvg {display: block !important;}
+  button.off .pausesvg {display: none;}
+  button.on .playsvg {display: none;}
+  button.on .pausesvg {display: block !important;}
+  button svg path {fill:#fff;}
+
+  #btneraser {width: 64px; opacity: 0.4;}
+  #btneraser.on {background: rgba(0,0,0,0.7); opacity: 1;}
+  
+
+  
+  #btneraser.on .erasersvg {display: none;}
+  #btneraser.on .pencilsvg {display: block !important;}
+
+  #btneraser {
+    display: block;
+    height: 64px;
+  }
+  #btneraser svg {
+    transform: scale(0.8) translateX(-8px);
+  }
+
+
+
+#btneraser:hover { opacity: 1;}
+
+
+  #hud input {
+    display: block; margin:4px 0;
+    width: 60px;
+    height: 32px;
+    background: rgba(0,0,0,0.1);
+    border: none;
+    outline: none;
+    /*display: none;*/
+  }
+
+  br {display: block; clear: both;}
+
+  #tl {
+    display: block; 
+    width: 100%; 
+  }
+
+  #tl button {line-height: 32px; width: 32px;}
+
+  .sl {float: right;}
+
+    #fgcol, #bgcol {cursor: pointer;}
+    
+    #colpicker {transform: scale(0.8) translateY(6px);}
+
+      .sl button {
+      width: auto !important; font-size: 60%;  margin: 0;}
+      #fps, #spritelength {margin-left: 20px;}
+      img {position: absolute; top: 90px; right: 0;}
+      #hideuibtn {position: absolute; z-index: 999; top: 0; right: 0;}
+      
+
+      @media only screen and (max-width: 500px) {
+        body {
+          background-color: lightblue;
+        }
+      }
+
+
+  </style>
+
+
+</head>
+<body>
+<button id="hideuibtn" onmousedown="hideUIButtonCallback()">hide ui</button>
+
+
+
+  <div id="hud">
+
+    <button id="btnplay" class="off">
+      <svg class="playsvg"  height="64" preserveAspectRatio="none" viewBox="0 0 64 64" width="64" xmlns="http://www.w3.org/2000/svg"><path d="m23.1 22v20.3l19.4-10.15z" fill="#fff" transform="translate(.25 -.15)"/></svg>
+
+      <svg class="pausesvg" style="display: none;"  height="64" preserveAspectRatio="none" viewBox="0 0 64 64" width="64" xmlns="http://www.w3.org/2000/svg"><path d="m19.85 19.85v24.35h7.85v-24.35zm24.35 24.35v-24.35h-7.9v24.35z" fill="#fff"/></svg>
+    </button>
+
+    <button id="btnnext">
+      <svg height="64" preserveAspectRatio="none" viewBox="0 0 64 64" width="64" xmlns="http://www.w3.org/2000/svg"><path d="m34.65 96.1-10.8-10.8-3.95 3.9 6.8 6.7-6.55 6.5 4.1 4.1zm.95-10.8-3.95 3.9 6.8 6.7-6.55 6.5 4.1 4.1 10.4-10.4z" fill="#fff" transform="translate(-1.15 -63.9)"/></svg>
+    </button>
+
+    <button id="btneraser" title="eraser mode">
+      <svg class="erasersvg" height="64" preserveAspectRatio="none" viewBox="0 0 64 64" width="64" xmlns="http://www.w3.org/2000/svg"><path d="m14.9 228.25v2.65l5.25 5.25h5.85l4.35-4.35-9.45-9.45zm18.7-18.6-12 11.95 9.5 9.45 11.9-11.95zm14.4 29.4v-1.85h-20.3l1.85 1.85z" fill="#fff" transform="translate(.8 -190.35)"/></svg>
+
+      <svg class="pencilsvg" style="display: none;" height="64" preserveAspectRatio="none" viewBox="0 0 64 64" width="64" xmlns="http://www.w3.org/2000/svg"><g transform="translate(1.1 13.6)"><path d="m17.05 31.7 3.1-.7h.1l.5-.1-2.9-2.9-.1.5-.05.05zm30.65 3.4v-1.85h-24.35-.3-.3-3.95-1.75-1.85v1.85h5.7zm-.35-26.45 1.45-1.45-7.3-7.2-22.55 22.5-.8 3.9 4.15 4.15 3.9-.8 2.75-2.75.15-.15 5.2-5.2 1.85-1.85 1.8-1.8 1.8-1.8.2-.2z" fill="#fff"/><path d="m39.75 16.2-1.2 1.25-2.95 2.95-1.3 1.25" fill="none" stroke="#933" stroke-linecap="square" stroke-miterlimit="3" stroke-width=".1"/></g></svg>
+    </button>
+
+
+    <input type="color" id="brush_color" value="#ffffff" style="display: none;">
+
+    <input type="color" id="bg_color" value="#222222" style="display: none;">
+
+    <svg id="colpicker" height="64" preserveAspectRatio="none" viewBox="0 0 64 64" width="64" xmlns="http://www.w3.org/2000/svg"><g transform="matrix(1.3520813 0 0 1.3520813 -14.1 -14.1)"><path d="m42.1 26.1v-12.45h-28.4v28.45h12.4v12.45h28.45v-28.45zm-1.5-10.95v10.9h-14.55v14.55h-10.85v-25.45zm-12.85 37.85v-25.25h25.25v25.25z" fill="rgba(255,255,255,0.1)"/>
+    <path id="fgcol" onclick="fgpick('fg')" d="m27.75 27.75v25.25h25.25v-25.25z" fill="#fff"/>
+    <path id="bgcol" onclick="bgpick('bg')" d="m40.6 26.05v-10.9h-25.4v25.45h10.85v-14.55z" fill="#2a2a2a"/></g></svg>
+  </div><!-- hud -->
+
+
+  <div id="tl">
+
+    <div class="sl">
+      <button type="button" id="submit" onmousedown="insertImage()">frog</button>
+      <button id="copy" onmousedown="copyframe()">copy</button>
+      <button id="clr">clear</button>
+      <button id="btnexport" title="copy and paste the image">export</button>      
+      <button id="expt" onmousedown="gifify(1)">gif</button>
+      <button id="canvas32px" onmousedown="makecanvas(32)">32px</button>
+      <button id="canvas64px" onmousedown="makecanvas(64)">64px</button>
+      <button id="canvas128px" onmousedown="makecanvas(128)">128px</button>
+
+      <span class="cfps"><b id="fps">1</b>fps</span> 
+      <button id="btnslow">-</button>
+      <button id="btnfast">+</button>
+
+
+      <span class="lengthx"><b id="spritelength">1</b>f</span>
+      <button id="btndown"  title="clear canvas and remove frame">-</button>
+      <button id="btnup" title="clear canvas and add frame">+</button>
+    </div>
+
+
+    <div id="framelineup">
+      <span id="timeline" class="f1">
+      </span>
+      <canvas id="drawing-canvas"></canvas>
+      <div id="gotoframe">
+        <button >1</button>
+      </div>
+    </div><!-- framelineup -->
+  </div><!-- tl -->
+
+
+
+  <div id="threejs-container"></div>
+
+  <script src="three.min.js"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/gifshot@0.4.5/dist/gifshot.min.js"></script> -->
+
+
+  <script type="text/javascript">
+// context.drawImage(img,sx,sy,swidth,sheight,x,y,width,height);
+
+
+function copyframe() {
+var xpos = (player.currentframe)*player.ogheight;
+var xpospaste = (player.currentframe+1)*player.ogheight;
+var xposcopy = (player.currentframe-1)*player.ogheight;
+
+// make temp canvas
+var copycanvas = document.createElement('canvas');
+copycanvas.width  = player.ogheight;
+copycanvas.height  = player.ogheight;
+
+// copy part of drawingcanvas
+if (player.currentframe>0) {
+  copycanvas.getContext('2d').drawImage(drawingCanvas,-xposcopy,0);
+} else {
+    copycanvas.getContext('2d').drawImage(drawingCanvas,0,0);
+}
+
+// document.body.appendChild(copycanvas);
+
+// paste copycanvas into drawing canvas
+if (player.currentframe>0) {
+drawingContext.drawImage(copycanvas, 0, 0, copycanvas.width, copycanvas.height, xpos, 0, copycanvas.width, copycanvas.height );
+} else {
+drawingContext.drawImage(copycanvas, 0, 0, copycanvas.width, copycanvas.height, xpospaste, 0, copycanvas.width, copycanvas.height );
+}
+
+// refresh material
+  plmaterial.map.needsUpdate = true;
+}
+
+function makecanvas(argument) {
+  drawingCanvas.height = argument;
+  drawingCanvas.width = argument;
+  player.ogwidth = argument;
+  player.ogheight = argument;
+  clrClick()
+  refreshcanvas()
+ document.getElementById('framelineup').style.height = argument+'px'; 
+ document.getElementById('timeline').style.width = argument+'px'; 
+}
+
+  var shift = 0;
+  var camera, scene, renderer, mesh, material, plmaterial, clock;
+  let raycaster = new THREE.Raycaster();
+  let mouse = new THREE.Vector2();
+  var isMouseDown = false;
+
+// get canvas and context
+var drawingCanvas = document.getElementById('drawing-canvas');
+var drawingContext = drawingCanvas.getContext('2d');
+drawingCanvas.height = 32;
+drawingCanvas.width = 32;
+
+var playbtn = document.getElementById('btnplay');
+var nextbtn = document.getElementById('btnnext');
+
+var eraserbtn = document.getElementById('btneraser');
+// keys
+var hotkeys = {
+    // event.key and/or event.keyCode 
+    "e": eraserButtonCallback,
+    "ArrowLeft": prevButtonCallback,
+    "ArrowRight": nextButtonCallback,
+    "32": playButtonCallback,
+    "9": hideUIButtonCallback,
+};
+
+
+document.getElementById('timeline').style.width = document.getElementById('timeline').style.height = drawingCanvas.height+'px';
+
+
+var framelength = document.getElementById('spritelength');
+
+var framenum = 1;
+var player = {
+  playing:false,
+  count:framenum,
+  fps:8,
+  currentframe:0,
+  ogwidth:drawingCanvas.width,
+  ogheight:drawingCanvas.height,
+  color:'#ffffff',
+  bgcolor:'#222222',
+  eraser:false
+};
+var fps = document.getElementById('fps');
+fps.innerHTML = player.fps;
+
+initHotkeys();
+createhud();
+init();
+setupCanvasDrawing();
+animate();
+
+
+
+function init() {
+// Renderer.
+renderer = new THREE.WebGLRenderer( { antialias: true, alpha:true, transparent:true } );
+
+renderer.setSize(window.innerWidth, window.innerHeight);
+// Add renderer to page
+document.getElementById('threejs-container').appendChild(renderer.domElement);
+
+// Create camera.
+camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 2000);
+camera.position.z = 200;
+
+// Create scene.
+scene = new THREE.Scene();
+clock = new THREE.Clock();
+
+// groups
+cursor = new THREE.Group();
+scene.add( cursor );
+
+
+
+// drawing plane geometry
+var geometry = new THREE.PlaneGeometry(200, 200, 1);
+// hoverplane object3D
+plmaterial = new THREE.MeshBasicMaterial( {
+  map : new THREE.CanvasTexture( drawingCanvas )
+  ,transparent:true
+} );
+plane = new THREE.Mesh( geometry, plmaterial );
+plane.name = 'plane';
+plane.position.set(0,0,1);
+scene.add( plane );
+plmaterial.map.magFilter = THREE.NearestFilter;
+plmaterial.map.minFilter = THREE.NearestFilter;
+
+// BG plane geometry
+bgmaterial = new THREE.MeshBasicMaterial( {  
+  color:0x000000, transparent:true, opacity:0.1  } );
+bgplane = new THREE.Mesh( geometry, bgmaterial );
+bgplane.name = 'bgplane';
+scene.add( bgplane );
+
+
+
+}// init
+
+
+// init keyboard controls
+function initHotkeys() {
+    window.onkeyup = function(event) {
+        // console.log('event === ',event);
+        if(typeof hotkeys[event.key] === "function") {
+            hotkeys[event.key]();
+        } else if (typeof hotkeys[event.keyCode] === "function") {
+            hotkeys[event.keyCode]();
+        }
+    }
+}
+
+// hide UI
+function hideUIButtonCallback() {
+     if (document.body.classList == 'hideui') {
+        document.body.classList = '';
+    } else {
+        document.body.classList = 'hideui';
+    } 
+}
+
+
+// play
+function playButtonCallback() {
+    if (framenum < 2) {
+        return
+    }
+    if (playbtn.classList == 'on') {
+        playbtn.classList = 'off';
+        player.playing = false;
+    } else {
+        playbtn.classList = 'on';
+        player.playing = true;
+    }
+}
+
+
+// eraser
+function eraserButtonCallback() {
+  eraserbtn.classList.toggle('on');
+  if (eraserbtn.classList != "on") {
+      // event.target.innerHTML = 'eraser: off';
+      player.eraser = false;
+  } else {
+      // event.target.innerHTML = 'eraser: on';
+      player.eraser = true;
+  }
+}
+
+
+// previous
+function prevButtonCallback() {
+  player.currentframe--;
+  if (player.currentframe < 0) {
+      player.currentframe = framenum - 1;
+  }
+  document.getElementById('timeline').style.transform = 'translateX(' + ((player.currentframe) *
+      player.ogheight) + 'px)';
+  plmaterial.map.offset.x = player.currentframe / framenum;
+  shift = player.currentframe * player.ogheight;
+}
+
+// next
+function nextButtonCallback() {
+  player.currentframe++;
+  if (player.currentframe > framenum - 1) {
+      player.currentframe = 0;
+  }
+  document.getElementById('timeline').style.transform = 'translateX(' + ((player.currentframe) *
+      player.ogheight) + 'px)';
+  plmaterial.map.offset.x = player.currentframe / framenum;
+  shift = player.currentframe * player.ogheight;
+}
+
+// set up 2D drawing canvas
+function setupCanvasDrawing() {
+
+  var painting = false;
+
+  drawingCanvas.addEventListener('mousedown', function(e){
+    painting = true
+  });
+  drawingCanvas.addEventListener('mousemove', function(e){
+    if(painting){
+      draw(drawingContext, e.offsetX, e.offsetY);
+    }
+  });
+  drawingCanvas.addEventListener('mouseup', function(e){
+    painting = false;
+  });
+  drawingCanvas.addEventListener('mouseleave', function(e){
+    painting = false;
+  });
+
+
+}
+
+
+// colour picker FG
+function fgpick() {
+  document.getElementById('brush_color').click();
+}
+// colour picker BG
+function bgpick() {
+  document.getElementById('bg_color').click();
+}
+
+
+// // scroll zoom
+window.addEventListener( 'wheel', onMouseWheel, false );
+function onMouseWheel( event ) {
+  camera.position.z += event.deltaY * 0.1;
+  if (camera.position.z < 3) {camera.position.z = 3;}
+  if (camera.position.z > 2000) {camera.position.z = 2000;}
+}
+
+// mouse events
+window.addEventListener('mousedown', mouseDown);
+window.addEventListener('touchstart', mouseDown);
+window.addEventListener('mouseup', mouseUp);
+window.addEventListener('touchend', mouseUp); 
+
+function mouseDown(e){
+  isMouseDown = true;
+}
+
+function mouseUp(e){
+  isMouseDown = false;
+}
+
+// Draw function
+function draw(drawContext,  x, y) {
+  if (player.eraser == true) {
+    drawingContext.clearRect(x, y, 1, 1)
+  } else {
+    drawingContext.fillStyle = player.color;
+    drawingContext.fillRect(x, y, 1, 1);
+  }
+
+  plmaterial.map.needsUpdate = true;
+}
+
+
+
+
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+
+  if (player.playing == true) {
+    var t = clock.getElapsedTime();
+    // set offset
+    plmaterial.map.offset.x = Math.floor( ( t * player.fps ) % player.count ) * 1 / player.count;   
+    // set current frame
+    player.currentframe = 1+Math.floor((t * player.fps ) % player.count );
+    // make shift from currentframe
+    shift = (player.currentframe-1)*player.ogheight;
+    // set html of timeline frame
+    document.getElementById('timeline').style.transform = 'translateX('+((player.currentframe-1)*player.ogheight)+'px)';
+
+  }// if playing
+
+}
+
+
+// resize
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+//
+// update touch
+let updateTouchCoordinates = function(evt) {
+  const touches = evt.targetTouches;
+
+  mouse.x = ( evt.touches[0].pageX / window.innerWidth ) * 2 - 1;
+  mouse.y = - ( evt.touches[0].pageY / window.innerHeight ) * 2 + 1;
+  raycaster.setFromCamera( mouse, camera );
+  let intersects = raycaster.intersectObject( plane );
+  if (intersects.length > 0) { 
+
+    xu = Math.floor(intersects[0].uv.x*player.ogwidth);
+    xv = -(Math.floor(intersects[0].uv.y*player.ogheight)-(player.ogheight-1));
+
+// draw on canvas
+draw(drawingContext, xu+shift, xv);
+
+}
+};
+
+
+// update mouse
+let updateMouseCoordinates = function(evt) {
+  evt.preventDefault();
+
+  mouse.x = ( evt.clientX / window.innerWidth ) * 2 - 1;
+  mouse.y = - ( evt.clientY / window.innerHeight ) * 2 + 1;
+  raycaster.setFromCamera( mouse, camera );
+  let intersects = raycaster.intersectObject( plane );
+  if (intersects.length > 0 && isMouseDown == true) { 
+
+    xu = Math.floor(intersects[0].uv.x*player.ogwidth);
+    xv = -(Math.floor(intersects[0].uv.y*player.ogheight)-(player.ogheight-1));
+
+// draw on canvas
+draw(drawingContext, xu+shift, xv);
+
+}
+};
+
+
+// clear canvas
+var clr = document.getElementById("clr");
+clr.addEventListener("click",clrClick, false );
+// clear func
+function clrClick() {
+  framenum = 1;
+  framelength.innerHTML = framenum;
+  drawingCanvas.height = player.ogheight;
+  drawingCanvas.width = player.ogwidth;
+  plmaterial.map.repeat.x = 1;
+  drawingContext.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+    plmaterial.map.needsUpdate = true;
+}
+
+
+// Add listeners
+window.addEventListener('resize', onWindowResize, false);
+window.addEventListener('touchmove', updateTouchCoordinates);
+window.addEventListener( 'mousemove', updateMouseCoordinates, false );
+
+// recreate drawing canvas
+function refreshcanvas() {  
+  // length of animation
+  player.count =  framenum;
+  // expand drawing canvas
+  drawingCanvas.width = player.ogwidth*framenum;
+  // set textture repeat
+  plmaterial.map.repeat.x = 1 / framenum;
+  plmaterial.map.needsUpdate = true;
+
+// clear timeline buttons
+document.getElementById('gotoframe').innerHTML = '';
+// add timeline buttons
+for (let i = 0; i < framenum; i++) {
+  var btn = document.createElement("BUTTON");
+  btn.textContent = i+1;
+  btn.style.width = player.ogheight+'px';
+  btn.style.left = (player.ogheight*i)+'px';
+  document.getElementById('gotoframe').appendChild(btn);
+  btn.onclick = function() { goto(i+1); };
+
+}
+
+}
+
+
+// hud
+function createhud() {
+
+  var faster = document.getElementById('btnfast');
+  var slower = document.getElementById('btnslow');
+
+  var addframe = document.getElementById('btnup');
+  var removeframe = document.getElementById('btndown');
+
+
+// export
+document.getElementById('btnexport').addEventListener('mousedown', function(){
+// open new window with screen grab of canvas
+var newTab = window.open();
+newTab.document.body.style.backgroundColor = "#222";
+newTab.document.body.style.margin = "0";
+newTab.document.body.innerHTML = '<img src="'+drawingCanvas.toDataURL("image/png")+'" width="'+drawingCanvas.width+'px" height="'+drawingCanvas.height+'px">';
+
+},false);
+
+// eraser
+eraserbtn.addEventListener('mousedown', function(){
+  eraserButtonCallback();
+},false);
+
+// fg colour picker
+document.getElementById('brush_color').addEventListener('change', function(event){
+  player.color = event.target.value;
+  document.getElementById("fgcol").setAttribute("fill", event.target.value)
+},false);
+
+// bg colour picker
+document.getElementById('bg_color').addEventListener('change', function(event){
+  player.bgcolor = event.target.value;
+  document.getElementById("bgcol").setAttribute("fill", event.target.value);  
+  document.body.style.backgroundColor = event.target.value;
+},false);
+
+
+// faster fps button
+faster.addEventListener('mousedown', function(){
+  player.fps = player.fps+1;
+  fps.innerHTML = player.fps;
+},false);
+
+// slower fps button
+slower.addEventListener('mousedown', function(){
+  player.fps = player.fps-1;
+  fps.innerHTML = player.fps;
+},false);
+
+// add frame button
+addframe.addEventListener('mousedown', function(){
+addxframe();
+},false);
+
+// remove frame button
+removeframe.addEventListener('mousedown', function(){
+removexframe()
+},false);
+
+// play button
+playbtn.addEventListener('mousedown', function(){
+  playButtonCallback()
+},false);
+
+// next button
+nextbtn.addEventListener('mousedown', function(){  
+  nextButtonCallback();
+},false);
+
+}
+
+
+
+// go to frame
+function goto(argument) {
+
+  player.currentframe = argument;
+// move timeline position
+document.getElementById('timeline').style.transform = 'translateX('+((player.currentframe-1)*player.ogheight)+'px)';
+
+// shift UV texture
+plmaterial.map.offset.x = (player.currentframe-1)/framenum;
+// shift mouse UV positions
+shift = (player.currentframe-1)*player.ogheight;
+}
+
+
+// add frame
+function addxframe() {
+  // make temp canvas
+var copycanvas = document.createElement('canvas');
+copycanvas.width  = drawingCanvas.width;
+copycanvas.height  = drawingCanvas.height;
+copycanvas.getContext('2d').drawImage(drawingCanvas,0,0);
+
+//
+  framenum++;
+  framelength.innerHTML = framenum;
+  refreshcanvas();
+//
+drawingContext.drawImage(copycanvas, 0, 0 );
+plmaterial.map.needsUpdate = true;
+}
+
+// remove frame
+function removexframe() {
+  if (framenum<2) {return}
+  // make temp canvas
+var copycanvas = document.createElement('canvas');
+copycanvas.width  = drawingCanvas.width;
+copycanvas.height  = drawingCanvas.height;
+copycanvas.getContext('2d').drawImage(drawingCanvas,0,0);
+
+//
+  framenum--;
+  framelength.innerHTML = framenum;
+  refreshcanvas();
+//
+
+drawingContext.drawImage(copycanvas, 0, 0 );
+plmaterial.map.needsUpdate = true;
+}
+
+
+
+function gifify(scale = 1){
+    const canvas = document.getElementById("drawing-canvas");
+    const ctx = canvas.getContext("2d");
+    const size = drawingCanvas.height;
+    const backgroundColor = "black";
+    gifshot.createGIF({
+        gifHeight: size * scale,
+        gifWidth: size * scale,
+        images: [...Array(framenum)].map((n,i)=>{
+            const _canvas = document.createElement("canvas");
+            _canvas.width = _canvas.height = size;
+            const _ctx = _canvas.getContext("2d");
+            _ctx.fillStyle = backgroundColor;
+            _ctx.fillRect(0,0,size,size);
+            _ctx.putImageData(ctx.getImageData(size * i,0,size,size),0,0);
+            _ctx.imageSmoothingEnabled = false;
+            _ctx.scale(scale, scale);
+            return {src: _canvas.toDataURL()}
+        })
+        },function(obj) {
+        if(!obj.error) {
+            var image = obj.image,
+            animatedImage = document.createElement('img');
+            animatedImage.src = image;
+            document.body.appendChild(animatedImage);
+        }
+    });
+}
+
+// import image
+function insertImage() {
+  framenum=4;
+  framelength.innerHTML = framenum;
+  refreshcanvas();
+
+
+  var img = document. createElement("img");
+  img.src = 'frog4.png';
+
+  img.onload = function() {
+    drawingContext.drawImage(img, 0, 0);
+    plmaterial.map.needsUpdate = true;
+  }
+
+}
+</script>
+</body>
+</html>
