@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=utf-8>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    @font-face {
+  font-family: 'uni';
+  src: url('font/uni-05_64.ttf.eot');
+  src: url('font/uni-05_64.ttf.eot?#iefix') format('embedded-opentype'),
+       url('font/uni-05_64.ttf.woff') format('woff'),
+       url('font/uni-05_64.ttf.svg#uni') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+    body { background:#000; color:#fff; 
+      font-family: 'uni';
+       margin:8px;
+           user-select:none; -webkit-user-select:none;
+           -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+    #kb { display:flex; gap:4px; }
+    .pad { flex:1; aspect-ratio:1; background:#111; color:#fff;
+           border:0; border-radius:6px; font-family: 'uni';
+           font-size:16px; padding:0; cursor:pointer; position:relative; }
+    .pad.on { background:#660000; }
+    .pad.tone { background:#0d1a0d; }
+    .pad.tone.on { background:#1a5a1a; }
+    .pad.oct { background:#1a1a2a; }
+    .pad.oct.on { background:#3a3a6a; }
+    .pad .oct-label { position:absolute; bottom:2px; right:4px;
+                      font-size:9px; opacity:0.6; }
+    .pad .layers { position:absolute; top:2px; right:4px;
+                   font-size:9px; opacity:0.5; }
+    #code { margin-top:16px; color:#8f8; font-size:12px;
+            white-space:pre-wrap; word-break:break-all;
+            user-select:text; -webkit-user-select:text; }
+    .pad {
+            clip-path: polygon(
+              0px calc(100% - 6px),
+              3px calc(100% - 6px),
+              3px calc(100% - 3px),
+              6px calc(100% - 3px),
+              6px 100%,
+              calc(100% - 6px) 100%,
+              calc(100% - 6px) calc(100% - 3px),
+              calc(100% - 3px) calc(100% - 3px),
+              calc(100% - 3px) calc(100% - 6px),
+              100% calc(100% - 6px),
+              100% 6px,
+              calc(100% - 3px) 6px,
+              calc(100% - 3px) 3px,
+              calc(100% - 6px) 3px,
+              calc(100% - 6px) 0px,
+              6px 0px,
+              6px 3px,
+              3px 3px,
+              3px 6px,
+              0px 6px
+            );
+          }            
+  </style>
+</head>
+<body>
+
+  <div id="kb"></div>
+  <div id="code">tap a pad</div>
+
+  <script src="ZzFXMicro.min.js"></script>
+  <script>
+  var voices = {
+    KICK: [
+      [1.1,0,65,.03,.2,.11,1,2.6,,,,,,,,.1,,.5,.19]
+    ],
+    SNARE: [
+      [0.7,0.05,220,0,0.02,0.18,0,1,-40,0,0,0,0,0.6,0,0,0,0.7,0,0,0],
+      [0.3,0.1,1800,0,0.01,0.08,3,1,0,0,0,0,0,0.9,0,0,0,0.5,0,0,0]
+    ],
+    HAT: [
+      [0.35,0,8000,0,0.005,0.05,3,1,0,0,0,0,0,0.4,0,0,0,0.5,0,0,0]
+    ],
+    CLAP: [
+      [0.6,0.1,1200,0,0.01,0.12,3,1,0,0,0,0,0,0.9,0,0,0,0.6,0,0,0]
+    ]
+  };
+
+  var filters = {
+    KICK:    { type:'lowpass',  freq:250,  q:0.7 },
+    SNARE:   { type:'bandpass', freq:1500, q:0.6 },
+    HAT:     { type:'bandpass', freq:7500, q:12  },
+    CLAP:    { type:'bandpass', freq:1200, q:1.5 }
+  };
+
+  var tones = {
+    U: { wave:'sine',     freq:220, cutoff:300, q:12 },
+    I: { wave:'triangle', freq:220, cutoff:500, q:12 },
+    O: { wave:'sawtooth', freq:220, cutoff:600, q:12 },
+    P: { wave:'square',   freq:220, cutoff:400, q:12 }
+  };
+
+  var layout = {
+    Q:'KICK', W:'SNARE', E:'HAT', R:'CLAP'
+  };
+
+  var octKeys = { T:-1, Y:+1 };
+
+  var octave = 0;
+  var octMin = -2, octMax = +2;
+
+  var ctx = null;
+  var kb = document.getElementById('kb');
+  var codeEl = document.getElementById('code');
+  var pads = {};
+  var held = {};
+  var activeTones = {};
+
+  function ensureAudio() {
+    if (!ctx) {
+      ctx = new AudioContext();
+      zzfxX = ctx;
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+  }
+
+  function playDrum(voice) {
+    ensureAudio();
+
+    var f = filters[voice];
+    var biquad = ctx.createBiquadFilter();
+    biquad.type = f.type;
+    biquad.frequency.value = f.freq;
+    biquad.Q.value = f.q;
+    biquad.connect(ctx.destination);
+
+    var origCreate = ctx.createBufferSource.bind(ctx);
+    ctx.createBufferSource = function() {
+      var s = origCreate();
+      var realConnect = s.connect.bind(s);
+      s.connect = function(dest) {
+        if (dest === ctx.destination) realConnect(biquad);
+        else realConnect(dest);
+      };
+      return s;
+    };
+
+    var layers = voices[voice];
+    for (var i = 0; i < layers.length; i++) {
+      zzfx.apply(null, layers[i]);
+    }
+
+    ctx.createBufferSource = origCreate;
+  }
+
+  function startTone(k) {
+    ensureAudio();
+    if (activeTones[k]) return;
+
+    var t = tones[k];
+    var pitch = t.freq * Math.pow(2, octave);
+    var cutoff = t.cutoff * Math.pow(2, octave);
+
+    var osc = ctx.createOscillator();
+    var filter = ctx.createBiquadFilter();
+    var gain = ctx.createGain();
+
+    osc.type = t.wave;
+    osc.frequency.value = pitch;
+
+    filter.type = 'lowpass';
+    filter.frequency.value = cutoff;
+    filter.Q.value = t.q;
+
+    var now = ctx.currentTime;
+    filter.frequency.setValueAtTime(cutoff, now);
+    filter.frequency.exponentialRampToValueAtTime(
+      Math.min(cutoff * 6, ctx.sampleRate / 2 - 100), now + 0.4);
+    filter.frequency.exponentialRampToValueAtTime(cutoff, now + 1.2);
+
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.35, now + 0.02);
+    gain.gain.setValueAtTime(0.35, now + 0.6);
+    gain.gain.linearRampToValueAtTime(0, now + 1.5);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 1.6);
+
+    activeTones[k] = { osc:osc, gain:gain, filter:filter };
+
+    osc.onended = function() {
+      delete activeTones[k];
+    };
+  }
+
+  function stopTone(k) {
+    var t = activeTones[k];
+    if (!t) return;
+    var now = ctx.currentTime;
+    t.gain.gain.cancelScheduledValues(now);
+    t.gain.gain.setValueAtTime(t.gain.gain.value, now);
+    t.gain.gain.linearRampToValueAtTime(0, now + 0.08);
+    t.osc.stop(now + 0.1);
+    delete activeTones[k];
+  }
+
+  function hit(k) {
+    if (layout[k]) {
+      var voice = layout[k];
+      playDrum(voice);
+
+      var layers = voices[voice];
+      var lines = [];
+      for (var i = 0; i < layers.length; i++) {
+        lines.push('zzfx(' + layers[i].join(', ') + ');');
+      }
+      codeEl.textContent = lines.join('\n');
+    } else if (tones[k]) {
+      startTone(k);
+      var t = tones[k];
+      var pitch = Math.round(t.freq * Math.pow(2, octave));
+      codeEl.textContent =
+        'osc.type="' + t.wave + '"; osc.freq=' + pitch +
+        'Hz; lowpass ' + Math.round(t.cutoff * Math.pow(2, octave)) +
+        'Hz Q' + t.q;
+    } else if (octKeys[k] !== undefined) {
+      shiftOctave(octKeys[k]);
+    } else {
+      return;
+    }
+
+    var btn = pads[k];
+    btn.classList.add('on');
+    clearTimeout(btn._t);
+    if (!tones[k]) {
+      btn._t = setTimeout(function(){ btn.classList.remove('on'); }, 100);
+    }
+  }
+
+  function shiftOctave(dir) {
+    octave = Math.max(octMin, Math.min(octMax, octave + dir));
+    updateOctaveLabel();
+    codeEl.textContent = 'octave ' + (octave >= 0 ? '+' : '') + octave;
+  }
+
+  function updateOctaveLabel() {
+    if (pads.T) {
+      pads.T.querySelector('.oct-label').textContent = octave - 1;
+    }
+    if (pads.Y) {
+      pads.Y.querySelector('.oct-label').textContent = octave + 1;
+    }
+  }
+
+  Object.keys(layout)
+    .concat(Object.keys(octKeys))
+    .concat(Object.keys(tones))
+    .forEach(function(k){
+      var btn = document.createElement('button');
+      var cls = 'pad';
+      if (tones[k]) cls += ' tone';
+      if (octKeys[k] !== undefined) cls += ' oct';
+      btn.className = cls;
+      btn.textContent = k;
+
+      if (octKeys[k] !== undefined) {
+        var lbl = document.createElement('span');
+        lbl.className = 'oct-label';
+        lbl.textContent = (octave + octKeys[k]);
+        btn.appendChild(lbl);
+      } else if (layout[k] && voices[layout[k]].length > 1) {
+        var lv = document.createElement('span');
+        lv.className = 'layers';
+        lv.textContent = voices[layout[k]].length + '×';
+        btn.appendChild(lv);
+      }
+
+      btn.addEventListener('mousedown', function(e){
+        e.preventDefault();
+        hit(k);
+      });
+      btn.addEventListener('touchstart', function(e){
+        e.preventDefault();
+        hit(k);
+      }, {passive:false});
+
+      btn.addEventListener('mouseup', function(e){
+        if (tones[k]) {
+          e.preventDefault();
+          stopTone(k);
+          btn.classList.remove('on');
+        }
+      });
+      btn.addEventListener('mouseleave', function(e){
+        if (tones[k] && activeTones[k]) {
+          stopTone(k);
+          btn.classList.remove('on');
+        }
+      });
+      btn.addEventListener('touchend', function(e){
+        if (tones[k]) {
+          e.preventDefault();
+          stopTone(k);
+          btn.classList.remove('on');
+        }
+      });
+      btn.addEventListener('touchcancel', function(e){
+        if (tones[k]) {
+          stopTone(k);
+          btn.classList.remove('on');
+        }
+      });
+
+      kb.appendChild(btn);
+      pads[k] = btn;
+    });
+
+  updateOctaveLabel();
+
+  window.addEventListener('keydown', function(e){
+    var k = e.key.toUpperCase();
+    if (held[k]) return;
+    if (layout[k] || tones[k] || octKeys[k] !== undefined) {
+      e.preventDefault();
+      held[k] = true;
+      hit(k);
+    }
+  });
+
+  window.addEventListener('keyup', function(e){
+    var k = e.key.toUpperCase();
+    held[k] = false;
+    if (tones[k]) {
+      stopTone(k);
+      if (pads[k]) pads[k].classList.remove('on');
+    }
+  });
+
+  window.addEventListener('mousedown', ensureAudio);
+  window.addEventListener('touchstart', ensureAudio, {passive:true});
+  </script>
+</body>
+</html>
