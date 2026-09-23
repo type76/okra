@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>video · numbers</title>
+    <style>
+        @font-face {
+            font-family: "poppins-bold";
+            src: url("font/poppins-bold-webfont.woff2") format("woff2"),
+                 url("font/poppins-bold-webfont.woff") format("woff");
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            overflow: hidden;
+            font-family: "poppins-bold", sans-serif;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        #video-bg {
+            visibility: hidden;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            transform: translate(-50%, -50%);
+            object-fit: cover;
+            transition: opacity 0.6s ease;
+            opacity: 1;
+        }
+
+
+        #numbers-overlay {
+            visibility: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem 1rem;
+            pointer-events: auto;
+        }
+
+        .num-btn {
+            width: 100px;
+            height: 100px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 6rem;
+            font-weight: 700;
+            font-family: "poppins-bold", sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            letter-spacing: 0.02em;
+        }
+
+        .num-btn:hover {
+            color: #fff000;
+        }
+
+        .num-btn:active {
+            color: #ff0000;
+        }
+
+        @media (max-width: 600px) {
+            .num-btn {
+                width: 75px;
+                height: 75px;
+                font-size: 2.2rem;
+            }
+            .number-grid {
+                gap: 1.5rem 2.2rem;
+            }
+        }
+        @media (max-width: 420px) {
+            .num-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.8rem;
+            }
+            .number-grid {
+                gap: 1rem 1.5rem;
+            }
+        }
+        #startit {
+            width: 100%;
+            margin: 2% auto;
+            position: relative;
+            z-index: 99999;
+            font-family: "poppins-bold", sans-serif;
+            color: #fff;
+            font-size: 30px;
+            background-color: transparent;
+            border: none;
+            outline: none;
+            padding: 30px;
+            line-height: 1.2em;
+        }
+
+        #startit:hover {
+            color: #fff000;
+            cursor: pointer;
+        }
+        #overlay {
+            background-color: #000;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            transition: all 1s ease-in-out;
+            opacity: 1;
+        }
+
+        #overlay.fade {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="overlay"></div>
+
+    <div id="video-container">
+        <video id="video-bg" loop playsinline preload="auto">
+        </video>
+    </div>
+
+    <div id="numbers-overlay">
+        <div class="number-grid" id="numberGrid">
+        </div>
+        
+    </div>
+
+<button id="startit" >click to start <br><small>[12mb]</small></button>
+
+    <script>
+        (function(){
+            "use strict";
+
+            const videoMap = {
+                "1": "v/1.mp4",
+                "2": "v/2.mp4",
+                "3": "v/3.mp4",
+                "4": "v/4.mp4",
+                "5": "v/5.mp4",
+                "6": "v/6.mp4",
+                "7": "v/7.mp4",
+                "8": "v/8.mp4",
+                "9": "v/9.mp4"
+            };
+
+
+            // DOM elements
+            const videoBg = document.getElementById('video-bg');
+            const grid = document.getElementById('numberGrid');           
+
+            // VARS
+            let activeNumber = null;
+
+
+            document.getElementById('startit').addEventListener('click', function(e) {
+                document.getElementById('startit').style.display = 'none';
+                videoBg.style.visibility = 'visible';
+                grid.style.visibility = 'visible';
+                document.getElementById('overlay').classList = 'fade';
+                    setTimeout(() => {
+                        document.getElementById('overlay').style.display = 'none';
+                    }, 400);
+            });
+
+
+            function buildNumbers() {
+                grid.innerHTML = '';
+                for (let i = 1; i <= 9; i++) {
+                    const num = i.toString();
+                    const btn = document.createElement('div');
+                    btn.className = 'num-btn';
+                    btn.textContent = num;
+                    btn.dataset.number = num;
+
+                    btn.addEventListener('mouseenter', function(e) {
+                        playVideoForNumber(num);
+
+                    });
+
+   
+                    btn.addEventListener('mouseleave', function(e) {
+                    });
+
+                    grid.appendChild(btn);
+                }
+            }
+
+            
+            function playVideoForNumber(numberKey) {
+                if (activeNumber === numberKey) return;
+
+                const videoSrc = videoMap[numberKey];
+                if (!videoSrc) {
+                    console.warn(`No video mapped for number ${numberKey}`);
+                    return;
+                }
+
+                activeNumber = numberKey;
+
+                videoBg.src = videoSrc;
+                videoBg.load();
+                videoBg.play().catch(e => {
+                    
+                    setTimeout(() => {
+                        videoBg.play().catch(() => {});
+                    }, 100);
+                });
+
+    
+            }
+
+            const overlay = document.getElementById('numbers-overlay');
+            overlay.addEventListener('mouseleave', function(e) {
+                
+                setTimeout(() => {
+                    const anyHover = document.querySelector('.num-btn:hover');
+                    if (!anyHover) {
+                       
+                        document.body.style.backgroundColor = '#0a0a0f';
+                    }
+                }, 400);
+            });
+
+
+
+            function preloadAllVideos() {
+                const urls = Object.values(videoMap);
+                urls.forEach(src => {
+                    const v = document.createElement('video');
+                    v.src = src;
+                    v.preload = 'auto';
+                    v.muted = true;
+                });
+            }
+
+            function init() {
+                buildNumbers();
+                preloadAllVideos();
+                document.body.style.backgroundColor = '#0a0a0f';
+
+                const defaultNum = '1';
+                const defaultSrc = videoMap[defaultNum];
+                if (defaultSrc) {
+                    videoBg.src = defaultSrc;
+                    videoBg.load();
+                    videoBg.play().catch(() => {});
+                    activeNumber = defaultNum;
+                }
+
+            }
+
+            function handleResize() {
+                 const vc = document.getElementById('video-container');
+                vc.style.width = window.innerWidth + 'px';
+                vc.style.height = window.innerHeight + 'px';
+            }
+
+            window.addEventListener('resize', handleResize);
+
+            // start
+            init();
+
+            videoBg.addEventListener('error', function(e) {
+                console.warn('video error, keeping background');
+            });
+
+
+        })();
+    </script>
+</body>
+</html>
